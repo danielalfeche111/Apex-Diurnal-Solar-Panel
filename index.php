@@ -1,116 +1,80 @@
 <?php
 // --- Page Configuration ---
-$page_title       = "Apex Diurnal | Clean Energy, Intelligent Future";
+$page_title = "Apex Diurnal | Clean Energy, Intelligent Future";
 $page_description = "Apex Diurnal - Top-tier solar technology, custom system design, "
-                  . "professional installation, and long-term solar maintenance for a sustainable future.";
-$current_year     = date('Y');
+  . "professional installation, and long-term solar maintenance for a sustainable future.";
+$current_year = date('Y');
 
 // --- Navigation Links ---
 $nav_links = [
-    ['label' => 'Home',     'href' => '#home',     'active' => true],
-    ['label' => 'Products', 'href' => '#products', 'active' => false],
-    ['label' => 'Services', 'href' => '#services', 'active' => false],
-    ['label' => 'About Us', 'href' => '#about',    'active' => false],
-    ['label' => 'Contact',  'href' => '#contact',  'active' => false],
+  ['label' => 'Home', 'href' => '#home', 'active' => true],
+  ['label' => 'Products', 'href' => '#products', 'active' => false],
+  ['label' => 'Services', 'href' => '#services', 'active' => false],
+  ['label' => 'About Us', 'href' => '#about', 'active' => false],
+  ['label' => 'Contact', 'href' => '#contact', 'active' => false],
 ];
 
-// --- Product Cards ---
-$products = [
-    [
-        'title'   => 'Residential Arrays',
-        'image'   => 'assets/images/residential arrays.png',
-        'alt'     => 'Residential Solar Panel Arrays',
-        'price'   => '$145.00',
-        'actions' => [
-            ['label' => 'BUY NOW',    'class' => 'btn btn-yellow'],
-            ['label' => 'LEARN MORE', 'class' => 'btn btn-outline'],
-        ],
-    ],
-    [
-        'title'   => 'Commercial Grids',
-        'image'   => 'assets/images/commercial grids.png',
-        'alt'     => 'Commercial Solar Grids',
-        'price'   => 'Call for Quote',
-        'actions' => [
-            ['label' => 'CONTACT SALES', 'class' => 'btn btn-yellow btn-block'],
-        ],
-    ],
-    [
-        'title'   => 'Advanced Solar Inverter',
-        'image'   => 'assets/images/advance power inverter.png',
-        'alt'     => 'Advanced Solar Inverter',
-        'price'   => '$450.00',
-        'actions' => [
-            ['label' => 'BUY NOW',    'class' => 'btn btn-yellow'],
-            ['label' => 'LEARN MORE', 'class' => 'btn btn-outline'],
-        ],
-    ],
-    [
-        'title'   => 'Professional Installation Booking',
-        'image'   => 'assets/images/product-booking.png',
-        'alt'     => 'Professional Installation Booking',
-        'price'   => '$150.00',
-        'actions' => [
-            ['label' => 'BOOK NOW', 'class' => 'btn btn-yellow btn-block'],
-        ],
-    ],
-];
+// --- Load product catalog and cart session helpers ---
+require_once __DIR__ . '/product_data.php';
+require_once __DIR__ . '/cart_functions.php';
 
 // --- Service / Feature Cards ---
 $features = [
-    [
-        'title'    => 'CUSTOM SYSTEM DESIGN',
-        'image'    => 'assets/images/custom design.png',
-        'icon'     => 'assets/images/custom.png',
-        'alt_img'  => 'Custom System Design',
-        'alt_icon' => 'Custom System Design Icon',
-        'text'     => 'End to End Service. Custom solutions for homes and businesses. '
-                    . 'Complete Site Analysis and 3D Modeling.',
-    ],
-    [
-        'title'    => 'PROFESSIONAL INSTALLATION',
-        'image'    => 'assets/images/professional installation.png',
-        'icon'     => 'assets/images/PROF INSTALLATION.png',
-        'alt_img'  => 'Professional Installation',
-        'alt_icon' => 'Professional Installation Icon',
-        'text'     => 'Seamless Execution. Flawless installation of unique system designs. '
-                    . 'Maximizing Solar Capture.',
-    ],
-    [
-        'title'    => 'LONG-TERM MAINTENANCE',
-        'image'    => 'assets/images/maintenance.png',
-        'icon'     => 'assets/images/longterm maintenance.png',
-        'alt_img'  => 'Long-Term Maintenance',
-        'alt_icon' => 'Long-Term Maintenance Icon',
-        'text'     => 'Ensuring Performance. System monitoring, cleaning, and preventative care. '
-                    . 'Prolonging Life and Rewarding Investment.',
-    ],
+  [
+    'title' => 'CUSTOM SYSTEM DESIGN',
+    'image' => 'assets/images/custom design.png',
+    'icon' => 'assets/images/custom.png',
+    'alt_img' => 'Custom System Design',
+    'alt_icon' => 'Custom System Design Icon',
+    'text' => 'End to End Service. Custom solutions for homes and businesses. '
+      . 'Complete Site Analysis and 3D Modeling.',
+  ],
+  [
+    'title' => 'PROFESSIONAL INSTALLATION',
+    'image' => 'assets/images/professional installation.png',
+    'icon' => 'assets/images/PROF INSTALLATION.png',
+    'alt_img' => 'Professional Installation',
+    'alt_icon' => 'Professional Installation Icon',
+    'text' => 'Seamless Execution. Flawless installation of unique system designs. '
+      . 'Maximizing Solar Capture.',
+  ],
+  [
+    'title' => 'LONG-TERM MAINTENANCE',
+    'image' => 'assets/images/maintenance.png',
+    'icon' => 'assets/images/longterm maintenance.png',
+    'alt_img' => 'Long-Term Maintenance',
+    'alt_icon' => 'Long-Term Maintenance Icon',
+    'text' => 'Ensuring Performance. System monitoring, cleaning, and preventative care. '
+      . 'Prolonging Life and Rewarding Investment.',
+  ],
 ];
 
 // --- Footer Columns ---
 $footer_menu = [
-    ['label' => 'Home',       'href' => '#home'],
-    ['label' => 'Products',   'href' => '#products'],
-    ['label' => 'Services',   'href' => '#services'],
-    ['label' => 'About us',   'href' => '#about'],
-    ['label' => 'Contact us', 'href' => '#contact'],
+  ['label' => 'Home', 'href' => '#home'],
+  ['label' => 'Products', 'href' => '#products'],
+  ['label' => 'Services', 'href' => '#services'],
+  ['label' => 'About us', 'href' => '#about'],
+  ['label' => 'Contact us', 'href' => '#contact'],
 ];
 $footer_legalities = [
-    'Copyright Notice',
-    'Privacy Policy',
-    'Terms of Service / Conditions',
-    'Disclaimers',
-    'Accessibility Statement',
+  'Copyright Notice',
+  'Privacy Policy',
+  'Terms of Service / Conditions',
+  'Disclaimers',
+  'Accessibility Statement',
 ];
 
-function void_link(string $inner, string $class = '', string $extra_attr = ''): string {
-    $cls = $class ? ' class="' . $class . '"' : '';
-    return '<a href="javascript:void(0)" onclick="return false;"' . $cls . $extra_attr . '>' . $inner . '</a>';
+function void_link(string $inner, string $class = '', string $extra_attr = ''): string
+{
+  $cls = $class ? ' class="' . $class . '"' : '';
+  return '<a href="javascript:void(0)" onclick="return false;"' . $cls . $extra_attr . '>' . $inner . '</a>';
 }
 
-function nav_link(string $label, string $href, string $class = '', string $extra_attr = ''): string {
-    $cls = $class ? ' class="' . $class . '"' : '';
-    return '<a href="' . htmlspecialchars($href) . '"' . $cls . $extra_attr . '>' . htmlspecialchars($label) . '</a>';
+function nav_link(string $label, string $href, string $class = '', string $extra_attr = ''): string
+{
+  $cls = $class ? ' class="' . $class . '"' : '';
+  return '<a href="' . htmlspecialchars($href) . '"' . $cls . $extra_attr . '>' . htmlspecialchars($label) . '</a>';
 }
 ?>
 <!DOCTYPE html>
@@ -148,8 +112,8 @@ function nav_link(string $label, string $href, string $class = '', string $extra
           <?php foreach ($nav_links as $link): ?>
             <li>
               <?php
-                $cls = $link['active'] ? 'nav-link active' : 'nav-link';
-                echo nav_link($link['label'], $link['href'], $cls);
+              $cls = $link['active'] ? 'nav-link active' : 'nav-link';
+              echo nav_link($link['label'], $link['href'], $cls);
               ?>
             </li>
           <?php endforeach; ?>
@@ -158,24 +122,28 @@ function nav_link(string $label, string $href, string $class = '', string $extra
 
       <div class="header-actions">
         <div class="search-container" id="search-container">
-          <button type="button" class="icon-btn" aria-label="Search" id="search-toggle" aria-expanded="false" aria-controls="search-bar">
+          <button type="button" class="icon-btn" aria-label="Search" id="search-toggle" aria-expanded="false"
+            aria-controls="search-bar">
             <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none">
               <circle cx="11" cy="11" r="8"></circle>
               <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
             </svg>
           </button>
           <div class="search-bar" id="search-bar" role="search">
-            <input type="search" class="search-input" id="search-input" placeholder="Search" aria-label="Search products and navigation" autocomplete="off">
+            <input type="search" class="search-input" id="search-input" placeholder="Search"
+              aria-label="Search products and navigation" autocomplete="off">
             <button type="button" class="search-close" id="search-close" aria-label="Close search">×</button>
           </div>
           <div class="search-results" id="search-results" aria-live="polite"></div>
         </div>
-        <button type="button" onclick="return false;" class="icon-btn cart-btn" aria-label="Shopping Cart">
-          <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2F" fill="none">
+        <button type="button" class="icon-btn cart-btn" id="cart-trigger" aria-label="Shopping Cart">
+          <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none">
             <circle cx="9" cy="21" r="1"></circle>
             <circle cx="20" cy="21" r="1"></circle>
             <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
           </svg>
+          <span class="cart-badge" id="cart-count" data-count="<?php echo cart_item_count(); ?>" <?php if (cart_item_count() === 0)
+               echo 'style="display:none"'; ?>><?php echo cart_item_count(); ?></span>
         </button>
         <button type="button" onclick="return false;" class="icon-btn" aria-label="User Account">
           <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none">
@@ -193,9 +161,8 @@ function nav_link(string $label, string $href, string $class = '', string $extra
     <!-- HERO SECTION -->
     <section class="hero-section" id="home">
       <div class="hero-background">
-        <img src="assets/images/homebackground.png"
-             alt="Modern house with solar panel rooftop installation"
-             class="hero-img">
+        <img src="assets/images/homebackground.png" alt="Modern house with solar panel rooftop installation"
+          class="hero-img">
         <div class="hero-overlay"></div>
       </div>
       <div class="container hero-container">
@@ -224,17 +191,29 @@ function nav_link(string $label, string $href, string $class = '', string $extra
               </div>
               <div class="card-image-wrap">
                 <img src="<?php echo htmlspecialchars($product['image']); ?>"
-                     alt="<?php echo htmlspecialchars($product['alt']); ?>"
-                     class="card-img">
+                  alt="<?php echo htmlspecialchars($product['alt']); ?>" class="card-img">
               </div>
               <div class="card-body">
                 <h3 class="product-title"><?php echo htmlspecialchars($product['title']); ?></h3>
                 <div class="product-price"><?php echo htmlspecialchars($product['price']); ?></div>
                 <div class="card-actions">
-                  <?php foreach ($product['actions'] as $action): ?>
-                    <button type="button" onclick="return false;"
-                            class="<?php echo htmlspecialchars($action['class']); ?>">
-                      <?php echo htmlspecialchars($action['label']); ?>
+                  <?php foreach ($product['actions'] as $action):
+                    $label = $action['label'];
+                    $upper = strtoupper(trim($label));
+                    $onclick = '';
+                    if ($upper === 'BUY NOW' || $upper === 'BOOK NOW') {
+                      $onclick = "addToCart('" . htmlspecialchars($product['id'], ENT_QUOTES) . "'); openCart();";
+                    } elseif ($upper === 'LEARN MORE') {
+                      $onclick = "document.getElementById('about')?.scrollIntoView({behavior:'smooth',block:'start'})";
+                    } elseif ($upper === 'CONTACT SALES') {
+                      $onclick = "document.getElementById('contact')?.scrollIntoView({behavior:'smooth',block:'start'})";
+                    } else {
+                      $onclick = "addToCart('" . htmlspecialchars($product['id'], ENT_QUOTES) . "')";
+                    }
+                    ?>
+                    <button type="button" data-id="<?php echo htmlspecialchars($product['id']); ?>"
+                      onclick="<?php echo $onclick; ?>" class="<?php echo htmlspecialchars($action['class']); ?>">
+                      <?php echo htmlspecialchars($label); ?>
                     </button>
                   <?php endforeach; ?>
                 </div>
@@ -256,14 +235,12 @@ function nav_link(string $label, string $href, string $class = '', string $extra
             <div class="feature-card">
               <div class="feature-img-wrap">
                 <img src="<?php echo htmlspecialchars($feature['image']); ?>"
-                     alt="<?php echo htmlspecialchars($feature['alt_img']); ?>"
-                     class="feature-img">
+                  alt="<?php echo htmlspecialchars($feature['alt_img']); ?>" class="feature-img">
               </div>
               <div class="feature-header">
                 <div class="feature-icon">
                   <img src="<?php echo htmlspecialchars($feature['icon']); ?>"
-                       alt="<?php echo htmlspecialchars($feature['alt_icon']); ?>"
-                       style="width:28px;height:28px;object-fit:contain;
+                    alt="<?php echo htmlspecialchars($feature['alt_icon']); ?>" style="width:28px;height:28px;object-fit:contain;
                               filter:invert(82%) sepia(87%) saturate(1915%)
                                      hue-rotate(345deg) brightness(103%) contrast(105%);">
                 </div>
@@ -274,9 +251,7 @@ function nav_link(string $label, string $href, string $class = '', string $extra
           <?php endforeach; ?>
         </div>
 
-        <div class="seamless-cta-wrap">
-          <button type="button" onclick="return false;" class="btn btn-yellow btn-large">BOOK NOW</button>
-        </div>
+
       </div>
     </section>
 
@@ -296,8 +271,7 @@ function nav_link(string $label, string $href, string $class = '', string $extra
           </div>
           <div class="tech-image-wrap">
             <img src="assets/images/rare advancement technology component.png"
-                 alt="Solar panel thermodynamic cell detail"
-                 class="tech-img">
+              alt="Solar panel thermodynamic cell detail" class="tech-img">
           </div>
         </div>
       </div>
@@ -309,9 +283,8 @@ function nav_link(string $label, string $href, string $class = '', string $extra
         <div class="craftsmanship-grid">
           <div class="craftsmanship-image-wrap">
             <div class="image-frame-yellow">
-              <img src="assets/images/craftsmanship.png"
-                   alt="Solar installer mounting panel precision"
-                   class="craftsmanship-img">
+              <img src="assets/images/craftsmanship.png" alt="Solar installer mounting panel precision"
+                class="craftsmanship-img">
             </div>
           </div>
           <div class="craftsmanship-content">
@@ -322,8 +295,7 @@ function nav_link(string $label, string $href, string $class = '', string $extra
             <h2 class="craftsmanship-title">EXPERT<br>INSTALLATION</h2>
             <div class="trust-badge-row">
               <div class="trust-icon-box">
-                <svg viewBox="0 0 24 24" width="32" height="32" fill="none"
-                     stroke="var(--color-navy)" stroke-width="2">
+                <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="var(--color-navy)" stroke-width="2">
                   <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
                   <circle cx="8.5" cy="7" r="4"></circle>
                   <polyline points="17 11 19 13 23 9"></polyline>
@@ -358,8 +330,7 @@ function nav_link(string $label, string $href, string $class = '', string $extra
               </svg>
             </a>
             <a href="javascript:void(0)" onclick="return false;" class="social-btn" aria-label="Instagram">
-              <svg viewBox="0 0 24 24" width="22" height="22" fill="none"
-                   stroke="var(--color-yellow)" stroke-width="2">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--color-yellow)" stroke-width="2">
                 <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
                 <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
                 <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
@@ -412,8 +383,165 @@ function nav_link(string $label, string $href, string $class = '', string $extra
     </div>
   </footer>
 
+  <!-- CART DRAWER -->
+  <div class="cart-overlay" id="cart-overlay"></div>
+  <aside class="cart-drawer" id="cart-drawer" aria-label="Shopping Cart" aria-hidden="true">
+    <div class="cart-drawer-header">
+      <h3>Your Cart <span class="cart-drawer-count" id="cart-drawer-count"><?php echo cart_item_count(); ?>
+          item(s)</span></h3>
+      <button type="button" class="cart-close" id="cart-close" aria-label="Close cart">&times;</button>
+    </div>
+    <div class="cart-drawer-body" id="cart-items">
+      <!-- JS renders cart items here -->
+    </div>
+    <div class="cart-drawer-footer">
+      <div class="cart-total-row">
+        <span>Total</span>
+        <strong id="cart-total">$<?php echo number_format(cart_total($products), 2); ?></strong>
+      </div>
+      <div class="cart-footer-actions">
+        <button type="button" class="btn btn-outline btn-block" id="cart-clear">Clear Cart</button>
+        <button type="button" class="btn btn-yellow btn-block" id="cart-checkout">Checkout</button>
+      </div>
+      <p class="cart-empty-hint" id="cart-empty-hint"
+        style="display:none; text-align:center; margin-top:12px; font-size:0.85rem; color:var(--color-text-muted);">Your
+        cart is empty.</p>
+    </div>
+  </aside>
+
+  <!-- TOAST -->
+  <div id="cart-toast" class="cart-toast" role="status" aria-live="polite"></div>
+
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    // --- Cart state from PHP ---
+    const CART_INITIAL = <?php echo json_encode([
+      'itemCount' => cart_item_count(),
+      'grandTotal' => number_format(cart_total($products), 2),
+      'items' => array_values(array_map(function ($item, $id) {
+      return [
+        'id' => $id,
+        'title' => $item['title'],
+        'price' => $item['price'],
+        'quantity' => $item['quantity'],
+        'line_total' => number_format($item['line_total'], 2),
+        'image' => $item['image'],
+        'alt' => $item['alt']
+      ];
+    }, get_cart_items($products), array_keys(get_cart_items($products))))
+    ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
+  </script>
+
+  <script>
+    // ---- Global cart helpers (called from onclick) ----
+    let cartToastTimer;
+    function showToast(msg) {
+      const t = document.getElementById('cart-toast');
+      if (!t) return;
+      t.textContent = msg;
+      t.classList.add('show');
+      clearTimeout(cartToastTimer);
+      cartToastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+    }
+    function openCart() {
+      document.getElementById('cart-drawer')?.classList.add('open');
+      document.getElementById('cart-overlay')?.classList.add('active');
+      document.getElementById('cart-drawer')?.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeCart() {
+      document.getElementById('cart-drawer')?.classList.remove('open');
+      document.getElementById('cart-overlay')?.classList.remove('active');
+      document.getElementById('cart-drawer')?.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+    }
+    function updateCartBadge(count) {
+      const b = document.getElementById('cart-count');
+      if (!b) return;
+      b.textContent = count;
+      b.setAttribute('data-count', String(count));
+      b.style.display = count > 0 ? 'flex' : 'none';
+    }
+    function renderCart(data) {
+      const list = document.getElementById('cart-items');
+      const totalEl = document.getElementById('cart-total');
+      const drawerCount = document.getElementById('cart-drawer-count');
+      const emptyHint = document.getElementById('cart-empty-hint');
+      if (!list) return;
+      updateCartBadge(data.itemCount);
+      if (totalEl) totalEl.textContent = '$' + data.grandTotal;
+      if (drawerCount) drawerCount.textContent = data.itemCount + ' item(s)';
+      list.innerHTML = '';
+      if (!data.items || data.items.length === 0) {
+        list.innerHTML = '<div class="cart-empty-state"><p>Your cart is empty.</p><a href="#products" onclick="closeCart()" class="btn btn-yellow">Browse Products</a></div>';
+        if (emptyHint) emptyHint.style.display = 'none';
+        return;
+      }
+      if (emptyHint) emptyHint.style.display = 'none';
+      data.items.forEach(item => {
+        const row = document.createElement('div');
+        row.className = 'cart-item';
+        row.innerHTML = ''
+          + '<img src="' + (item.image || '') + '" alt="' + (item.alt || item.title) + '">'
+          + '<div class="cart-item-info"><h4>' + item.title + '</h4><div class="cart-item-price">' + item.price + '</div>'
+          + '<div class="cart-item-qty">'
+          + '<button type="button" class="qty-btn" onclick="changeQty(\'' + item.id + '\', ' + (item.quantity - 1) + ')">−</button>'
+          + '<span class="qty-val">' + item.quantity + '</span>'
+          + '<button type="button" class="qty-btn" onclick="changeQty(\'' + item.id + '\', ' + (item.quantity + 1) + ')">+</button>'
+          + '</div></div>'
+          + '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">'
+          + '<div class="cart-item-line">$' + item.line_total + '</div>'
+          + '<button type="button" class="cart-item-remove" onclick="removeItem(\'' + item.id + '\')">Remove</button>'
+          + '</div>';
+        list.appendChild(row);
+      });
+    }
+    function fetchCart(action, productId, quantity) {
+      const body = new URLSearchParams();
+      body.set('action', action);
+      if (productId) body.set('product_id', productId);
+      if (quantity !== undefined) body.set('quantity', quantity);
+      return fetch('cart_action.php', { method: 'POST', body: body, headers: { 'Accept': 'application/json' } })
+        .then(r => { if (!r.ok) throw new Error('Cart request failed ' + r.status); return r.json(); })
+        .then(data => { renderCart(data); return data; })
+        .catch(err => { console.error(err); showToast('Cart error. Is XAMPP running?'); throw err; });
+    }
+    function addToCart(id, qty) {
+      fetchCart('add', id, qty || 1).then(() => showToast('Added to cart'));
+    }
+    function changeQty(id, qty) { fetchCart('update', id, qty); }
+    function removeItem(id) { fetchCart('remove', id, 1).then(() => showToast('Removed from cart')); }
+    // expose globally for inline onclick
+    window.addToCart = addToCart;
+    window.openCart = openCart;
+    window.closeCart = closeCart;
+    window.changeQty = changeQty;
+    window.removeItem = removeItem;
+
+    document.addEventListener('DOMContentLoaded', function () {
+      // --- Init cart UI from PHP ---
+      try { renderCart(CART_INITIAL); } catch (e) { console.error(e); }
+      if (parseInt(CART_INITIAL.itemCount || 0) === 0) updateCartBadge(0); else updateCartBadge(CART_INITIAL.itemCount);
+
+      const cartTrigger = document.getElementById('cart-trigger');
+      const cartOverlay = document.getElementById('cart-overlay');
+      const cartClose = document.getElementById('cart-close');
+      const cartClear = document.getElementById('cart-clear');
+      const cartCheckout = document.getElementById('cart-checkout');
+      if (cartTrigger) cartTrigger.addEventListener('click', openCart);
+      if (cartOverlay) cartOverlay.addEventListener('click', closeCart);
+      if (cartClose) cartClose.addEventListener('click', closeCart);
+      if (cartClear) cartClear.addEventListener('click', function () {
+        if (confirm('Clear your cart?')) fetchCart('clear').then(() => showToast('Cart cleared'));
+      });
+      if (cartCheckout) cartCheckout.addEventListener('click', function () {
+        const count = parseInt(document.getElementById('cart-count')?.textContent || '0');
+        if (count === 0) { showToast('Your cart is empty'); return; }
+        showToast('Checkout demo — order placed! $' + (document.getElementById('cart-total')?.textContent || ''));
+        fetchCart('clear');
+        closeCart();
+      });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeCart(); });
+
       const toggle = document.getElementById('search-toggle');
       const bar = document.getElementById('search-bar');
       const input = document.getElementById('search-input');
@@ -427,7 +555,7 @@ function nav_link(string $label, string $href, string $class = '', string $extra
       function openSearch() {
         bar.classList.add('active');
         toggle.setAttribute('aria-expanded', 'true');
-        setTimeout(function() { input.focus(); }, 100);
+        setTimeout(function () { input.focus(); }, 100);
       }
 
       function closeSearch() {
@@ -450,29 +578,29 @@ function nav_link(string $label, string $href, string $class = '', string $extra
         const div = document.createElement('div');
         div.className = 'search-result-item';
         div.innerHTML = '<span class="result-type">' + type + '</span> ' + label;
-        div.addEventListener('click', function() { navigateTo(href); });
+        div.addEventListener('click', function () { navigateTo(href); });
         return div;
       }
 
-      toggle.addEventListener('click', function(e) {
+      toggle.addEventListener('click', function (e) {
         e.stopPropagation();
         if (bar.classList.contains('active')) closeSearch(); else openSearch();
       });
 
-      closeBtn.addEventListener('click', function(e) {
+      closeBtn.addEventListener('click', function (e) {
         e.stopPropagation();
         closeSearch();
       });
 
-      document.addEventListener('click', function(e) {
+      document.addEventListener('click', function (e) {
         if (!container.contains(e.target) && bar.classList.contains('active')) closeSearch();
       });
 
-      document.addEventListener('keydown', function(e) {
+      document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape' && bar.classList.contains('active')) closeSearch();
       });
 
-      input.addEventListener('input', function() {
+      input.addEventListener('input', function () {
         const q = input.value.toLowerCase().trim();
         results.innerHTML = '';
         results.classList.remove('active');
@@ -485,20 +613,20 @@ function nav_link(string $label, string $href, string $class = '', string $extra
 
         // --- Product search with direct card direction ---
         let productMatches = [];
-        cards.forEach(function(card) {
+        cards.forEach(function (card) {
           const titleEl = card.querySelector('.product-title');
           const title = (titleEl?.textContent || '').toLowerCase();
           const price = (card.querySelector('.product-price')?.textContent || '').toLowerCase();
           // handle common typo / partial matches for the 4 products
           const match = title.includes(q) || price.includes(q) ||
-                        (q.includes('professional') && title.includes('professional')) ||
-                        (q.includes('proffesional') && title.includes('professional'));
+            (q.includes('professional') && title.includes('professional')) ||
+            (q.includes('proffesional') && title.includes('professional'));
           if (match) productMatches.push({ card: card, title: titleEl?.textContent.trim() || 'Product', href: '#' + card.id });
         });
 
         // --- Navigation search (no highlight) ---
         let navMatches = [];
-        navLinks.forEach(function(link) {
+        navLinks.forEach(function (link) {
           const text = (link.textContent || '').toLowerCase();
           const href = (link.getAttribute('href') || '').toLowerCase();
           const match = text.includes(q) || href.includes(q);
@@ -506,35 +634,35 @@ function nav_link(string $label, string $href, string $class = '', string $extra
             navMatches.push({ label: link.textContent.trim(), href: link.getAttribute('href'), type: 'NAV' });
           }
         });
-        footerLinks.forEach(function(link) {
+        footerLinks.forEach(function (link) {
           const text = (link.textContent || '').toLowerCase();
           if (text.includes(q)) {
             // avoid duplicate if already in header
-            if (!navMatches.some(function(m){ return m.href === link.getAttribute('href'); })) {
+            if (!navMatches.some(function (m) { return m.href === link.getAttribute('href'); })) {
               navMatches.push({ label: link.textContent.trim(), href: link.getAttribute('href'), type: 'NAV' });
             }
           }
         });
 
         // If searching for "product"/"products" show all products with direction to each card
-        const isProductSearch = q.includes('product') || navMatches.some(function(m){ return m.href === '#products'; });
+        const isProductSearch = q.includes('product') || navMatches.some(function (m) { return m.href === '#products'; });
         if (isProductSearch && productMatches.length === 0) {
-          productMatches = Array.from(cards).map(function(card){
+          productMatches = Array.from(cards).map(function (card) {
             return { card: card, title: card.querySelector('.product-title')?.textContent.trim() || 'Product', href: '#' + card.id };
           });
         }
 
         // --- Build dropdown results ---
         let hasResults = false;
-        navMatches.forEach(function(m) {
+        navMatches.forEach(function (m) {
           const div = document.createElement('div');
           div.className = 'search-result-item';
           div.textContent = m.label;
-          div.addEventListener('click', function() { navigateTo(m.href); });
+          div.addEventListener('click', function () { navigateTo(m.href); });
           results.appendChild(div);
           hasResults = true;
         });
-        productMatches.forEach(function(m) {
+        productMatches.forEach(function (m) {
           results.appendChild(buildResultItem(m.title, m.href, 'PRODUCT'));
           hasResults = true;
         });
@@ -552,7 +680,7 @@ function nav_link(string $label, string $href, string $class = '', string $extra
         }
       });
 
-      input.addEventListener('keydown', function(e) {
+      input.addEventListener('keydown', function (e) {
         if (e.key === 'Enter') {
           e.preventDefault();
           const firstResult = results.querySelector('.search-result-item');
@@ -563,7 +691,7 @@ function nav_link(string $label, string $href, string $class = '', string $extra
           const qNav = input.value.toLowerCase().trim();
           let firstNav = null;
           if (qNav) {
-            firstNav = Array.from(navLinks).find(function(l) {
+            firstNav = Array.from(navLinks).find(function (l) {
               return (l.textContent || '').toLowerCase().includes(qNav) || (l.getAttribute('href') || '').toLowerCase().includes(qNav);
             });
           }
