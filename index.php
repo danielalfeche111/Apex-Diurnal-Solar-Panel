@@ -14,9 +14,10 @@ $nav_links = [
   ['label' => 'Contact', 'href' => '#contact', 'active' => false],
 ];
 
-// --- Load product catalog and cart session helpers ---
+// --- Load product cart, session helpers, and authentication ---
 require_once __DIR__ . '/product_data.php';
 require_once __DIR__ . '/cart_functions.php';
+require_once __DIR__ . '/auth.php';
 
 // --- Service / Feature Cards ---
 $features = [
@@ -145,12 +146,28 @@ function nav_link(string $label, string $href, string $class = '', string $extra
           <span class="cart-badge" id="cart-count" data-count="<?php echo cart_item_count(); ?>" <?php if (cart_item_count() === 0)
                echo 'style="display:none"'; ?>><?php echo cart_item_count(); ?></span>
         </button>
-        <button type="button" onclick="return false;" class="icon-btn" aria-label="User Account">
-          <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-            <circle cx="12" cy="7" r="4"></circle>
-          </svg>
-        </button>
+        <?php if (isLoggedIn()): ?>
+          <div class="user-dropdown" id="user-dropdown">
+            <button type="button" class="icon-btn user-account-btn" aria-label="User Account" id="user-account-btn">
+              <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              <span class="user-name"><?php echo htmlspecialchars(getCurrentUserEmail()); ?></span>
+            </button>
+            <div class="user-dropdown-menu" id="user-dropdown-menu">
+              <a href="change_password.php" class="user-dropdown-item">Change Password</a>
+              <a href="logout.php" class="user-dropdown-item">Logout</a>
+            </div>
+          </div>
+        <?php else: ?>
+          <button type="button" class="icon-btn" aria-label="User Account" onclick="window.location.href='login.php'">
+            <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+          </button>
+        <?php endif; ?>
       </div>
 
     </div>
@@ -399,9 +416,10 @@ function nav_link(string $label, string $href, string $class = '', string $extra
         <span>Total</span>
         <strong id="cart-total">$<?php echo number_format(cart_total($products), 2); ?></strong>
       </div>
+      <?php $has_cart_items = (cart_item_count() > 0); ?>
       <div class="cart-footer-actions">
-        <button type="button" class="btn btn-outline btn-block" id="cart-clear">Clear Cart</button>
-        <button type="button" class="btn btn-yellow btn-block" id="cart-checkout">Checkout</button>
+        <button type="button" class="btn btn-outline btn-block <?php echo !$has_cart_items ? 'disabled' : ''; ?>" id="cart-clear" aria-disabled="<?php echo !$has_cart_items ? 'true' : 'false'; ?>">Clear Cart</button>
+        <button type="button" class="btn btn-yellow btn-block <?php echo !$has_cart_items ? 'disabled' : ''; ?>" id="cart-checkout" aria-disabled="<?php echo !$has_cart_items ? 'true' : 'false'; ?>" title="<?php echo !$has_cart_items ? 'Your cart is empty. Please add items before checking out.' : 'Proceed to Checkout'; ?>">Checkout</button>
       </div>
       <p class="cart-empty-hint" id="cart-empty-hint"
         style="display:none; text-align:center; margin-top:12px; font-size:0.85rem; color:var(--color-text-muted);">Your

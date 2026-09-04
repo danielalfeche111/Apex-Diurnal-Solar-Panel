@@ -9,6 +9,9 @@ if (!isset($_SESSION['cart'])) {
     $_SESSION['cart'] = [];
 }
 
+// Include auth functions
+require_once __DIR__ . '/auth.php';
+
 /**
  * Add a product to the cart (or increase quantity)
  */

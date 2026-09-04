@@ -19,6 +19,11 @@
  * - 3 display modes: GET form, POST invalid (sticky + highlighted errors), POST valid (clean confirmation)
  */
 
+require_once __DIR__ . '/auth.php';
+
+// Require login for checkout
+requireLogin();
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -158,7 +163,7 @@ if ($is_post) {
 
     // Product Selection Validation
     if (empty($selected_items)) {
-        $errors['products'] = 'Please select at least one product or service to complete checkout.';
+        $errors['products'] = 'You cannot checkout without an order! Please select at least one product or service to complete checkout.';
     }
 
     // --- Calculate Total Price (Tax 8%) ---
@@ -181,23 +186,29 @@ if ($is_post) {
         }
     }
 } else {
-    // GET Request: Check if cart session has items or default to pre-checking Residential Arrays
+    // GET Request: Populate selected products from active cart session if items were added
     if (!empty($_SESSION['cart']) && is_array($_SESSION['cart'])) {
         $cart_map = [
-            'residential-arrays'     => 'Residential Arrays',
+            'residential-arrays'      => 'Residential Arrays',
             'advanced-solar-inverter' => 'Advanced Solar Inverter',
-            'installation-booking'   => 'Professional Installation Booking',
+            'installation-booking'    => 'Professional Installation Booking',
         ];
         foreach ($_SESSION['cart'] as $c_id => $c_qty) {
-            if (isset($cart_map[$c_id])) {
-                $selected_items[$cart_map[$c_id]] = max(1, (int)$c_qty);
+            $qty = (int)$c_qty;
+            if (isset($cart_map[$c_id]) && $qty > 0) {
+                $selected_items[$cart_map[$c_id]] = max(1, min(99, $qty));
             }
         }
     }
-    // Default fallback: pre-check Residential Arrays if nothing is pre-selected
-    if (empty($selected_items)) {
-        $selected_items['Residential Arrays'] = 1;
+
+    // Calculate initial totals for items selected from cart (remains $0.00 if cart is empty)
+    foreach ($selected_items as $prod_name => $quantity) {
+        if (isset($catalog_products[$prod_name])) {
+            $subtotal += $catalog_products[$prod_name] * $quantity;
+        }
     }
+    $tax_amount  = $subtotal * TAX_RATE;
+    $grand_total = $subtotal + $tax_amount;
 }
 
 // Helper to sanitize display strings
@@ -1015,6 +1026,32 @@ function safe(string $str): string {
       transform: translateY(0);
     }
 
+    .btn-submit-order:disabled,
+    .btn-submit-order.disabled {
+      background: #dfdeda !important;
+      color: #7b7871 !important;
+      border-color: #cac7c0 !important;
+      cursor: not-allowed !important;
+      box-shadow: none !important;
+      transform: none !important;
+      opacity: 0.7;
+    }
+
+    .empty-selection-alert {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--color-error-bg);
+      color: var(--color-error);
+      border: 1px solid var(--color-error-border);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      margin-top: 14px;
+      margin-bottom: 6px;
+    }
+
     .security-guarantee-note {
       text-align: center;
       font-size: 0.75rem;
@@ -1281,6 +1318,102 @@ function safe(string $str): string {
       }
     }
 
+    /* Empty Cart State */
+    .empty-cart-container {
+      max-width: 780px;
+      margin: 0 auto;
+    }
+
+    .empty-cart-card {
+      background: var(--color-card-bg);
+      border-radius: var(--radius-lg);
+      border: 1px solid rgba(27, 51, 95, 0.12);
+      box-shadow: var(--shadow-lg);
+      padding: 48px 36px;
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    .empty-cart-icon-wrapper {
+      width: 88px;
+      height: 88px;
+      margin: 0 auto 20px;
+      background: rgba(254, 224, 0, 0.2);
+      color: var(--color-primary);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 16px rgba(254, 224, 0, 0.35);
+      border: 2px solid var(--color-accent);
+    }
+
+    .empty-cart-title {
+      font-size: 1.85rem;
+      font-weight: 800;
+      color: var(--color-primary);
+      letter-spacing: -0.5px;
+      margin: 14px 0 10px;
+    }
+
+    .empty-cart-desc {
+      font-size: 0.95rem;
+      color: var(--color-text-muted);
+      max-width: 540px;
+      margin: 0 auto 28px;
+      line-height: 1.65;
+    }
+
+    .empty-cart-steps {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      background: var(--color-bg-soft);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 18px 24px;
+      margin: 0 auto 32px;
+      max-width: 620px;
+      flex-wrap: wrap;
+    }
+
+    .empty-step-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.84rem;
+      font-weight: 700;
+      color: var(--color-primary);
+    }
+
+    .empty-step-num {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--color-primary);
+      color: var(--color-accent);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.76rem;
+      font-weight: 800;
+    }
+
+    .empty-step-arrow {
+      color: var(--color-accent);
+      font-weight: 900;
+      font-size: 1.1rem;
+    }
+
+    .empty-cart-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
     /* Footer */
     .brand-footer {
       background: var(--color-primary);
@@ -1290,6 +1423,37 @@ function safe(string $str): string {
       padding: 20px;
       margin-top: auto;
       border-top: 3px solid var(--color-accent);
+    }
+
+    /* Interactive Notification Toast */
+    .checkout-toast {
+      position: fixed;
+      top: 28px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-120px);
+      background: #b91c1c;
+      color: #ffffff;
+      padding: 14px 24px;
+      border-radius: 50px;
+      font-size: 0.92rem;
+      font-weight: 700;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+      border: 2px solid #fca5a5;
+      z-index: 9999;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-align: center;
+      max-width: 90vw;
+    }
+
+    .checkout-toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+      visibility: visible;
     }
   </style>
 </head>
@@ -1327,6 +1491,8 @@ function safe(string $str): string {
   </header>
 
   <main class="page-wrapper">
+    <!-- Interactive Notification Toast Container -->
+    <div id="checkout-toast" class="checkout-toast" role="alert" aria-live="assertive"></div>
 
     <?php if ($is_success): ?>
       <!-- ================================================================= -->
@@ -1479,11 +1645,11 @@ function safe(string $str): string {
             Print Receipt
           </button>
           
-          <a href="checkout.php" class="btn-action-outline">
+          <a href="index.php#products" class="btn-action-outline">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M12 5v14M5 12h14"></path>
             </svg>
-            Place Another Order
+            Order More Products
           </a>
 
           <a href="index.php" class="btn-action-primary">
@@ -1497,9 +1663,80 @@ function safe(string $str): string {
 
       </div>
 
+    <?php elseif (!$is_post && empty($selected_items)): ?>
+      <!-- ================================================================= -->
+      <!-- DISPLAY MODE 2: Empty Cart / No Order Made State                   -->
+      <!-- ================================================================= -->
+      <div class="empty-cart-container">
+        <div class="checkout-breadcrumb-bar">
+          <a href="index.php" class="back-pill-link" title="Return to Apex Diurnal Homepage">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="19" y1="12" x2="5" y2="12"></line>
+              <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            <span>&larr; Back to Homepage</span>
+          </a>
+        </div>
+
+        <div class="empty-cart-card">
+          <div class="empty-cart-icon-wrapper">
+            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="9" cy="21" r="1"></circle>
+              <circle cx="20" cy="21" r="1"></circle>
+              <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+            </svg>
+          </div>
+
+          <span class="checkout-badge">No Order Found</span>
+          <div class="empty-selection-alert" style="display:inline-flex; align-items:center; gap:10px; margin: 12px auto 18px; font-size:0.92rem; padding:12px 20px; background:#fef2f2; color:#b91c1c; border:1.5px solid #f87171; border-radius:8px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            <span><strong>Notification:</strong> You cannot checkout without an order! Please select products from our catalog first.</span>
+          </div>
+          <h1 class="empty-cart-title">Your Cart is Currently Empty</h1>
+          <p class="empty-cart-desc">
+            You cannot proceed with checkout because no order has been made yet. Please browse our certified solar hardware, smart hybrid inverters, or professional installation bookings and add items to your cart first.
+          </p>
+
+          <div class="empty-cart-steps">
+            <div class="empty-step-item">
+              <span class="empty-step-num">1</span>
+              <span>Browse solar systems &amp; services</span>
+            </div>
+            <div class="empty-step-arrow">&rarr;</div>
+            <div class="empty-step-item">
+              <span class="empty-step-num">2</span>
+              <span>Add products to your cart</span>
+            </div>
+            <div class="empty-step-arrow">&rarr;</div>
+            <div class="empty-step-item">
+              <span class="empty-step-num">3</span>
+              <span>Complete secure checkout</span>
+            </div>
+          </div>
+
+          <div class="empty-cart-actions">
+            <a href="index.php#products" class="btn-action-accent">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                <line x1="8" y1="21" x2="16" y2="21"></line>
+                <line x1="12" y1="17" x2="12" y2="21"></line>
+              </svg>
+              Browse Solar Products
+            </a>
+            <a href="index.php" class="btn-action-outline">
+              Return to Homepage
+            </a>
+          </div>
+        </div>
+      </div>
+
     <?php else: ?>
       <!-- ================================================================= -->
-      <!-- DISPLAY MODES: GET Request OR POST Validation Fails                -->
+      <!-- DISPLAY MODE 3: Checkout Form (Active Order OR POST Validation)    -->
       <!-- ================================================================= -->
       
       <!-- Top Back Navigation Option -->
@@ -1891,12 +2128,12 @@ function safe(string $str): string {
                   
                   <div class="summary-line">
                     <span>Products Subtotal</span>
-                    <strong id="display-subtotal">$0.00</strong>
+                    <strong id="display-subtotal">$<?php echo number_format($subtotal, 2); ?></strong>
                   </div>
                   
                   <div class="summary-line">
                     <span>Clean Energy Tax (8%)</span>
-                    <strong id="display-tax">$0.00</strong>
+                    <strong id="display-tax">$<?php echo number_format($tax_amount, 2); ?></strong>
                   </div>
                   <div class="tax-badge-note">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1909,17 +2146,27 @@ function safe(string $str): string {
 
                   <div class="summary-line total-line">
                     <span>Total Cost</span>
-                    <span class="grand-value" id="display-grandtotal">$0.00</span>
+                    <span class="grand-value" id="display-grandtotal">$<?php echo number_format($grand_total, 2); ?></span>
                   </div>
                 </div>
 
+                <!-- Product Selection Warning -->
+                <div id="no-products-warning" class="empty-selection-alert" style="<?php echo empty($selected_items) ? 'display:flex;' : 'display:none;'; ?>">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                  <span>At least one product must be selected to complete checkout.</span>
+                </div>
+
                 <!-- Submit Button -->
-                <button type="submit" class="btn-submit-order" id="btn-submit">
+                <button type="submit" class="btn-submit-order <?php echo empty($selected_items) ? 'disabled' : ''; ?>" id="btn-submit" aria-disabled="<?php echo empty($selected_items) ? 'true' : 'false'; ?>" title="<?php echo empty($selected_items) ? 'Please select at least one product to checkout' : 'Confirm and place order'; ?>">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                     <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                     <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                   </svg>
-                  Confirm & Place Order
+                  Confirm &amp; Place Order
                 </button>
 
                 <!-- Back to Homepage Option -->
@@ -1970,6 +2217,7 @@ function safe(string $str): string {
     function recalculateTotals() {
       const checkboxes = document.querySelectorAll('.product-checkbox');
       let subtotal = 0;
+      let checkedCount = 0;
 
       checkboxes.forEach(function(chk) {
         const cardId = chk.getAttribute('data-card-id');
@@ -1978,6 +2226,7 @@ function safe(string $str): string {
         const qtyElem = document.getElementById(qtyId);
 
         if (chk.checked) {
+          checkedCount++;
           if (cardElem) cardElem.classList.add('is-selected');
           const unitPrice = parseFloat(chk.getAttribute('data-price')) || 0;
           const qty = parseInt(qtyElem.value, 10) || 1;
@@ -1997,6 +2246,25 @@ function safe(string $str): string {
       if (subtotalElem) subtotalElem.textContent = '$' + subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       if (taxElem) taxElem.textContent = '$' + tax.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       if (grandElem) grandElem.textContent = '$' + grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+      // Dynamically disable or enable the place order button & warning notice
+      const submitBtn = document.getElementById('btn-submit');
+      const warningElem = document.getElementById('no-products-warning');
+
+      if (submitBtn) {
+        submitBtn.removeAttribute('disabled');
+        if (checkedCount === 0 || subtotal <= 0) {
+          submitBtn.classList.add('disabled');
+          submitBtn.setAttribute('aria-disabled', 'true');
+          submitBtn.setAttribute('title', 'Please select at least one product to checkout');
+          if (warningElem) warningElem.style.display = 'flex';
+        } else {
+          submitBtn.classList.remove('disabled');
+          submitBtn.removeAttribute('aria-disabled');
+          submitBtn.removeAttribute('title');
+          if (warningElem) warningElem.style.display = 'none';
+        }
+      }
     }
 
     function updatePaymentHighlight(radio) {
@@ -2009,9 +2277,63 @@ function safe(string $str): string {
       }
     }
 
+    function showCheckoutNotif(msg) {
+      const t = document.getElementById('checkout-toast');
+      if (!t) return;
+      t.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg><span>' + msg + '</span>';
+      t.classList.add('show');
+      clearTimeout(window.checkoutToastTimer);
+      window.checkoutToastTimer = setTimeout(function() {
+        t.classList.remove('show');
+      }, 3500);
+    }
+
+    function blockEmptyCheckout(e) {
+      const checkedBoxes = document.querySelectorAll('.product-checkbox:checked');
+      if (checkedBoxes.length === 0) {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        const warningElem = document.getElementById('no-products-warning');
+        if (warningElem) {
+          warningElem.style.display = 'flex';
+          warningElem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        showCheckoutNotif('⚠️ You cannot checkout without an order! Please select at least one product first.');
+        return false;
+      }
+      return true;
+    }
+
+    // Intercept click on submit button
+    const submitBtn = document.getElementById('btn-submit');
+    if (submitBtn) {
+      submitBtn.addEventListener('click', function(e) {
+        if (!blockEmptyCheckout(e)) {
+          return false;
+        }
+      });
+    }
+
+    // Guard form submission against zero products
+    const checkoutForm = document.getElementById('apex-checkout-form');
+    if (checkoutForm) {
+      checkoutForm.addEventListener('submit', function(e) {
+        if (!blockEmptyCheckout(e)) {
+          return false;
+        }
+      });
+    }
+
     // Initialize totals on page load
     document.addEventListener('DOMContentLoaded', function() {
       recalculateTotals();
+
+      <?php if (!$is_post && empty($selected_items)): ?>
+      // Alert user on empty cart page
+      showCheckoutNotif('Notice: You must order first before proceeding to checkout.');
+      <?php endif; ?>
     });
   </script>
 </body>

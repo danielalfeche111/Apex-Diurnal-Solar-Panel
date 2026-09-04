@@ -2,8 +2,16 @@
 // cart_action.php – handles AJAX requests for cart operations
 require_once __DIR__ . '/product_data.php';
 require_once __DIR__ . '/cart_functions.php';
+require_once __DIR__ . '/auth.php';
 
 header('Content-Type: application/json');
+
+// Require login for cart operations
+if (!isLoggedIn()) {
+    http_response_code(401);
+    echo json_encode(['error' => 'Authentication required']);
+    exit;
+}
 
 $action = $_POST['action'] ?? '';
 $productId = $_POST['product_id'] ?? '';
