@@ -477,7 +477,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             id="email" 
                             name="email" 
                             class="form-control" 
-                            placeholder="e.g. admin@apexdiurnal.com"
+                            placeholder="e.g. admin@gmail.com"
                             value="<?php echo htmlspecialchars($email); ?>" 
                             required 
                             autofocus
@@ -527,7 +527,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <span class="demo-badge">DEMO ACCESS</span>
                     <span>Admin Credentials</span>
                 </div>
-                <div>Email: <span class="demo-code">admin@apexdiurnal.com</span></div>
+                <div>Email: <span class="demo-code">admin@gmail.com</span></div>
                 <div>Password: <span class="demo-code">admin123</span></div>
             </div>
 

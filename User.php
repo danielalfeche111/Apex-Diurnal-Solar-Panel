@@ -80,15 +80,12 @@ class User {
 
     // Update password
     public function updatePassword($new_password_hash) {
-        $query = "UPDATE " . $this->table_name . " SET password_hash = :password_hash, updated_at = NOW() WHERE id = ?";
+        $query = "UPDATE " . $this->table_name . " SET password_hash = :password_hash, updated_at = NOW() WHERE id = :id";
         $stmt = $this->conn->prepare($query);
 
-        // Sanitize
-        $new_password_hash = htmlspecialchars(strip_tags($new_password_hash));
-
-        // Bind values
+        // Bind values (hash should not be altered with htmlspecialchars)
         $stmt->bindParam(":password_hash", $new_password_hash);
-        $stmt->bindParam(1, $this->id);
+        $stmt->bindParam(":id", $this->id, PDO::PARAM_INT);
 
         if ($stmt->execute()) {
             return true;

@@ -1,5 +1,7 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 /**
  * Check if the user is logged in
@@ -25,6 +27,10 @@ function loginUser($user_id, $email) {
  * Log out the user
  */
 function logoutUser() {
+    // Ensure session is started so we can clear it
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
     $_SESSION = array();
     if (ini_get("session.use_cookies")) {
         $params = session_get_cookie_params();
@@ -33,7 +39,9 @@ function logoutUser() {
             $params["secure"], $params["httponly"]
         );
     }
-    session_destroy();
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_destroy();
+    }
 }
 
 /**

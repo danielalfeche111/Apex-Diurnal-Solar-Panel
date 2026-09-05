@@ -1,16 +1,11 @@
 <?php
 // cart_functions.php – central cart logic, uses PHP sessions
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once __DIR__ . '/auth.php';
 
 // Ensure cart array exists in session
 if (!isset($_SESSION['cart'])) {
     $_SESSION['cart'] = [];
 }
-
-// Include auth functions
-require_once __DIR__ . '/auth.php';
 
 /**
  * Add a product to the cart (or increase quantity)

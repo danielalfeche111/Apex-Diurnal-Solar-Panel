@@ -158,6 +158,16 @@ button {
   letter-spacing: 1px;
 }
 
+.btn:disabled,
+.btn[disabled],
+.btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed !important;
+  box-shadow: none !important;
+  transform: none !important;
+  pointer-events: auto; /* Allow click event to trigger informative feedback toast if needed */
+}
+
 /* 4. NAVIGATION HEADER */
 .site-header {
   position: fixed;
@@ -296,6 +306,35 @@ button {
 }
 
 .icon-btn:active {
+  transform: translateY(0);
+}
+
+.header-login-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 22px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  background-color: var(--color-yellow);
+  color: var(--color-navy);
+  border-radius: var(--radius-pill);
+  box-shadow: 0 4px 12px rgba(254, 224, 0, 0.35);
+  transition: all var(--transition-normal);
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.header-login-btn:hover {
+  background-color: var(--color-yellow-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(254, 224, 0, 0.45);
+}
+
+.header-login-btn:active {
   transform: translateY(0);
 }
 
@@ -1063,7 +1102,148 @@ button {
   .btn-yellow:hover,
   .btn-outline:hover,
   .icon-btn:hover,
-  .social-btn:hover {
+  .social-btn:hover,
+  .user-dropdown-item:hover {
+    transform: none;
+  }
+}
+
+/* User Dropdown Styles */
+.user-dropdown {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 16px;
+}
+
+.user-account-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+  width: auto;
+  height: auto;
+  min-height: 40px;
+}
+
+.user-account-btn:hover {
+  background-color: rgba(27, 51, 95, 0.08);
+}
+
+.user-account-btn:active {
+  transform: translateY(0);
+}
+
+.user-avatar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: var(--color-navy);
+  color: var(--color-yellow);
+  font-weight: 800;
+  font-size: 1rem;
+  line-height: 1;
+  border: 2px solid var(--color-yellow);
+  box-shadow: 0 2px 8px rgba(27, 51, 95, 0.15);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.user-avatar-btn:hover {
+  background-color: var(--color-navy-light);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(27, 51, 95, 0.25);
+}
+
+.user-avatar-btn:active {
+  transform: translateY(0);
+}
+
+.user-avatar {
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.user-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-navy);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 150px;
+}
+
+.user-dropdown-menu {
+  position: absolute;
+  top: 120%;
+  right: 0;
+  background-color: var(--color-white);
+  min-width: 200px;
+  box-shadow: var(--shadow-lg);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(27, 51, 95, 0.12);
+  z-index: 2000;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(10px);
+  transition: all var(--transition-fast);
+  padding: 8px 0;
+  pointer-events: none;
+}
+
+.user-dropdown-menu.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+/* Fallback: show menu on hover / focus-within even if JS fails */
+.user-dropdown:hover .user-dropdown-menu,
+.user-dropdown:focus-within .user-dropdown-menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.user-dropdown-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  color: var(--color-text-body);
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: all var(--transition-fast);
+}
+
+.user-dropdown-item:hover {
+  background-color: rgba(27, 51, 95, 0.04);
+  color: var(--color-navy);
+}
+
+.user-dropdown-item:active {
+  background-color: rgba(27, 51, 95, 0.08);
+}
+
+/* Disable hover lift on touch devices that don't support hover */
+@media (hover: none) {
+  .product-card:hover,
+  .feature-card:hover,
+  .tech-image-wrap:hover,
+  .image-frame-yellow:hover,
+  .btn-yellow:hover,
+  .btn-outline:hover,
+  .icon-btn:hover,
+  .social-btn:hover,
+  .user-dropdown-item:hover {
     transform: none;
   }
 }
@@ -1181,11 +1361,13 @@ body.is-searching button:hover {
   z-index: 1500;
   opacity: 0;
   visibility: hidden;
+  pointer-events: none;
   transition: opacity var(--transition-normal), visibility var(--transition-normal);
 }
 .cart-overlay.active {
   opacity: 1;
   visibility: visible;
+  pointer-events: auto;
 }
 .cart-drawer {
   position: fixed;
@@ -1365,6 +1547,12 @@ body.is-searching button:hover {
   transform: translateX(-50%) translateY(0);
   opacity: 1;
   visibility: visible;
+}
+.cart-toast.toast-warning {
+  background: #b91c1c;
+  color: #fff;
+  border: 1.5px solid #fca5a5;
+  box-shadow: 0 6px 24px rgba(185, 28, 28, 0.45);
 }
 .cart-empty-state {
   text-align: center;

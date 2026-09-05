@@ -91,7 +91,7 @@ function nav_link(string $label, string $href, string $class = '', string $extra
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=5">
 </head>
 
 <body>
@@ -148,25 +148,23 @@ function nav_link(string $label, string $href, string $class = '', string $extra
         </button>
         <?php if (isLoggedIn()): ?>
           <div class="user-dropdown" id="user-dropdown">
-            <button type="button" class="icon-btn user-account-btn" aria-label="User Account" id="user-account-btn">
-              <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-              </svg>
-              <span class="user-name"><?php echo htmlspecialchars(getCurrentUserEmail()); ?></span>
+            <button type="button" class="user-avatar-btn" aria-label="User Account" id="user-account-btn" title="<?php echo htmlspecialchars(getCurrentUserEmail()); ?>">
+              <span class="user-avatar"><?php echo htmlspecialchars(strtoupper(substr(getCurrentUserEmail() ?? 'U', 0, 1))); ?></span>
             </button>
             <div class="user-dropdown-menu" id="user-dropdown-menu">
-              <a href="change_password.php" class="user-dropdown-item">Change Password</a>
+              <a href="settings.php" class="user-dropdown-item">Settings</a>
               <a href="logout.php" class="user-dropdown-item">Logout</a>
             </div>
           </div>
         <?php else: ?>
-          <button type="button" class="icon-btn" aria-label="User Account" onclick="window.location.href='login.php'">
-            <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-              <circle cx="12" cy="7" r="4"></circle>
+          <a href="login.php" class="header-login-btn" aria-label="Log In">
+            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" aria-hidden="true">
+              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+              <polyline points="10 17 15 12 10 7"></polyline>
+              <line x1="15" y1="12" x2="3" y2="12"></line>
             </svg>
-          </button>
+            Log In
+          </a>
         <?php endif; ?>
       </div>
 
@@ -448,8 +446,43 @@ function nav_link(string $label, string $href, string $class = '', string $extra
     }, get_cart_items($products), array_keys(get_cart_items($products))))
     ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
   </script>
+  <script>
+    // Inline fallback for user dropdown - ensures logout is clickable even if main.js fails or is cached
+    (function(){
+      function initFallbackDropdown(){
+        var btn = document.getElementById('user-account-btn');
+        var menu = document.getElementById('user-dropdown-menu');
+        var dropdown = document.getElementById('user-dropdown');
+        if(!btn || !menu) return;
+        // Avoid double binding
+        if(btn.dataset.fallbackBound) return;
+        btn.dataset.fallbackBound = '1';
+        btn.addEventListener('click', function(e){
+          e.stopPropagation();
+          e.preventDefault();
+          menu.classList.toggle('show');
+          console.log('Fallback toggle, show:', menu.classList.contains('show'));
+        });
+        document.addEventListener('click', function(e){
+          if(dropdown && !dropdown.contains(e.target)){
+            menu.classList.remove('show');
+          }
+        });
+      }
+      if(document.readyState === 'loading'){
+        document.addEventListener('DOMContentLoaded', initFallbackDropdown);
+      } else {
+        initFallbackDropdown();
+      }
+      // Also expose global for inline onclick
+      window.toggleUserDropdown = window.toggleUserDropdown || function(){
+        var m = document.getElementById('user-dropdown-menu');
+        if(m) m.classList.toggle('show');
+      };
+    })();
+  </script>
 
-    <script src="js/main.js" defer></script>
+    <script src="js/main.js?v=3" defer></script>
 
 </body>
 
