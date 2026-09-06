@@ -11,46 +11,66 @@ if (isLoggedIn()) {
 
 $email = '';
 $password = '';
+$confirm_password = '';
 $errors = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
+    $confirm_password = $_POST['confirm_password'] ?? '';
 
-    // Basic validation
+    // Validation
     if ($email === '') {
-        $errors['email'] = 'Email is required';
-    }
-    if ($password === '') {
-        $errors['password'] = 'Password is required';
+        $errors['email'] = 'Email is required.';
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $errors['email'] = 'Please enter a valid email address.';
     }
 
-    // If no validation errors, try to log in
+    if ($password === '') {
+        $errors['password'] = 'Password is required.';
+    } elseif (strlen($password) < 8) {
+        $errors['password'] = 'Password must be at least 8 characters.';
+    }
+
+    if ($confirm_password === '') {
+        $errors['confirm_password'] = 'Please confirm your password.';
+    } elseif ($password !== $confirm_password) {
+        $errors['confirm_password'] = 'Passwords do not match.';
+    }
+
+    // If initial validation passes, check uniqueness and proceed
     if (empty($errors)) {
         $database = new Database();
         $db = $database->getConnection();
-        $user = new User($db);
-
-        $user->email = $email;
-        if ($user->findByEmail($email)) {
-            // Validate password
-            if ($user->validatePassword($password)) {
-                // Login successful
-                loginUser($user->id, $user->email);
-
-                // Redirect to intended page or homepage
-                $redirect = getRedirectAfterLogin();
-                if ($redirect) {
-                    header('Location: ' . $redirect);
-                } else {
-                    header('Location: index.php');
-                }
-                exit;
-            } else {
-                $errors['password'] = 'Invalid email or password';
-            }
+        if (!$db) {
+            $errors['general'] = 'Database connection error. Please try again later.';
         } else {
-            $errors['password'] = 'Invalid email or password';
+            $user = new User($db);
+
+            // Check if email already exists
+            if ($user->findByEmail($email)) {
+                $errors['email'] = 'Email already registered. Please sign in or use another email.';
+            } else {
+                // Securely hash password
+                $user->email = $email;
+                $user->password_hash = password_hash($password, PASSWORD_DEFAULT);
+
+                if ($user->create()) {
+                    // Auto-login user
+                    loginUser($user->id, $user->email);
+
+                    // Redirect to intended page or homepage
+                    $redirect = getRedirectAfterLogin();
+                    if ($redirect) {
+                        header('Location: ' . $redirect);
+                    } else {
+                        header('Location: index.php');
+                    }
+                    exit;
+                } else {
+                    $errors['general'] = 'Failed to create your account. Please try again.';
+                }
+            }
         }
     }
 }
@@ -60,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign In | Apex Diurnal Solar Panels</title>
+    <title>Sign Up | Apex Diurnal Solar Panels</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -140,7 +160,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         .login-card {
             width: 100%;
-            max-width: 440px;
+            max-width: 460px;
             background: #ffffff;
             border-radius: 24px;
             padding: 40px 36px;
@@ -162,33 +182,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         .login-header {
             text-align: center;
-            margin-bottom: 28px;
+            margin-bottom: 24px;
         }
 
-        .brand-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 14px;
-            background: var(--color-navy);
-            border-radius: 30px;
-            margin-bottom: 16px;
-            box-shadow: 0 4px 12px rgba(27, 51, 95, 0.15);
-        }
-
-        .brand-badge-title {
-            font-size: 0.85rem;
-            font-weight: 800;
-            letter-spacing: 2px;
-            color: var(--color-yellow);
-        }
-
-        .brand-badge-sub {
-            font-size: 0.65rem;
-            font-weight: 600;
-            letter-spacing: 2px;
-            color: #ffffff;
-            opacity: 0.9;
+        .login-header .logo-mark {
+            height: 38px;
+            margin-bottom: 12px;
         }
 
         .login-title {
@@ -229,7 +228,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         /* Form Controls */
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 18px;
         }
 
         .form-label-row {
@@ -245,17 +244,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             color: var(--color-navy);
         }
 
-        .forgot-link {
-            font-size: 0.82rem;
+        .form-hint {
+            font-size: 0.78rem;
+            color: #788aa3;
             font-weight: 500;
-            color: #4b6389;
-            text-decoration: none;
-            transition: color 0.2s;
-        }
-
-        .forgot-link:hover {
-            color: var(--color-navy);
-            text-decoration: underline;
         }
 
         .input-group {
@@ -317,7 +309,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .btn-signin {
             width: 100%;
             padding: 14px 24px;
-            margin-top: 8px;
+            margin-top: 10px;
             background-color: var(--color-yellow);
             color: var(--color-navy);
             border: none;
@@ -350,7 +342,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .card-footer {
             margin-top: 24px;
             text-align: center;
-            font-size: 0.85rem;
+            font-size: 0.88rem;
             color: #64748b;
             border-top: 1px solid rgba(27, 51, 95, 0.06);
             padding-top: 20px;
@@ -358,7 +350,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         .card-footer a {
             color: var(--color-navy);
-            font-weight: 600;
+            font-weight: 700;
             text-decoration: none;
         }
 
@@ -376,7 +368,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         @media (max-width: 480px) {
             .login-card {
-                padding: 32px 24px;
+                padding: 32px 22px;
                 border-radius: 20px;
             }
             .login-title {
@@ -405,8 +397,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="login-card">
             <div class="login-header">
                 <img src="assets/images/logo.png" alt="Apex Diurnal Logo" class="logo-mark">
-                <h1 class="login-title">Sign In to Your Account</h1>
-                <p class="login-subtitle">Enter your email and password to access your account</p>
+                <h1 class="login-title">Create an Account</h1>
+                <p class="login-subtitle">Sign up to get started with Apex Diurnal Solar Panels</p>
             </div>
 
             <?php if (!empty($errors)): ?>
@@ -424,7 +416,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
             <?php endif; ?>
 
-            <form action="login.php" method="POST" autocomplete="on">
+            <form action="register.php" method="POST" autocomplete="on">
                 <div class="form-group">
                     <label for="email" class="form-label">Email Address</label>
                     <div class="input-group">
@@ -437,7 +429,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             id="email" 
                             name="email" 
                             class="form-control" 
-                            placeholder="Enter your email address"
+                            placeholder="e.g. yourname@example.com"
                             value="<?php echo htmlspecialchars($email); ?>" 
                             required 
                             autofocus
@@ -448,7 +440,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="form-group">
                     <div class="form-label-row">
                         <label for="password" class="form-label">Password</label>
-                        <a href="change_password.php" class="forgot-link">Change Password?</a>
+                        <span class="form-hint">Min. 8 characters</span>
                     </div>
                     <div class="input-group">
                         <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -460,9 +452,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             id="password" 
                             name="password" 
                             class="form-control" 
-                            placeholder="Enter your password"
+                            placeholder="Create a password"
                             style="padding-right: 44px;"
                             required
+                            minlength="8"
                         >
                         <button type="button" class="password-toggle" id="togglePassword" aria-label="Show or hide password">
                             <svg id="eyeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -473,8 +466,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                 </div>
 
+                <div class="form-group">
+                    <div class="form-label-row">
+                        <label for="confirm_password" class="form-label">Confirm Password</label>
+                    </div>
+                    <div class="input-group">
+                        <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                        </svg>
+                        <input 
+                            type="password" 
+                            id="confirm_password" 
+                            name="confirm_password" 
+                            class="form-control" 
+                            placeholder="Confirm your password"
+                            style="padding-right: 44px;"
+                            required
+                            minlength="8"
+                        >
+                        <button type="button" class="password-toggle" id="toggleConfirmPassword" aria-label="Show or hide password confirmation">
+                            <svg id="eyeIconConfirm" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
                 <button type="submit" class="btn-signin">
-                    <span>Sign In</span>
+                    <span>Sign Up</span>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                         <line x1="5" y1="12" x2="19" y2="12"></line>
                         <polyline points="12 5 19 12 12 19"></polyline>
@@ -483,7 +504,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </form>
 
             <div class="card-footer">
-                <p>Don't have an account? <a href="register.php">Sign Up</a></p>
+                <p>Already have an account? <a href="login.php">Sign In</a></p>
                 <p style="margin-top: 8px;"><a href="index.php">← Return to Solar Homepage</a></p>
             </div>
         </div>
@@ -495,31 +516,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </footer>
 
     <script>
-        // Interactive Show / Hide Password toggle
-        const togglePassword = document.getElementById('togglePassword');
-        const passwordInput = document.getElementById('password');
-        const eyeIcon = document.getElementById('eyeIcon');
+        function setupPasswordToggle(btnId, inputId, iconId) {
+            const btn = document.getElementById(btnId);
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
 
-        if (togglePassword && passwordInput) {
-            togglePassword.addEventListener('click', function () {
-                const isPassword = passwordInput.getAttribute('type') === 'password';
-                passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
-                
-                if (isPassword) {
-                    // Show eye-off icon
-                    eyeIcon.innerHTML = `
-                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
-                        <line x1="1" y1="1" x2="23" y2="23"></line>
-                    `;
-                } else {
-                    // Show standard eye icon
-                    eyeIcon.innerHTML = `
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                        <circle cx="12" cy="12" r="3"></circle>
-                    `;
-                }
-            });
+            if (btn && input && icon) {
+                btn.addEventListener('click', function () {
+                    const isPassword = input.getAttribute('type') === 'password';
+                    input.setAttribute('type', isPassword ? 'text' : 'password');
+                    
+                    if (isPassword) {
+                        // Eye-off icon
+                        icon.innerHTML = `
+                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                            <line x1="1" y1="1" x2="23" y2="23"></line>
+                        `;
+                    } else {
+                        // Eye icon
+                        icon.innerHTML = `
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        `;
+                    }
+                });
+            }
         }
+
+        setupPasswordToggle('togglePassword', 'password', 'eyeIcon');
+        setupPasswordToggle('toggleConfirmPassword', 'confirm_password', 'eyeIconConfirm');
     </script>
 </body>
 </html>
