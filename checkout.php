@@ -67,6 +67,249 @@ $allowed_payment_methods = [
     'PayPal' => 'PayPal Express Checkout',
     'Financing / Cash on Delivery' => 'Flexible Solar Financing / Pay on Delivery',
 ];
+// Province -> Cities mapping - All cities under all provinces (complete Philippines)
+$philippine_provinces = [
+  'Abra',
+  'Agusan del Norte',
+  'Agusan del Sur',
+  'Aklan',
+  'Albay',
+  'Antique',
+  'Apayao',
+  'Aurora',
+  'Basilan',
+  'Bataan',
+  'Batanes',
+  'Batangas',
+  'Benguet',
+  'Biliran',
+  'Bohol',
+  'Bukidnon',
+  'Bulacan',
+  'Cagayan',
+  'Camarines Norte',
+  'Camarines Sur',
+  'Camiguin',
+  'Capiz',
+  'Catanduanes',
+  'Cavite',
+  'Cebu',
+  'Cotabato',
+  'Davao Occidental',
+  'Davao Oriental',
+  'Davao de Oro',
+  'Davao del Norte',
+  'Davao del Sur',
+  'Dinagat Islands',
+  'Eastern Samar',
+  'Guimaras',
+  'Ifugao',
+  'Ilocos Norte',
+  'Ilocos Sur',
+  'Iloilo',
+  'Isabela',
+  'Kalinga',
+  'La Union',
+  'Laguna',
+  'Lanao del Norte',
+  'Lanao del Sur',
+  'Leyte',
+  'Maguindanao del Norte',
+  'Maguindanao del Sur',
+  'Marinduque',
+  'Masbate',
+  'Metro Manila (NCR)',
+  'Misamis Occidental',
+  'Misamis Oriental',
+  'Mountain Province',
+  'Negros Occidental',
+  'Negros Oriental',
+  'Northern Samar',
+  'Nueva Ecija',
+  'Nueva Vizcaya',
+  'Occidental Mindoro',
+  'Oriental Mindoro',
+  'Palawan',
+  'Pampanga',
+  'Pangasinan',
+  'Quezon',
+  'Quirino',
+  'Rizal',
+  'Romblon',
+  'Samar',
+  'Sarangani',
+  'Siquijor',
+  'Sorsogon',
+  'South Cotabato',
+  'Southern Leyte',
+  'Sultan Kudarat',
+  'Sulu',
+  'Surigao del Norte',
+  'Surigao del Sur',
+  'Tarlac',
+  'Tawi-Tawi',
+  'Zambales',
+  'Zamboanga Sibugay',
+  'Zamboanga del Norte',
+  'Zamboanga del Sur'
+];
+$philippine_cities = [
+  'Alaminos City',
+  'Angeles City',
+  'Antipolo City',
+  'Bacolod City',
+  'Bacoor City',
+  'Bago City',
+  'Baguio City',
+  'Bais City',
+  'Balanga City',
+  'Baliwag City',
+  'Batac City',
+  'Batangas City',
+  'Bayawan City',
+  'Baybay City',
+  'Bayugan City',
+  'Bislig City',
+  'Biñan City',
+  'Bogo City',
+  'Borongan City',
+  'Butuan City',
+  'Cabadbaran City',
+  'Cabanatuan City',
+  'Cabuyao City',
+  'Cadiz City',
+  'Cagayan de Oro City',
+  'Calamba City',
+  'Calapan City',
+  'Calbayog City',
+  'Caloocan',
+  'Candon City',
+  'Canlaon City',
+  'Carcar City',
+  'Carmona City',
+  'Catbalogan City',
+  'Cauayan City',
+  'Cavite City',
+  'Cebu City',
+  'Cotabato City',
+  'Dagupan City',
+  'Danao City',
+  'Dapitan City',
+  'Dasmariñas City',
+  'Davao City',
+  'Digos City',
+  'Dipolog City',
+  'Dumaguete City',
+  'El Salvador City',
+  'Escalante City',
+  'Gapan City',
+  'General Santos City',
+  'General Trias City',
+  'Gingoog City',
+  'Guihulngan City',
+  'Himamaylan City',
+  'Ilagan City',
+  'Iligan City',
+  'Iloilo City',
+  'Imus City',
+  'Iriga City',
+  'Isabela City',
+  'Kabankalan City',
+  'Kidapawan City',
+  'Koronadal City',
+  'La Carlota City',
+  'Lamitan City',
+  'Laoag City',
+  'Lapu-Lapu City',
+  'Las Piñas',
+  'Legazpi City',
+  'Ligao City',
+  'Lipa City',
+  'Lucena City',
+  'Maasin City',
+  'Mabalacat City',
+  'Makati',
+  'Malabon',
+  'Malaybalay City',
+  'Malolos City',
+  'Mandaluyong',
+  'Mandaue City',
+  'Manila',
+  'Marawi City',
+  'Marikina',
+  'Masbate City',
+  'Mati City',
+  'Meycauayan City',
+  'Muntinlupa',
+  'Muñoz City',
+  'Naga City (Camarines Sur)',
+  'Naga City (Cebu)',
+  'Navotas',
+  'Olongapo City',
+  'Ormoc City',
+  'Oroquieta City',
+  'Ozamiz City',
+  'Pagadian City',
+  'Palayan City',
+  'Panabo City',
+  'Parañaque',
+  'Pasay',
+  'Pasig',
+  'Passi City',
+  'Puerto Princesa City',
+  'Quezon City',
+  'Roxas City',
+  'Sagay City',
+  'Samal City',
+  'San Carlos City (Negros Occidental)',
+  'San Carlos City (Pangasinan)',
+  'San Fernando City (La Union)',
+  'San Fernando City (Pampanga)',
+  'San Jose City',
+  'San Jose del Monte City',
+  'San Juan',
+  'San Pablo City',
+  'San Pedro City',
+  'Santa Rosa City',
+  'Santiago City',
+  'Santo Tomas City',
+  'Silay City',
+  'Sipalay City',
+  'Sorsogon City',
+  'Surigao City',
+  'Tabaco City',
+  'Tabuk City',
+  'Tacloban City',
+  'Tacurong City',
+  'Tagaytay City',
+  'Tagbilaran City',
+  'Taguig',
+  'Tagum City',
+  'Talisay City (Cebu)',
+  'Talisay City (Negros Occidental)',
+  'Tanauan City',
+  'Tandag City',
+  'Tangub City',
+  'Tanjay City',
+  'Tarlac City',
+  'Tayabas City',
+  'Toledo City',
+  'Trece Martires City',
+  'Tuguegarao City',
+  'Urdaneta City',
+  'Valencia City',
+  'Valenzuela',
+  'Victorias City',
+  'Vigan City',
+  'Zamboanga City'
+];
+sort($philippine_provinces);
+sort($philippine_cities);
+$provinceCityMap = array_fill_keys($philippine_provinces, $philippine_cities);
+$allowed_provinces = $philippine_provinces;
+$allowed_cities = $philippine_cities;
+$cityProvinceMap = [];
+foreach ($philippine_cities as $ct) { $cityProvinceMap[$ct] = $philippine_provinces[0]; }
 
 // ---------------------------------------------------------------------
 // 2. Initial State & Default Field Values
@@ -74,7 +317,11 @@ $allowed_payment_methods = [
 $full_name      = '';
 $email          = '';
 $phone          = '';
-$address        = '';
+$street_address = '';
+$city           = '';
+$province       = '';
+$postal_code    = '';
+$address        = ''; // composite for confirmation display & backwards compatibility
 $property_type  = '';
 $payment_method = '';
 $notes          = '';
@@ -97,10 +344,27 @@ if ($is_post) {
     $full_name      = trim($_POST['full_name'] ?? '');
     $email          = trim($_POST['email'] ?? '');
     $phone          = trim($_POST['phone'] ?? '');
-    $address        = trim($_POST['address'] ?? '');
+    $street_address = trim($_POST['street_address'] ?? '');
+    $city           = trim($_POST['city'] ?? '');
+    $province       = trim($_POST['province'] ?? '');
+    $postal_code    = trim($_POST['postal_code'] ?? '');
+    // Normalize ASCII aliases to canonical UTF-8 city names
+    $cityAliasMap = [
+      'Binan City' => 'Biñan City',
+      'Dasmarinas City' => 'Dasmariñas City',
+      'Las Pinas' => 'Las Piñas',
+      'Paranaque' => 'Parañaque',
+      'Munoz City' => 'Muñoz City',
+      'Science City of Munoz' => 'Muñoz City',
+      'Science City of Muñoz' => 'Muñoz City',
+    ];
+    if (isset($cityAliasMap[$city])) { $city = $cityAliasMap[$city]; }
     $property_type  = trim($_POST['property_type'] ?? '');
     $payment_method = trim($_POST['payment_method'] ?? '');
     $notes          = trim($_POST['notes'] ?? '');
+
+    // Re-compose full address for confirmation / display
+    $address = trim(implode(', ', array_filter([$street_address, $city, $province])) . ($postal_code !== '' ? ' ' . $postal_code : ''));
 
     // Process selected products & quantities
     $posted_products   = $_POST['products'] ?? [];
@@ -140,12 +404,35 @@ if ($is_post) {
         $errors['phone'] = 'Please enter a valid phone number (at least 7 digits).';
     }
 
-    // Address
-    if ($address === '') {
-        $errors['address'] = 'Installation / billing street address is required.';
-    } elseif (mb_strlen($address) < 6) {
-        $errors['address'] = 'Please provide a complete street address including city & postal code.';
+    // Street Address - free text input (no dropdown)
+    if ($street_address === '') {
+        $errors['street_address'] = 'Street address is required (house #, street, barangay).';
+    } elseif (mb_strlen($street_address) < 5) {
+        $errors['street_address'] = 'Please provide a complete street address (at least 5 characters).';
     }
+
+    // City - must be selected from dropdown
+    if ($city === '') {
+        $errors['city'] = 'Please select a city from the dropdown.';
+    } elseif (!in_array($city, $allowed_cities, true)) {
+        $errors['city'] = 'Invalid city selected. Please choose from the dropdown list.';
+    }
+
+    // Province - must be selected from dropdown
+    if ($province === '') {
+        $errors['province'] = 'Please select a province from the dropdown.';
+    } elseif (!in_array($province, $allowed_provinces, true)) {
+        $errors['province'] = 'Invalid province selected. Please choose from the dropdown list.';
+    }
+
+    // Postal Code - text input (no dropdown), 4-digit PH zip validation
+    if ($postal_code === '') {
+        $errors['postal_code'] = 'Postal code is required.';
+    } elseif (!preg_match('/^\d{4}$/', $postal_code)) {
+        $errors['postal_code'] = 'Please enter a valid 4-digit postal code (e.g., 1000).';
+    }
+
+    // Province & City are now independent - all cities under all provinces (no cross-validation)
 
     // Property Type
     if ($property_type === '') {
@@ -1551,8 +1838,24 @@ function safe(string $str): string {
                   </span>
                 </li>
                 <li class="conf-details-item">
-                  <span class="conf-details-label">Site / Installation Address</span>
-                  <span class="conf-details-value"><?php echo nl2br(safe($address)); ?></span>
+                  <span class="conf-details-label">Street Address</span>
+                  <span class="conf-details-value"><?php echo safe($street_address); ?></span>
+                </li>
+                <li class="conf-details-item">
+                  <span class="conf-details-label">City</span>
+                  <span class="conf-details-value"><?php echo safe($city); ?></span>
+                </li>
+                <li class="conf-details-item">
+                  <span class="conf-details-label">Province</span>
+                  <span class="conf-details-value"><?php echo safe($province); ?></span>
+                </li>
+                <li class="conf-details-item">
+                  <span class="conf-details-label">Postal Code</span>
+                  <span class="conf-details-value"><?php echo safe($postal_code); ?></span>
+                </li>
+                <li class="conf-details-item">
+                  <span class="conf-details-label">Full Installation Address</span>
+                  <span class="conf-details-value"><?php echo safe($address); ?></span>
                 </li>
                 <li class="conf-details-item">
                   <span class="conf-details-label">Payment Method Selected</span>
@@ -1878,28 +2181,121 @@ function safe(string $str): string {
                   </div>
                 </div>
 
-                <!-- Street Address -->
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="province" class="form-label">
+                      Province <span class="required-mark">*</span>
+                    </label>
+                    <select 
+                      id="province" 
+                      name="province" 
+                      class="form-control <?php echo isset($errors['province']) ? 'has-error' : ''; ?>" 
+                      required
+                      autocomplete="address-level1"
+                    >
+                      <option value="">Select Province</option>
+                      <?php foreach ($allowed_provinces as $p): ?>
+                        <option value="<?php echo safe($p); ?>" <?php echo ($province === $p) ? 'selected' : ''; ?>><?php echo safe($p); ?></option>
+                      <?php endforeach; ?>
+                    </select>
+                    <?php if (isset($errors['province'])): ?>
+                      <div class="field-error-message">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <circle cx="12" cy="12" r="10"></circle>
+                          <line x1="12" y1="8" x2="12" y2="12"></line>
+                          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
+                        <?php echo safe($errors['province']); ?>
+                      </div>
+                    <?php endif; ?>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="city" class="form-label">
+                      City <span class="required-mark">*</span>
+                    </label>
+                    <select 
+                      id="city" 
+                      name="city" 
+                      class="form-control <?php echo isset($errors['city']) ? 'has-error' : ''; ?>" 
+                      required
+                      autocomplete="address-level2"
+                    >
+                      <option value="">Select City</option>
+                      <?php
+                      // All cities shown regardless of province - all cities under all provinces
+                      foreach ($allowed_cities as $c):
+                      ?>
+                        <option value="<?php echo safe($c); ?>" <?php echo ($city === $c) ? 'selected' : ''; ?>><?php echo safe($c); ?></option>
+                      <?php endforeach; ?>
+                    </select>
+                    <?php if (isset($errors['city'])): ?>
+                      <div class="field-error-message">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <circle cx="12" cy="12" r="10"></circle>
+                          <line x1="12" y1="8" x2="12" y2="12"></line>
+                          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
+                        <?php echo safe($errors['city']); ?>
+                      </div>
+                    <?php endif; ?>
+                  </div>
+                </div>
+
                 <div class="form-group">
-                  <label for="address" class="form-label">
-                    Installation / Billing Address <span class="required-mark">*</span>
+                  <label for="street_address" class="form-label">
+                    Barangay / Street Address <span class="required-mark">*</span>
                   </label>
-                  <textarea 
-                    id="address" 
-                    name="address" 
-                    rows="2" 
-                    class="form-control <?php echo isset($errors['address']) ? 'has-error' : ''; ?>" 
-                    placeholder="Enter street number, city, state, zip code..."
+                  <input 
+                    type="text"
+                    id="street_address" 
+                    name="street_address" 
+                    class="form-control <?php echo isset($errors['street_address']) ? 'has-error' : ''; ?>" 
+                    placeholder="e.g. Brgy. San Isidro, 123 Rizal St."
+                    value="<?php echo safe($street_address); ?>"
                     required
                     autocomplete="street-address"
-                  ><?php echo safe($address); ?></textarea>
-                  <?php if (isset($errors['address'])): ?>
+                  >
+                  <?php if (isset($errors['street_address'])): ?>
                     <div class="field-error-message">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="10"></circle>
                         <line x1="12" y1="8" x2="12" y2="12"></line>
                         <line x1="12" y1="16" x2="12.01" y2="16"></line>
                       </svg>
-                      <?php echo safe($errors['address']); ?>
+                      <?php echo safe($errors['street_address']); ?>
+                    </div>
+                  <?php endif; ?>
+                </div>
+
+                <!-- Postal Code - Text input only (no dropdown) -->
+                <div class="form-group">
+                  <label for="postal_code" class="form-label">
+                    Postal Code <span class="required-mark">*</span>
+                  </label>
+                  <input 
+                    type="text" 
+                    id="postal_code" 
+                    name="postal_code" 
+                    class="form-control <?php echo isset($errors['postal_code']) ? 'has-error' : ''; ?>" 
+                    placeholder="e.g. 1000"
+                    value="<?php echo safe($postal_code); ?>"
+                    required
+                    inputmode="numeric"
+                    pattern="\d{4}"
+                    maxlength="4"
+                    autocomplete="postal-code"
+                    oninput="this.value=this.value.replace(/\D/g,'').slice(0,4)"
+                    onkeypress="return event.charCode>=48 && event.charCode<=57"
+                  >
+                  <?php if (isset($errors['postal_code'])): ?>
+                    <div class="field-error-message">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                      </svg>
+                      <?php echo safe($errors['postal_code']); ?>
                     </div>
                   <?php endif; ?>
                 </div>
@@ -2316,12 +2712,36 @@ function safe(string $str): string {
       });
     }
 
-    // Guard form submission against zero products
+    // Guard form submission against zero products + dependent province/city validation
     const checkoutForm = document.getElementById('apex-checkout-form');
+    // Guard form submission against zero products (all cities under all provinces - no filtering)
     if (checkoutForm) {
       checkoutForm.addEventListener('submit', function(e) {
+        const provEl = document.getElementById('province');
+        const cityEl2 = document.getElementById('city');
+        const postalEl = document.getElementById('postal_code');
+        const streetEl = document.getElementById('street_address');
+        let addrValid = true;
+        // Street - free text (no dropdown)
+        if (streetEl && !streetEl.value.trim()) { addrValid = false; streetEl.classList.add('has-error'); showCheckoutNotif('Please enter street address.'); }
+        else if (streetEl && streetEl.value.trim().length < 5) { addrValid = false; streetEl.classList.add('has-error'); showCheckoutNotif('Street address must be at least 5 characters.'); }
+        // Province
+        if (provEl && !provEl.value) { addrValid = false; provEl.classList.add('has-error'); showCheckoutNotif('Please select a province.'); }
+        // City - all cities available under every province
+        if (cityEl2 && !cityEl2.value) { addrValid = false; cityEl2.classList.add('has-error'); showCheckoutNotif('Please select a city.'); }
+        // Postal
+        if (postalEl && !/^\d{4}$/.test(postalEl.value.trim())) { addrValid = false; postalEl.classList.add('has-error'); if (postalEl.value.trim()==='') showCheckoutNotif('Postal code is required.'); else showCheckoutNotif('Please enter a valid 4-digit postal code.'); }
+        if (!addrValid) { e.preventDefault(); e.stopPropagation(); const firstErr = document.querySelector('.form-control.has-error'); if (firstErr) firstErr.scrollIntoView({behavior:'smooth', block:'center'}); return false; }
         if (!blockEmptyCheckout(e)) {
           return false;
+        }
+      });
+      // Clear has-error on input/change
+      ['street_address','province','city','postal_code'].forEach(function(id){
+        const el = document.getElementById(id);
+        if (el) {
+          el.addEventListener('input', function(){ this.classList.remove('has-error'); });
+          el.addEventListener('change', function(){ this.classList.remove('has-error'); });
         }
       });
     }
@@ -2335,6 +2755,13 @@ function safe(string $str): string {
       showCheckoutNotif('Notice: You must order first before proceeding to checkout.');
       <?php endif; ?>
     });
+  </script>
+
+  <!-- Province & City are now independent - all cities under all provinces -->
+  <script>
+    const checkoutProvinceCityMap = <?php echo json_encode($provinceCityMap, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
+    const checkoutCityProvinceMap = <?php echo json_encode($cityProvinceMap, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
+    // All cities are available under every province - no filtering
   </script>
 </body>
 </html>
