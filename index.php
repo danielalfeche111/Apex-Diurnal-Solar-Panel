@@ -891,7 +891,7 @@ function nav_link(string $label, string $href, string $class = '', string $extra
     <div class="cart-drawer-footer">
       <div class="cart-total-row">
         <span>Total</span>
-        <strong id="cart-total">$<?php echo number_format(cart_total($products), 2); ?></strong>
+        <strong id="cart-total">&#8369;<?php echo number_format(cart_total($products), 2); ?></strong>
       </div>
       <?php $has_cart_items = (cart_item_count() > 0); ?>
       <div class="cart-footer-actions">

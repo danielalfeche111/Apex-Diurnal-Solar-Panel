@@ -106,18 +106,6 @@ $logo_path = $site_root . 'assets/images/logo.png?v=' . $logo_v;
         <span class="nav-badge"><?php echo $counts['new_quotes']; ?></span>
       <?php endif; ?>
     </a>
-
-    <div class="nav-section-title">Navigation</div>
-    <a href="<?php echo $admin_base; ?>../index.php" target="_blank" class="nav-item">
-      <div class="nav-item-content">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-          <polyline points="15 3 21 3 21 9"></polyline>
-          <line x1="10" y1="14" x2="21" y2="3"></line>
-        </svg>
-        <span>Live Storefront</span>
-      </div>
-    </a>
   </nav>
 
   <div class="sidebar-footer">

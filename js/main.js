@@ -147,7 +147,7 @@ function renderCart(data) {
   const emptyHint = document.getElementById('cart-empty-hint');
   if (!list) return;
   updateCartBadge(data.itemCount);
-  if (totalEl) totalEl.textContent = '$' + data.grandTotal;
+  if (totalEl) totalEl.textContent = '₱' + data.grandTotal;
   if (drawerCount) drawerCount.textContent = data.itemCount + ' item(s)';
 
   const checkoutBtn = document.getElementById('cart-checkout');
@@ -198,7 +198,7 @@ function renderCart(data) {
       + '<button type="button" class="qty-btn" onclick="changeQty(\'' + item.id + '\', ' + (item.quantity + 1) + ')">+</button>'
       + '</div></div>'
       + '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">'
-      + '<div class="cart-item-line">$' + item.line_total + '</div>'
+      + '<div class="cart-item-line">₱' + item.line_total + '</div>'
       + '<button type="button" class="cart-item-remove" onclick="removeItem(\'' + item.id + '\')">Remove</button>'
       + '</div>';
     list.appendChild(row);

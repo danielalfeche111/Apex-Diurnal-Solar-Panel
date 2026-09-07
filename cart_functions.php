@@ -78,7 +78,7 @@ function cart_total(array $catalog): float {
     $total = 0.0;
     foreach ($_SESSION['cart'] as $id => $qty) {
         if (isset($lookup[$id])) {
-            $price = floatval(str_replace(['$', ','], '', $lookup[$id]['price']));
+            $price = floatval(str_replace(['$', '₱', '&#8369;', 'PHP', 'php', ','], '', $lookup[$id]['price']));
             $total += $price * $qty;
         }
     }
@@ -95,7 +95,7 @@ function get_cart_items(array $catalog): array {
         if (isset($lookup[$id])) {
             $product = $lookup[$id];
             $product['quantity'] = $qty;
-            $price = floatval(str_replace(['$', ','], '', $product['price']));
+            $price = floatval(str_replace(['$', '₱', '&#8369;', 'PHP', 'php', ','], '', $product['price']));
             $product['line_total'] = $price * $qty;
             $items[$id] = $product;
         }

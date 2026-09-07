@@ -1,0 +1,308 @@
+<?php
+/**
+ * admin/orders/index.php - Order Management Dashboard
+ */
+
+require_once __DIR__ . '/../auth.php';
+requireAdminLogin();
+
+$page_title = 'Order Management';
+$active_nav = 'orders';
+
+$db = (new Database())->getConnection();
+
+// Filter parameter
+$status_filter = trim($_GET['status'] ?? 'all');
+$search = trim($_GET['search'] ?? '');
+
+$where_clauses = [];
+$params = [];
+
+if ($status_filter !== 'all' && in_array($status_filter, ['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded'])) {
+    $where_clauses[] = "o.status = :status";
+    $params[':status'] = $status_filter;
+}
+
+if (!empty($search)) {
+    $where_clauses[] = "(o.order_number LIKE :srch OR o.customer_name LIKE :srch OR o.customer_email LIKE :srch OR o.shipping_address LIKE :srch)";
+    $params[':srch'] = '%' . $search . '%';
+}
+
+$where_sql = !empty($where_clauses) ? 'WHERE ' . implode(' AND ', $where_clauses) : '';
+
+$sql = "
+    SELECT 
+        o.*,
+        COUNT(oi.id) AS item_count,
+        GROUP_CONCAT(CONCAT(oi.quantity, 'x ', oi.product_name) SEPARATOR ', ') AS item_summary
+    FROM orders o
+    LEFT JOIN order_items oi ON o.id = oi.order_id
+    $where_sql
+    GROUP BY o.id
+    ORDER BY o.created_at DESC
+";
+$stmt = $db->prepare($sql);
+$stmt->execute($params);
+$orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Overall KPIs
+$kpi_total_orders = (int)$db->query("SELECT COUNT(*) FROM orders")->fetchColumn();
+$kpi_pending = (int)$db->query("SELECT COUNT(*) FROM orders WHERE status = 'pending'")->fetchColumn();
+$kpi_processing = (int)$db->query("SELECT COUNT(*) FROM orders WHERE status IN ('processing', 'shipped')")->fetchColumn();
+$kpi_revenue = (float)$db->query("SELECT SUM(total_amount) FROM orders WHERE status NOT IN ('cancelled', 'refunded')")->fetchColumn();
+
+// Check for flash messages
+$msg = $_GET['msg'] ?? '';
+$err = $_GET['err'] ?? '';
+
+include __DIR__ . '/../includes/header.php';
+?>
+
+<!-- KPI Header Grid -->
+<div class="metrics-grid">
+  <div class="metric-card">
+    <div class="metric-details">
+      <h3>Total Sales Revenue</h3>
+      <div class="metric-value">&#8369;<?php echo number_format($kpi_revenue, 2); ?></div>
+      <div class="metric-subtext">Active orders (excl. refunds)</div>
+    </div>
+    <div class="metric-icon success">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+    </div>
+  </div>
+
+  <div class="metric-card">
+    <div class="metric-details">
+      <h3>Pending Approvals</h3>
+      <div class="metric-value" style="<?php echo $kpi_pending > 0 ? 'color:#b45309;' : ''; ?>">
+        <?php echo $kpi_pending; ?>
+      </div>
+      <div class="metric-subtext">Requires stock allocation</div>
+    </div>
+    <div class="metric-icon warning">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+    </div>
+  </div>
+
+  <div class="metric-card">
+    <div class="metric-details">
+      <h3>In Fulfillment</h3>
+      <div class="metric-value"><?php echo $kpi_processing; ?></div>
+      <div class="metric-subtext">Processing & Shipped</div>
+    </div>
+    <div class="metric-icon info">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+    </div>
+  </div>
+
+  <div class="metric-card">
+    <div class="metric-details">
+      <h3>Total Lifetime Orders</h3>
+      <div class="metric-value"><?php echo $kpi_total_orders; ?></div>
+      <div class="metric-subtext">All customer transactions</div>
+    </div>
+    <div class="metric-icon">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+    </div>
+  </div>
+</div>
+
+<?php if ($msg): ?>
+  <div style="background:#ecfdf5; border:1px solid #a7f3d0; color:#065f46; padding:0.85rem 1.25rem; border-radius:8px; margin-bottom:1.5rem; font-size:0.85rem; display:flex; align-items:center; gap:0.5rem;">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+    <span><?php echo htmlspecialchars($msg); ?></span>
+  </div>
+<?php endif; ?>
+
+<?php if ($err): ?>
+  <div style="background:#fef2f2; border:1px solid #fecaca; color:#991b1b; padding:0.85rem 1.25rem; border-radius:8px; margin-bottom:1.5rem; font-size:0.85rem; display:flex; align-items:center; gap:0.5rem;">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+    <span><?php echo htmlspecialchars($err); ?></span>
+  </div>
+<?php endif; ?>
+
+<!-- Filters and Search Toolbar -->
+<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1.25rem;">
+  <div class="filter-nav" style="margin-bottom:0;">
+    <a href="index.php?status=all<?php echo !empty($search) ? '&search=' . urlencode($search) : ''; ?>" class="filter-pill <?php echo ($status_filter === 'all') ? 'active' : ''; ?>">
+      All (<?php echo $kpi_total_orders; ?>)
+    </a>
+    <a href="index.php?status=pending<?php echo !empty($search) ? '&search=' . urlencode($search) : ''; ?>" class="filter-pill <?php echo ($status_filter === 'pending') ? 'active' : ''; ?>">
+      Pending (<?php echo $kpi_pending; ?>)
+    </a>
+    <a href="index.php?status=processing<?php echo !empty($search) ? '&search=' . urlencode($search) : ''; ?>" class="filter-pill <?php echo ($status_filter === 'processing') ? 'active' : ''; ?>">
+      Processing
+    </a>
+    <a href="index.php?status=shipped<?php echo !empty($search) ? '&search=' . urlencode($search) : ''; ?>" class="filter-pill <?php echo ($status_filter === 'shipped') ? 'active' : ''; ?>">
+      Shipped
+    </a>
+    <a href="index.php?status=delivered<?php echo !empty($search) ? '&search=' . urlencode($search) : ''; ?>" class="filter-pill <?php echo ($status_filter === 'delivered') ? 'active' : ''; ?>">
+      Delivered
+    </a>
+    <a href="index.php?status=cancelled<?php echo !empty($search) ? '&search=' . urlencode($search) : ''; ?>" class="filter-pill <?php echo ($status_filter === 'cancelled') ? 'active' : ''; ?>">
+      Cancelled
+    </a>
+  </div>
+
+  <!-- Search form -->
+  <form method="GET" action="index.php" style="display:flex; gap:0.5rem; align-items:center;">
+    <input type="hidden" name="status" value="<?php echo htmlspecialchars($status_filter); ?>">
+    <input 
+      type="text" 
+      name="search" 
+      class="form-control" 
+      placeholder="Search order #, customer..." 
+      value="<?php echo htmlspecialchars($search); ?>" 
+      style="width: 240px; padding: 0.45rem 0.85rem;">
+    <button type="submit" class="btn btn-secondary btn-sm" style="padding: 0.55rem 0.85rem;">Search</button>
+    <?php if (!empty($search)): ?>
+      <a href="index.php?status=<?php echo htmlspecialchars($status_filter); ?>" class="btn btn-outline btn-sm">Clear</a>
+    <?php endif; ?>
+  </form>
+</div>
+
+<!-- Orders Table Card -->
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+      <span>Customer Purchase Records (<?php echo count($orders); ?>)</span>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Order Reference</th>
+          <th style="width: 85px;">Date</th>
+          <th>Customer</th>
+          <th>Location</th>
+          <th>Items</th>
+          <th style="width: 85px;">Total</th>
+          <th style="width: 75px;">Status</th>
+          <th style="text-align: right; width: 115px;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php if (empty($orders)): ?>
+          <tr>
+            <td colspan="8" style="text-align: center; padding: 3rem; color: var(--text-muted);">
+              No orders matched your selected criteria.
+            </td>
+          </tr>
+        <?php else: ?>
+          <?php foreach ($orders as $ord): 
+            $status = $ord['status'];
+            $badgeClass = 'badge-pending';
+            if ($status === 'processing') $badgeClass = 'badge-processing';
+            elseif ($status === 'shipped') $badgeClass = 'badge-shipped';
+            elseif ($status === 'delivered') $badgeClass = 'badge-delivered';
+            elseif ($status === 'cancelled' || $status === 'refunded') $badgeClass = 'badge-cancelled';
+          ?>
+          <tr>
+            <td>
+              <a href="view.php?id=<?php echo $ord['id']; ?>" style="font-weight: 700; color: var(--navy-primary); font-family: monospace; text-decoration: underline;">
+                <?php echo htmlspecialchars($ord['order_number']); ?>
+              </a>
+              <div style="font-size: 0.7rem; color: var(--text-muted);"><?php echo htmlspecialchars($ord['payment_method']); ?></div>
+            </td>
+            <td style="font-size: 0.74rem; color: var(--text-muted); white-space: nowrap;">
+              <?php echo date('M j', strtotime($ord['created_at'])); ?><br>
+              <span style="font-size: 0.67rem;"><?php echo date('g:i A', strtotime($ord['created_at'])); ?></span>
+            </td>
+            <td>
+              <div style="font-weight: 700; color: var(--text-main); font-size: 0.78rem;"><?php echo htmlspecialchars($ord['customer_name']); ?></div>
+              <div style="font-size: 0.7rem; color: var(--text-muted);"><?php echo htmlspecialchars($ord['customer_email']); ?></div>
+            </td>
+            <td>
+              <div style="font-size: 0.78rem; font-weight: 600; color: var(--navy-primary);"><?php echo htmlspecialchars($ord['property_type']); ?></div>
+              <div style="font-size: 0.7rem; color: var(--text-muted); max-width: 140px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="<?php echo htmlspecialchars($ord['shipping_address']); ?>">
+                <?php echo htmlspecialchars($ord['shipping_address']); ?>
+              </div>
+            </td>
+            <td>
+              <span style="font-weight: 600; font-size: 0.78rem;"><?php echo $ord['item_count']; ?> item(s)</span>
+              <div style="font-size: 0.68rem; color: var(--text-muted); max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="<?php echo htmlspecialchars($ord['item_summary']); ?>">
+                <?php echo htmlspecialchars($ord['item_summary']); ?>
+              </div>
+            </td>
+            <td style="font-weight: 700; color: var(--navy-primary); font-size: 0.88rem; white-space: nowrap;">
+              &#8369;<?php echo number_format($ord['total_amount'], 2); ?>
+            </td>
+            <td>
+              <span class="badge <?php echo $badgeClass; ?>" style="font-size: 0.66rem; padding: 0.15rem 0.5rem;">
+                <?php echo ucfirst($status); ?>
+              </span>
+            </td>
+            <td style="text-align: right; width: 115px; white-space: nowrap;">
+              <a href="view.php?id=<?php echo $ord['id']; ?>" class="btn btn-secondary btn-sm" style="padding: 0.25rem 0.45rem; font-size: 0.7rem;" title="Inspect Order Details">
+                View
+              </a>
+              <?php if ($status === 'pending'): ?>
+                <button 
+                  type="button" 
+                  class="btn btn-primary btn-sm"
+                  style="padding: 0.25rem 0.45rem; font-size: 0.7rem;"
+                  onclick="openStatusModal(<?php echo $ord['id']; ?>, '<?php echo htmlspecialchars($ord['order_number']); ?>', 'processing')">
+                  Accept
+                </button>
+              <?php endif; ?>
+            </td>
+          </tr>
+          <?php endforeach; ?>
+        <?php endif; ?>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Order Status Quick Modal -->
+<div class="modal-overlay" id="status-modal">
+  <div class="modal-container">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-order-title">Process Order</div>
+      <button type="button" class="modal-close" onclick="closeAdminModal('status-modal')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div>
+    <form method="POST" action="process.php">
+      <div class="modal-body">
+        <input type="hidden" name="csrf_token" value="<?php echo csrfToken(); ?>">
+        <input type="hidden" name="order_id" id="modal-order-id" value="">
+        <input type="hidden" name="redirect_source" value="index">
+
+        <div class="form-group">
+          <label class="form-label" for="new_status">Change Status To</label>
+          <select class="form-control" name="new_status" id="modal-new-status" required>
+            <option value="processing">Processing (Accept order & Deduct Stock)</option>
+            <option value="shipped">Shipped</option>
+            <option value="delivered">Delivered</option>
+            <option value="cancelled">Cancelled (Restore Stock)</option>
+            <option value="refunded">Refunded (Restore Stock)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="admin_note">Optional Note / Tracking Info</label>
+          <input type="text" class="form-control" name="admin_note" id="admin_note" placeholder="e.g. Courier tracking # PH-1029482">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeAdminModal('status-modal')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Confirm Status Change</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openStatusModal(orderId, orderNum, defaultStatus) {
+  document.getElementById('modal-order-id').value = orderId;
+  document.getElementById('modal-order-title').textContent = 'Process Order: ' + orderNum;
+  document.getElementById('modal-new-status').value = defaultStatus;
+  openAdminModal('status-modal');
+}
+</script>
+
+<?php include __DIR__ . '/../includes/footer.php'; ?>

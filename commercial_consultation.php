@@ -387,6 +387,67 @@ try {
         $response['lead_type'] = $lead_type;
         $response['company_name'] = $company_name;
 
+        // Synchronize with Admin Dashboard Subsystems
+        try {
+            if ($lead_type === 'rfq') {
+                $quoteNum = 'RFQ-' . date('Ymd') . '-' . sprintf('%04d', $lead_id);
+                $stmtQ = $db->prepare("
+                    INSERT INTO quote_requests (
+                        quote_number, company_name, contact_person, email, phone, facility_type,
+                        facility_size, current_monthly_bill, target_timeline, estimated_system_size,
+                        estimated_installation_cost, estimated_annual_savings, estimated_payback_period,
+                        applicable_discounts, installation_address, access_notes, status
+                    ) VALUES (
+                        :qnum, :cname, :cperson, :email, :phone, :ftype,
+                        :fsize, :cbill, :ttime, :ssize,
+                        :icost, :asav, :pback,
+                        :disc, :addr, :notes, 'new'
+                    )
+                ");
+                $stmtQ->execute([
+                    ':qnum' => $quoteNum,
+                    ':cname' => $company_name,
+                    ':cperson' => $contact_person,
+                    ':email' => $corporate_email,
+                    ':phone' => $phone_number,
+                    ':ftype' => $facility_type,
+                    ':fsize' => $facility_size,
+                    ':cbill' => $current_monthly_bill,
+                    ':ttime' => $target_timeline,
+                    ':ssize' => $estimated_system_size,
+                    ':icost' => $estimated_installation_cost,
+                    ':asav' => $estimated_annual_savings,
+                    ':pback' => $estimated_payback_period,
+                    ':disc' => $applicable_discounts_json,
+                    ':addr' => $property_address,
+                    ':notes' => $access_notes
+                ]);
+            } else {
+                $bookingRef = 'COMM-' . date('Ymd') . '-' . sprintf('%04d', $lead_id);
+                $stmtB = $db->prepare("
+                    INSERT INTO service_bookings (
+                        booking_reference, customer_name, customer_email, customer_phone,
+                        service_type, preferred_date, preferred_time_slot, status, address, access_notes
+                    ) VALUES (
+                        :bref, :cname, :email, :phone,
+                        'consultation', :pdate, :pslot, 'pending', :addr, :notes
+                    )
+                ");
+                $stmtB->execute([
+                    ':bref' => $bookingRef,
+                    ':cname' => $contact_person ?: $company_name,
+                    ':email' => $corporate_email,
+                    ':phone' => $phone_number,
+                    ':pdate' => $preferred_date,
+                    ':pslot' => strtolower($preferred_time_slot ?: 'morning'),
+                    ':addr' => $property_address,
+                    ':notes' => $access_notes
+                ]);
+            }
+        } catch (Exception $syncEx) {
+            error_log('Admin sync error in commercial_consultation.php: ' . $syncEx->getMessage());
+        }
+
         if ($lead_type === 'rfq') {
             $response['message'] = 'Request for Quote successfully submitted! Our commercial sales engineering team will review your specifications and deliver a formal equipment proposal.';
             $response['disclaimer'] = 'This is a preliminary quote request. Final pricing requires site assessment and detailed system design.';

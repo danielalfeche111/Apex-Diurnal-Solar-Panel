@@ -6,7 +6,7 @@ $products = [
         'title'   => 'Residential Arrays',
         'image'   => 'assets/images/residential arrays.png',
         'alt'     => 'Residential Solar Panel Arrays',
-        'price'   => '$145.00',
+        'price'   => '₱8,120.00',
         'actions' => [
             ['label' => 'BUY NOW',    'class' => 'btn btn-yellow'],
             ['label' => 'LEARN MORE', 'class' => 'btn btn-outline'],
@@ -27,7 +27,7 @@ $products = [
         'title'   => 'Advanced Solar Inverter',
         'image'   => 'assets/images/advance power inverter.png',
         'alt'     => 'Advanced Solar Inverter',
-        'price'   => '$450.00',
+        'price'   => '₱25,200.00',
         'actions' => [
             ['label' => 'BUY NOW',    'class' => 'btn btn-yellow'],
             ['label' => 'LEARN MORE', 'class' => 'btn btn-outline'],
@@ -38,7 +38,7 @@ $products = [
         'title'   => 'Professional Installation Booking',
         'image'   => 'assets/images/product-booking.png',
         'alt'     => 'Professional Installation Booking',
-        'price'   => '$150.00',
+        'price'   => '₱8,400.00',
         'actions' => [
             ['label' => 'BOOK NOW', 'class' => 'btn btn-yellow btn-block'],
         ],

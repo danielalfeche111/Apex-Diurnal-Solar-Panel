@@ -32,9 +32,9 @@ if (session_status() === PHP_SESSION_NONE) {
 // 1. Product Selection & Pricing Array (Associative Array)
 // ---------------------------------------------------------------------
 $catalog_products = [
-    'Residential Arrays' => 145.00,
-    'Advanced Solar Inverter' => 450.00,
-    'Professional Installation Booking' => 150.00,
+    'Residential Arrays' => 8120.00,
+    'Advanced Solar Inverter' => 25200.00,
+    'Professional Installation Booking' => 8400.00,
 ];
 
 // Product metadata for rich presentation (images & descriptions)
@@ -466,6 +466,105 @@ if ($is_post) {
         $is_success  = true;
         $order_id    = 'APD-' . date('Ymd') . '-' . strtoupper(substr(md5(uniqid((string)mt_rand(), true)), 0, 6));
         $order_date  = date('F j, Y - g:i A');
+
+        // Persist order and line items to database
+        try {
+            require_once __DIR__ . '/db.php';
+            $database = new Database();
+            $db = $database->getConnection();
+            if ($db) {
+                $user_id = getCurrentUserId();
+                $stmtOrd = $db->prepare("
+                    INSERT INTO orders (
+                        order_number, user_id, customer_name, customer_email, customer_phone,
+                        property_type, payment_method, status, subtotal, tax_amount, total_amount,
+                        shipping_address, notes
+                    ) VALUES (
+                        :ord_num, :uid, :name, :email, :phone,
+                        :prop, :pmethod, 'pending', :subtotal, :tax, :total,
+                        :addr, :notes
+                    )
+                ");
+                $stmtOrd->execute([
+                    ':ord_num' => $order_id,
+                    ':uid' => $user_id,
+                    ':name' => $full_name,
+                    ':email' => $email,
+                    ':phone' => $phone,
+                    ':prop' => $property_type,
+                    ':pmethod' => $payment_method,
+                    ':subtotal' => $subtotal,
+                    ':tax' => $tax_amount,
+                    ':total' => $grand_total,
+                    ':addr' => $address,
+                    ':notes' => $notes
+                ]);
+                $new_order_db_id = (int)$db->lastInsertId();
+
+                // Map product names to catalog product_ids
+                $name_to_id = [
+                    'Residential Arrays' => 'residential-arrays',
+                    'Advanced Solar Inverter' => 'advanced-solar-inverter',
+                    'Professional Installation Booking' => 'installation-booking'
+                ];
+
+                $stmtItem = $db->prepare("
+                    INSERT INTO order_items (order_id, product_id, product_name, quantity, unit_price, total_price)
+                    VALUES (:oid, :pid, :pname, :qty, :uprice, :tprice)
+                ");
+
+                $hasInstallationBooking = false;
+                foreach ($selected_items as $prod_name => $quantity) {
+                    $pid = $name_to_id[$prod_name] ?? strtolower(str_replace(' ', '-', $prod_name));
+                    $uprice = $catalog_products[$prod_name] ?? 0.00;
+                    $tprice = $uprice * $quantity;
+                    $stmtItem->execute([
+                        ':oid' => $new_order_db_id,
+                        ':pid' => $pid,
+                        ':pname' => $prod_name,
+                        ':qty' => $quantity,
+                        ':uprice' => $uprice,
+                        ':tprice' => $tprice
+                    ]);
+
+                    if ($pid === 'installation-booking') {
+                        $hasInstallationBooking = true;
+                    }
+                }
+
+                // If installation booking was selected, create linked service booking
+                if ($hasInstallationBooking) {
+                    $bookingRef = 'INST-' . date('Ymd') . '-' . strtoupper(substr(md5(uniqid()), 0, 4));
+                    $stmtBk = $db->prepare("
+                        INSERT INTO service_bookings (
+                            booking_reference, order_id, customer_name, customer_email, customer_phone,
+                            service_type, preferred_date, preferred_time_slot, status, address, access_notes
+                        ) VALUES (
+                            :bref, :oid, :name, :email, :phone,
+                            'installation', :pdate, 'morning', 'pending', :addr, :notes
+                        )
+                    ");
+                    $stmtBk->execute([
+                        ':bref' => $bookingRef,
+                        ':oid' => $new_order_db_id,
+                        ':name' => $full_name,
+                        ':email' => $email,
+                        ':phone' => $phone,
+                        ':pdate' => date('Y-m-d', strtotime('+7 days')),
+                        ':addr' => $address,
+                        ':notes' => $notes
+                    ]);
+                }
+
+                // Clear persistent database user cart
+                if ($user_id) {
+                    $stmtClear = $db->prepare("DELETE FROM user_carts WHERE user_id = :uid");
+                    $stmtClear->execute([':uid' => $user_id]);
+                }
+            }
+        } catch (Exception $e) {
+            error_log('Order persistence error: ' . $e->getMessage());
+        }
 
         // Clear active session cart if present to prevent duplicate order submissions
         if (isset($_SESSION['cart'])) {
@@ -1906,12 +2005,12 @@ function safe(string $str): string {
                       <td>
                         <span class="receipt-item-name"><?php echo safe($p_name); ?></span>
                         <div style="font-size:0.75rem; color:var(--color-text-muted);">
-                          $<?php echo number_format($u_price, 2); ?> each
+                          ₱<?php echo number_format($u_price, 2); ?> each
                         </div>
                       </td>
                       <td class="qty-col"><?php echo (int)$p_qty; ?></td>
                       <td class="num-col font-weight-bold">
-                        <strong>$<?php echo number_format($line_sum, 2); ?></strong>
+                        <strong>₱<?php echo number_format($line_sum, 2); ?></strong>
                       </td>
                     </tr>
                   <?php endforeach; ?>
@@ -1921,15 +2020,15 @@ function safe(string $str): string {
               <div class="receipt-summary-totals">
                 <div class="summary-line">
                   <span>Subtotal</span>
-                  <strong>$<?php echo number_format($subtotal, 2); ?></strong>
+                  <strong>₱<?php echo number_format($subtotal, 2); ?></strong>
                 </div>
                 <div class="summary-line">
                   <span>State & Clean Energy Tax (8%)</span>
-                  <strong>$<?php echo number_format($tax_amount, 2); ?></strong>
+                  <strong>₱<?php echo number_format($tax_amount, 2); ?></strong>
                 </div>
                 <div class="summary-line total-line">
                   <span>Total Amount</span>
-                  <span class="grand-value">$<?php echo number_format($grand_total, 2); ?></span>
+                  <span class="grand-value">₱<?php echo number_format($grand_total, 2); ?></span>
                 </div>
               </div>
             </div>
@@ -2493,7 +2592,7 @@ function safe(string $str): string {
                                 <span class="product-badge-tag"><?php echo safe($info['badge']); ?></span>
                               <?php endif; ?>
                             </label>
-                            <span class="product-unit-price">$<?php echo number_format($price_val, 2); ?></span>
+                            <span class="product-unit-price">₱<?php echo number_format($price_val, 2); ?></span>
                           </div>
                           <p class="product-desc-text"><?php echo safe($info['description']); ?></p>
                         </div>
@@ -2524,12 +2623,12 @@ function safe(string $str): string {
                   
                   <div class="summary-line">
                     <span>Products Subtotal</span>
-                    <strong id="display-subtotal">$<?php echo number_format($subtotal, 2); ?></strong>
+                    <strong id="display-subtotal">₱<?php echo number_format($subtotal, 2); ?></strong>
                   </div>
                   
                   <div class="summary-line">
                     <span>Clean Energy Tax (8%)</span>
-                    <strong id="display-tax">$<?php echo number_format($tax_amount, 2); ?></strong>
+                    <strong id="display-tax">₱<?php echo number_format($tax_amount, 2); ?></strong>
                   </div>
                   <div class="tax-badge-note">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -2542,7 +2641,7 @@ function safe(string $str): string {
 
                   <div class="summary-line total-line">
                     <span>Total Cost</span>
-                    <span class="grand-value" id="display-grandtotal">$<?php echo number_format($grand_total, 2); ?></span>
+                    <span class="grand-value" id="display-grandtotal">₱<?php echo number_format($grand_total, 2); ?></span>
                   </div>
                 </div>
 
@@ -2639,9 +2738,9 @@ function safe(string $str): string {
       const taxElem = document.getElementById('display-tax');
       const grandElem = document.getElementById('display-grandtotal');
 
-      if (subtotalElem) subtotalElem.textContent = '$' + subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      if (taxElem) taxElem.textContent = '$' + tax.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      if (grandElem) grandElem.textContent = '$' + grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      if (subtotalElem) subtotalElem.textContent = '₱' + subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      if (taxElem) taxElem.textContent = '₱' + tax.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      if (grandElem) grandElem.textContent = '₱' + grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
       // Dynamically disable or enable the place order button & warning notice
       const submitBtn = document.getElementById('btn-submit');
