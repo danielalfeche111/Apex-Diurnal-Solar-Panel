@@ -112,7 +112,7 @@ if ($is_post) {
 
     $full_name      = $clean['full_name'] ?? '';
     $email          = $clean['email'] ?? '';
-    $phone          = $clean['phone'] ?? '';
+    $phone          = trim((string)($clean['phone'] ?? ''));
     $street_address = $clean['street_address'] ?? '';
     $city           = $clean['city'] ?? '';
     $province       = $clean['province'] ?? '';
@@ -165,7 +165,7 @@ if ($is_post) {
     $validator->minLength('full_name', 3, 'Full Name must be at least 3 characters.');
     $validator->pattern('full_name', "/^[a-zA-Z\s\.\'\-]+$/", 'Full Name contains invalid characters.');
     $validator->email('email', 'Please enter a valid email address (e.g., alex@example.com).');
-    $validator->pattern('phone', '/^[0-9\+\-\s\(\)\.]{7,22}$/', 'Please enter a valid phone number (at least 7 digits).');
+    $validator->pattern('phone', '/^\d{11}$/', 'Please enter a valid 11-digit mobile number (e.g., 09171234567).');
     $validator->minLength('street_address', 5, 'Please provide a complete street address (at least 5 characters).');
     $validator->in('province', $allowed_provinces, 'Invalid province selected. Please choose from the dropdown list.');
     if ($province !== '' && isset($provinceCityMap[$province])) {
@@ -288,10 +288,17 @@ if ($is_post) {
                     ]);
                 }
 
-                // Clear persistent database user cart
+                // Mark active cart as converted and reset user's active cart state
                 if ($user_id) {
-                    $stmtClear = $db->prepare("DELETE FROM user_carts WHERE user_id = :uid");
-                    $stmtClear->execute([':uid' => $user_id]);
+                    try {
+                        require_once __DIR__ . '/../Cart.php';
+                        $cartService = new Cart($db);
+                        $cartService->markConverted((int)$user_id);
+                    } catch (Exception $cartEx) {
+                        error_log('[checkout] Error converting cart: ' . $cartEx->getMessage());
+                        $stmtClear = $db->prepare("DELETE FROM user_carts WHERE user_id = :uid");
+                        $stmtClear->execute([':uid' => $user_id]);
+                    }
 
                     // Save or update profile if requested and user is logged in
                     if (!empty($_POST['save_to_profile'])) {
@@ -321,6 +328,21 @@ if ($is_post) {
         }
     }
 } else {
+    // If logged in, validate and hydrate active cart from database
+    if (isLoggedIn()) {
+        try {
+            require_once __DIR__ . '/../Cart.php';
+            $cartDatabase = new Database();
+            $cartDb = $cartDatabase->getConnection();
+            if ($cartDb) {
+                $cartService = new Cart($cartDb);
+                $cartService->validateAndHydrate((int)getCurrentUserId());
+            }
+        } catch (Exception $e) {
+            error_log('[checkout] Error hydrating cart on GET: ' . $e->getMessage());
+        }
+    }
+
     // GET Request: Populate selected products from active cart session if items were added
     if (!empty($_SESSION['cart']) && is_array($_SESSION['cart'])) {
         $cart_map = [
@@ -363,7 +385,7 @@ if ($is_post) {
                         $email = $userModel->email;
                     }
                     if (!empty($prof['phone'])) {
-                        $phone = $prof['phone'];
+                        $phone = substr(preg_replace('/\D/', '', $prof['phone']), 0, 11);
                         $is_prefilled = true;
                     }
                     if (!empty($prof['street_address'])) {
@@ -405,7 +427,7 @@ function safe(string $str): string {
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-  <link rel="stylesheet" href="checkout.css">
+  <link rel="stylesheet" href="checkout.css?v=<?php echo filemtime(__DIR__ . '/checkout.css'); ?>">
 </head>
 <body data-empty-cart-alert="<?php echo (!$is_post && empty($selected_items)) ? 'true' : 'false'; ?>">
 
@@ -413,22 +435,12 @@ function safe(string $str): string {
   <header class="brand-header">
     <div class="brand-nav-container">
       <a href="../index.php" class="brand-logo-link" title="Return to Apex Diurnal Homepage">
-        <img src="../assets/images/LOGO.jpg" alt="Apex Diurnal Solar Logo" class="brand-logo-img">
+        <img src="../assets/images/logo-clean.png?v=<?php echo filemtime(__DIR__ . '/../assets/images/logo-clean.png'); ?>" alt="Apex Diurnal Solar Logo" class="brand-logo-img">
         <div class="brand-name">
           <span class="brand-name-title">APEX</span>
           <span class="brand-name-sub">DIURNAL</span>
         </div>
       </a>
-
-      <div class="brand-header-actions">
-        <a href="../index.php" class="header-back-btn" title="Back to Apex Diurnal Homepage">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <line x1="19" y1="12" x2="5" y2="12"></line>
-            <polyline points="12 19 5 12 12 5"></polyline>
-          </svg>
-          <span>Back to Home</span>
-        </a>
-      </div>
     </div>
   </header>
 
@@ -632,7 +644,7 @@ function safe(string $str): string {
               <line x1="19" y1="12" x2="5" y2="12"></line>
               <polyline points="12 19 5 12 12 5"></polyline>
             </svg>
-            <span>&larr; Back to Homepage</span>
+            <span>Back to Homepage</span>
           </a>
         </div>
 
@@ -704,7 +716,7 @@ function safe(string $str): string {
             <line x1="19" y1="12" x2="5" y2="12"></line>
             <polyline points="12 19 5 12 12 5"></polyline>
           </svg>
-          <span>&larr; Back to Homepage</span>
+          <span>Back to Homepage</span>
         </a>
       </div>
 
@@ -844,8 +856,12 @@ function safe(string $str): string {
                       id="phone" 
                       name="phone" 
                       class="form-control <?php echo isset($errors['phone']) ? 'has-error' : ''; ?>" 
-                      placeholder="e.g. +1 (555) 342-8901" 
+                      placeholder="e.g. 09171234567" 
                       value="<?php echo safe($phone); ?>"
+                      maxlength="11"
+                      inputmode="numeric"
+                      pattern="[0-9]{11}"
+                      oninput="this.value=this.value.replace(/\D/g,'').slice(0,11)"
                       required
                       autocomplete="tel"
                     >

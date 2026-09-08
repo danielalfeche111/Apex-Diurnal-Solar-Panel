@@ -156,11 +156,13 @@ if ($lead_type === 'rfq') {
         $errors['corporate_email'] = 'Please enter a valid corporate email address.';
     }
 
-    $cleanPhone = preg_replace('/[^\d+]/', '', $phone_number);
+    $cleanPhone = preg_replace('/[^\d]/', '', $phone_number);
     if ($phone_number === '') {
         $errors['phone_number'] = 'Contact phone number is required.';
-    } elseif (strlen(preg_replace('/[^\d]/', '', $cleanPhone)) < 7) {
-        $errors['phone_number'] = 'Please enter a valid phone number (at least 7 digits).';
+    } elseif (strlen($cleanPhone) !== 11) {
+        $errors['phone_number'] = 'Please enter a valid 11-digit mobile number (e.g., 09171234567).';
+    } else {
+        $phone_number = $cleanPhone;
     }
 
     $allowed_call_times = ['Morning', 'Afternoon', 'Anytime'];
@@ -275,11 +277,13 @@ if ($lead_type === 'rfq') {
         $errors['corporate_email'] = 'Please enter a valid email address.';
     }
 
-    $cleanPhone = preg_replace('/[^\d+]/', '', $phone_number);
+    $cleanPhone = preg_replace('/[^\d]/', '', $phone_number);
     if ($phone_number === '') {
         $errors['phone_number'] = 'Phone number is required for pre-inspection contact.';
-    } elseif (strlen(preg_replace('/[^\d]/', '', $cleanPhone)) < 7) {
-        $errors['phone_number'] = 'Please enter a valid contact phone number (at least 7 digits).';
+    } elseif (strlen($cleanPhone) !== 11) {
+        $errors['phone_number'] = 'Please enter a valid 11-digit mobile number (e.g., 09171234567).';
+    } else {
+        $phone_number = $cleanPhone;
     }
 
     if (!in_array($best_call_time, $allowed_call_times, true)) {

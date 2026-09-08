@@ -96,7 +96,7 @@ try {
         }
 
         if (isset($clean['phone'])) {
-            $validator->pattern('phone', '/^[0-9\+\-\s\(\)\.]{7,22}$/', 'Please enter a valid phone number (at least 7 digits).');
+            $validator->pattern('phone', '/^\d{11}$/', 'Please enter a valid 11-digit mobile number (e.g., 09171234567).');
         }
 
         if (isset($clean['street_address'])) {

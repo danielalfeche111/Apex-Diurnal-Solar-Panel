@@ -42,6 +42,32 @@ CREATE TABLE IF NOT EXISTS user_carts (
     KEY idx_user_carts_user_id (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Active and historic cart sessions with status lifecycle
+CREATE TABLE IF NOT EXISTS carts (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    status ENUM('active', 'converted', 'abandoned') NOT NULL DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    KEY idx_carts_user_status (user_id, status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Granular cart line items linked to active carts
+CREATE TABLE IF NOT EXISTS cart_items (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    cart_id INT NOT NULL,
+    product_id VARCHAR(50) NOT NULL,
+    quantity INT NOT NULL DEFAULT 1,
+    price_at_addition DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (cart_id) REFERENCES carts(id) ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_cart_product (cart_id, product_id),
+    KEY idx_cart_items_cart (cart_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- -----------------------------------------------------------------------------
 -- 3. COMMERCIAL LEADS TABLE (Consultation Bookings & Corporate RFQ Quotes)
 -- -----------------------------------------------------------------------------
@@ -316,4 +342,36 @@ CREATE TABLE IF NOT EXISTS quote_requests (
     KEY idx_quote_requests_email (email),
     KEY idx_quote_requests_num (quote_number),
     FOREIGN KEY (quoted_by) REFERENCES admin_users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- -----------------------------------------------------------------------------
+-- 13. SHOPPING CARTS TABLE (Persistent Multi-Device User Carts)
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS carts (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    status ENUM('active', 'converted', 'abandoned') NOT NULL DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    KEY idx_carts_user_status (user_id, status),
+    KEY idx_carts_created_at (created_at),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- -----------------------------------------------------------------------------
+-- 14. CART ITEMS TABLE (Persistent Cart Line Items & Price Snapshotting)
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS cart_items (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    cart_id INT NOT NULL,
+    product_id VARCHAR(100) NOT NULL,
+    quantity INT NOT NULL DEFAULT 1,
+    price_at_addition DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uniq_cart_product (cart_id, product_id),
+    KEY idx_cart_items_cart (cart_id),
+    KEY idx_cart_items_product (product_id),
+    FOREIGN KEY (cart_id) REFERENCES carts(id) ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

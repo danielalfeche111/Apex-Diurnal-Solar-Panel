@@ -224,6 +224,7 @@ button {
   height: 40px;
   object-fit: contain;
   border-radius: 6px;
+  overflow: hidden;
 }
 
 .brand-text {

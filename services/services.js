@@ -77,6 +77,19 @@
     setupProvinceCityDropdowns('consult_province', 'consult_city', 'err-consult_city');
     setupProvinceCityDropdowns('rfq_province', 'rfq_city', 'err-rfq_city');
 
+    // Restrict mobile contact to 11 numbers max in real-time
+    ['phone_number', 'rfq_phone_number'].forEach(id => {
+      const p = document.getElementById(id);
+      if (p) {
+        p.addEventListener('input', function () {
+          this.value = this.value.replace(/\D/g, '').slice(0, 11);
+          this.classList.remove('is-invalid');
+          const errDiv = document.getElementById('err-' + id);
+          if (errDiv) { errDiv.textContent = ''; errDiv.classList.remove('show'); }
+        });
+      }
+    });
+
     function clearErrors() {
       if (errorAlert) {
         errorAlert.style.display = 'none';
@@ -322,9 +335,9 @@
         showFieldError('corporate_email', 'Please enter a valid email address.');
         valid = false;
       }
-      const cleanPhone = (phone?.value || '').replace(/[^\d]/g, '');
-      if (!phone || cleanPhone.length < 7) {
-        showFieldError('phone_number', 'Please enter a valid phone number (at least 7 digits).');
+      const cleanPhone = (phone?.value || '').replace(/[^\d]/g, '').slice(0, 11);
+      if (!phone || cleanPhone.length !== 11) {
+        showFieldError('phone_number', 'Please enter a valid 11-digit mobile number (e.g., 09171234567).');
         valid = false;
       }
       return valid;
@@ -425,9 +438,9 @@
         showFieldError('rfq_corporate_email', 'Please enter a valid corporate email address.');
         valid = false;
       }
-      const cleanPhone = (phone?.value || '').replace(/[^\d]/g, '');
-      if (!phone || cleanPhone.length < 7) {
-        showFieldError('rfq_phone_number', 'Please enter a valid phone number (at least 7 digits).');
+      const cleanPhone = (phone?.value || '').replace(/[^\d]/g, '').slice(0, 11);
+      if (!phone || cleanPhone.length !== 11) {
+        showFieldError('rfq_phone_number', 'Please enter a valid 11-digit mobile number (e.g., 09171234567).');
         valid = false;
       }
       return valid;

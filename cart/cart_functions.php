@@ -8,12 +8,50 @@ if (!isset($_SESSION['cart'])) {
 }
 
 /**
+ * Get Cart domain service instance for authenticated sessions
+ */
+function get_cart_service(): ?Cart {
+    static $cartService = null;
+    if ($cartService !== null) {
+        return $cartService;
+    }
+    if (isLoggedIn()) {
+        require_once __DIR__ . '/../db.php';
+        require_once __DIR__ . '/../Cart.php';
+        try {
+            $database = new Database();
+            $db = $database->getConnection();
+            if ($db) {
+                $cartService = new Cart($db);
+                return $cartService;
+            }
+        } catch (Exception $e) {
+            error_log('[cart_functions] Error initializing Cart: ' . $e->getMessage());
+        }
+    }
+    return null;
+}
+
+/**
  * Add a product to the cart (or increase quantity)
  */
 function add_to_cart(string $productId, int $qty = 1): void {
     if ($qty < 1) {
         $qty = 1;
     }
+
+    $cart = get_cart_service();
+    $userId = getCurrentUserId();
+    if ($cart && $userId) {
+        try {
+            $cart->addItem($userId, $productId, $qty);
+            return;
+        } catch (Exception $e) {
+            error_log('[cart_functions] Error adding item to database cart: ' . $e->getMessage());
+        }
+    }
+
+    // Guest fallback
     if (isset($_SESSION['cart'][$productId])) {
         $_SESSION['cart'][$productId] += $qty;
     } else {
@@ -25,6 +63,17 @@ function add_to_cart(string $productId, int $qty = 1): void {
  * Remove a product from the cart completely
  */
 function remove_from_cart(string $productId): void {
+    $cart = get_cart_service();
+    $userId = getCurrentUserId();
+    if ($cart && $userId) {
+        try {
+            $cart->removeItem($userId, $productId);
+            return;
+        } catch (Exception $e) {
+            error_log('[cart_functions] Error removing item from database cart: ' . $e->getMessage());
+        }
+    }
+
     unset($_SESSION['cart'][$productId]);
 }
 
@@ -34,15 +83,38 @@ function remove_from_cart(string $productId): void {
 function update_cart(string $productId, int $qty): void {
     if ($qty <= 0) {
         remove_from_cart($productId);
-    } else {
-        $_SESSION['cart'][$productId] = $qty;
+        return;
     }
+
+    $cart = get_cart_service();
+    $userId = getCurrentUserId();
+    if ($cart && $userId) {
+        try {
+            $cart->updateQuantity($userId, $productId, $qty);
+            return;
+        } catch (Exception $e) {
+            error_log('[cart_functions] Error updating item in database cart: ' . $e->getMessage());
+        }
+    }
+
+    $_SESSION['cart'][$productId] = $qty;
 }
 
 /**
  * Empty the entire cart
  */
 function clear_cart(): void {
+    $cart = get_cart_service();
+    $userId = getCurrentUserId();
+    if ($cart && $userId) {
+        try {
+            $cart->clearCart($userId);
+            return;
+        } catch (Exception $e) {
+            error_log('[cart_functions] Error clearing database cart: ' . $e->getMessage());
+        }
+    }
+
     $_SESSION['cart'] = [];
 }
 

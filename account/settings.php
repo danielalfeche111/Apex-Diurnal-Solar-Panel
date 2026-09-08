@@ -19,6 +19,23 @@ $user_id = getCurrentUserId();
 $currentUser = new User($db);
 $currentUser->findById($user_id);
 
+// Cart hydration & notification gathering for active session
+$cart_notices = [];
+if (!empty($_SESSION['cart_notifications']) && is_array($_SESSION['cart_notifications'])) {
+    $cart_notices = array_merge($cart_notices, $_SESSION['cart_notifications']);
+    unset($_SESSION['cart_notifications']);
+}
+try {
+    require_once __DIR__ . '/../Cart.php';
+    $cartModel = new Cart($db);
+    $hydration = $cartModel->validateAndHydrate((int)$user_id);
+    if (!empty($hydration['notices'])) {
+        $cart_notices = array_merge($cart_notices, $hydration['notices']);
+    }
+} catch (Exception $e) {
+    error_log('[settings] Cart hydration error: ' . $e->getMessage());
+}
+
 $email = $currentUser->email;
 $current_password = '';
 $new_password = '';
@@ -44,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ]);
         $validator->minLength('full_name', 3, 'Full Name must be at least 3 characters.');
         $validator->pattern('full_name', "/^[a-zA-Z\s\.\'\-]+$/", 'Full Name contains invalid characters.');
-        $validator->pattern('phone', '/^[0-9\+\-\s\(\)\.]{7,22}$/', 'Please enter a valid phone number (at least 7 digits).');
+        $validator->pattern('phone', '/^\d{11}$/', 'Please enter a valid 11-digit mobile number (e.g., 09171234567).');
         $validator->minLength('street_address', 5, 'Street address must be at least 5 characters.');
         $validator->in('province', $consult_provinces, 'Invalid province selected.');
 
@@ -110,7 +127,7 @@ $profile = $currentUser->getProfile();
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../styles.css?v=5">
-    <link rel="stylesheet" href="account.css">
+    <link rel="stylesheet" href="account.css?v=<?php echo filemtime(__DIR__ . '/account.css'); ?>">
     <link rel="stylesheet" href="../cart/cart.css">
 </head>
 <body>
@@ -118,7 +135,7 @@ $profile = $currentUser->getProfile();
     <header class="site-header" id="site-header">
         <div class="header-container">
             <a href="../index.php#home" class="brand-logo" aria-label="Apex Diurnal Home">
-                <img src="../assets/images/LOGO.jpg" alt="Apex Diurnal Logo" class="logo-mark">
+                <img src="../assets/images/logo-clean.png?v=<?php echo filemtime(__DIR__ . '/../assets/images/logo-clean.png'); ?>" alt="Apex Diurnal Logo" class="logo-mark">
                 <div class="brand-text">
                     <span class="brand-title">APEX</span>
                     <span class="brand-subtitle">DIURNAL</span>
@@ -209,27 +226,11 @@ $profile = $currentUser->getProfile();
                     <div><?php echo htmlspecialchars($profile_success_message); ?></div>
                 </div>
             <?php endif; ?>
-            <?php if (!empty($password_success_message)): ?>
-                <div class="alert-success">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-                    <div><?php echo htmlspecialchars($password_success_message); ?></div>
-                </div>
-            <?php endif; ?>
             <?php if (!empty($profile_errors)): ?>
                 <div class="alert-error">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
                     <div>
                         <?php foreach ($profile_errors as $error): ?>
-                            <div><?php echo htmlspecialchars($error); ?></div>
-                        <?php endforeach; ?>
-                    </div>
-                </div>
-            <?php endif; ?>
-            <?php if (!empty($password_errors)): ?>
-                <div class="alert-error">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                    <div>
-                        <?php foreach ($password_errors as $error): ?>
                             <div><?php echo htmlspecialchars($error); ?></div>
                         <?php endforeach; ?>
                     </div>
@@ -310,7 +311,7 @@ $profile = $currentUser->getProfile();
                             <label for="profile_phone" class="form-label">Phone Number <span style="color:#dc2626;">*</span></label>
                             <div class="input-group">
                                 <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-                                <input type="tel" id="profile_phone" name="phone" class="form-control" placeholder="e.g. 09171234567" value="<?php echo htmlspecialchars($profile['phone'] ?? ''); ?>" required>
+                                <input type="tel" id="profile_phone" name="phone" class="form-control" placeholder="e.g. 09171234567" value="<?php echo htmlspecialchars(substr(preg_replace('/\D/', '', $profile['phone'] ?? ''), 0, 11)); ?>" maxlength="11" inputmode="numeric" pattern="[0-9]{11}" oninput="this.value=this.value.replace(/\D/g,'').slice(0,11);" required>
                             </div>
                         </div>
                     </div>
@@ -403,30 +404,56 @@ $profile = $currentUser->getProfile();
                     <input type="hidden" name="action" value="change_password">
                     <input type="hidden" name="email" value="<?php echo htmlspecialchars($email); ?>">
                     <div class="form-group">
-                        <label for="current_password" class="form-label">Current Password</label>
+                        <label for="current_password" class="form-label">Current Password <span style="color:#dc2626;">*</span></label>
                         <div class="input-group">
                             <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                            <input type="password" id="current_password" name="current_password" class="form-control" placeholder="Enter current password" value="<?php echo htmlspecialchars($current_password); ?>" required>
+                            <input type="password" id="current_password" name="current_password" class="form-control <?php echo isset($password_errors['current_password']) ? 'has-error' : ''; ?>" placeholder="Enter current password" value="<?php echo htmlspecialchars($current_password); ?>" required>
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="new_password" class="form-label">New Password <span style="font-weight:400; color:var(--color-text-muted);">(min 6 characters)</span></label>
+                        <label for="new_password" class="form-label">New Password <span style="font-weight:400; color:var(--color-text-muted);">(min 6 characters)</span> <span style="color:#dc2626;">*</span></label>
                         <div class="input-group">
                             <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                            <input type="password" id="new_password" name="new_password" class="form-control" placeholder="Enter new password" value="<?php echo htmlspecialchars($new_password); ?>" required>
+                            <input type="password" id="new_password" name="new_password" class="form-control <?php echo isset($password_errors['new_password']) ? 'has-error' : ''; ?>" placeholder="Enter new password" value="<?php echo htmlspecialchars($new_password); ?>" required>
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="confirm_password" class="form-label">Confirm New Password</label>
+                        <label for="confirm_password" class="form-label">Confirm New Password <span style="color:#dc2626;">*</span></label>
                         <div class="input-group">
                             <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                            <input type="password" id="confirm_password" name="confirm_password" class="form-control" placeholder="Repeat new password" value="<?php echo htmlspecialchars($confirm_password); ?>" required>
+                            <input type="password" id="confirm_password" name="confirm_password" class="form-control <?php echo isset($password_errors['confirm_password']) ? 'has-error' : ''; ?>" placeholder="Repeat new password" value="<?php echo htmlspecialchars($confirm_password); ?>" required>
                         </div>
                     </div>
-                    <button type="submit" class="btn-settings">
+                    <button type="submit" class="btn-settings" id="btn-update-password">
                         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
                         Update Password
                     </button>
+
+                    <!-- Error and feedback handling at the bottom of the Change Password feature -->
+                    <?php if (!empty($password_errors)): ?>
+                        <div class="alert-error password-feedback" id="password-error-box" role="alert">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-top:2px;">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="8" x2="12" y2="12"></line>
+                                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                            </svg>
+                            <div>
+                                <?php foreach ($password_errors as $error): ?>
+                                    <div><?php echo htmlspecialchars($error); ?></div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if (!empty($password_success_message)): ?>
+                        <div class="alert-success password-feedback" id="password-success-box" role="alert">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-top:2px;">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                            </svg>
+                            <div><?php echo htmlspecialchars($password_success_message); ?></div>
+                        </div>
+                    <?php endif; ?>
                 </form>
             </div>
 
@@ -544,23 +571,28 @@ $profile = $currentUser->getProfile();
           'itemCount' => cart_item_count(),
           'grandTotal' => number_format(cart_total($products), 2),
           'items' => array_values(array_map(function ($item, $id) {
-          return [
-            'id' => $id,
-            'title' => $item['title'],
-            'price' => $item['price'],
-            'quantity' => $item['quantity'],
-            'line_total' => number_format($item['line_total'], 2),
-            'image' => $item['image'],
-            'alt' => $item['alt']
-          ];
-        }, get_cart_items($products), array_keys(get_cart_items($products))))
+            $img = $item['image'] ?? 'assets/images/logo-clean.png';
+            if (!empty($img) && strpos($img, 'http') !== 0 && strpos($img, '/') !== 0 && strpos($img, '../') !== 0) {
+              $img = '../' . $img;
+            }
+            return [
+              'id' => $id,
+              'title' => $item['title'],
+              'price' => $item['price'],
+              'quantity' => $item['quantity'],
+              'line_total' => number_format($item['line_total'], 2),
+              'image' => $img,
+              'alt' => $item['alt']
+            ];
+          }, get_cart_items($products), array_keys(get_cart_items($products)))),
+          'notices' => $cart_notices
         ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
     </script>
   <script>
     window.provinceCityMap = <?php echo json_encode($consultProvinceCityMap, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
   </script>
-  <script src="../cart/cart.js" defer></script>
-  <script src="account.js?v=2" defer></script>
+  <script src="../cart/cart.js?v=<?php echo filemtime(__DIR__ . '/../cart/cart.js'); ?>" defer></script>
+  <script src="account.js?v=<?php echo filemtime(__DIR__ . '/account.js'); ?>" defer></script>
   <script src="../js/main.js" defer></script>
 </body>
 </html>

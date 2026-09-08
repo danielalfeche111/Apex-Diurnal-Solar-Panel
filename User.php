@@ -116,6 +116,9 @@ class User {
                     $this->$field = (bool)$val;
                 } else {
                     $trimmed = ($val !== null) ? trim((string)$val) : null;
+                    if ($field === 'phone' && $trimmed !== null) {
+                        $trimmed = substr(preg_replace('/\D/', '', $trimmed), 0, 11);
+                    }
                     $params[$placeholder] = $trimmed;
                     $this->$field = $trimmed;
                 }
@@ -139,7 +142,7 @@ class User {
         $fields = [
             'full_name'           => $this->full_name ?? '',
             'email'               => $this->email ?? '',
-            'phone'               => $this->phone ?? '',
+            'phone'               => substr(preg_replace('/\D/', '', $this->phone ?? ''), 0, 11),
             'street_address'      => $this->street_address ?? '',
             'city'                => $this->city ?? '',
             'province'            => $this->province ?? '',

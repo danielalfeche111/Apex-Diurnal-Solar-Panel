@@ -41,8 +41,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($user->findByEmail($email)) {
             // Validate password
             if ($user->validatePassword($password)) {
+                // Capture guest cart before login session regeneration
+                $guestCart = !empty($_SESSION['cart']) && is_array($_SESSION['cart']) ? $_SESSION['cart'] : [];
+
                 // Login successful
                 loginUser($user->id, $user->email);
+
+                // Rehydrate and merge cart into database
+                try {
+                    require_once __DIR__ . '/../Cart.php';
+                    $cartModel = new Cart($db);
+                    $cartResult = $cartModel->mergeSessionCart((int)$user->id, $guestCart);
+                    if (!empty($cartResult['notices'])) {
+                        $_SESSION['cart_notifications'] = $cartResult['notices'];
+                        foreach ($cartResult['notices'] as $notice) {
+                            if (!empty($notice['message'])) {
+                                SessionManager::setFlash('warning', $notice['message']);
+                            }
+                        }
+                    }
+                } catch (Exception $e) {
+                    error_log('[login] Error merging cart on login: ' . $e->getMessage());
+                }
 
                 // Redirect to intended page or homepage
                 $redirect = getRedirectAfterLogin();

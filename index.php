@@ -19,6 +19,27 @@ require_once __DIR__ . '/product_data.php';
 require_once __DIR__ . '/cart/cart_functions.php';
 require_once __DIR__ . '/auth.php';
 
+// Cart hydration & notification gathering for active session
+$cart_notices = [];
+if (!empty($_SESSION['cart_notifications']) && is_array($_SESSION['cart_notifications'])) {
+    $cart_notices = array_merge($cart_notices, $_SESSION['cart_notifications']);
+    unset($_SESSION['cart_notifications']);
+}
+if (isLoggedIn()) {
+    $cartService = get_cart_service();
+    $userId = getCurrentUserId();
+    if ($cartService && $userId) {
+        try {
+            $hydration = $cartService->validateAndHydrate($userId);
+            if (!empty($hydration['notices'])) {
+                $cart_notices = array_merge($cart_notices, $hydration['notices']);
+            }
+        } catch (Exception $e) {
+            error_log('[index] Cart hydration error: ' . $e->getMessage());
+        }
+    }
+}
+
 // --- Service / Feature Cards ---
 $features = [
   [
@@ -107,7 +128,7 @@ function nav_link(string $label, string $href, string $class = '', string $extra
     <div class="header-container">
 
       <a href="#home" class="brand-logo" aria-label="Apex Diurnal Home">
-        <img src="assets/images/LOGO.jpg" alt="Apex Diurnal Logo" class="logo-mark">
+        <img src="assets/images/logo-clean.png?v=<?php echo filemtime(__DIR__ . '/assets/images/logo-clean.png'); ?>" alt="Apex Diurnal Logo" class="logo-mark">
         <div class="brand-text">
           <span class="brand-title">APEX</span>
           <span class="brand-subtitle">DIURNAL</span>
@@ -212,7 +233,7 @@ function nav_link(string $label, string $href, string $class = '', string $extra
           <?php foreach ($products as $idx => $product): ?>
             <article class="product-card" id="product-<?php echo $idx; ?>">
               <div class="card-badge">
-                <img src="assets/images/LOGO.jpg" alt="Apex Diurnal Logo" class="badge-logo">
+                <img src="assets/images/logo-clean.png?v=<?php echo filemtime(__DIR__ . '/assets/images/logo-clean.png'); ?>" alt="Apex Diurnal Logo" class="badge-logo">
               </div>
               <div class="card-image-wrap">
                 <img src="<?php echo htmlspecialchars($product['image']); ?>"
@@ -569,7 +590,8 @@ function nav_link(string $label, string $href, string $class = '', string $extra
               <label for="phone_number" class="consultation-label">Phone Number <span
                   class="text-danger">*</span></label>
               <input type="tel" id="phone_number" name="phone_number" class="consultation-input"
-                placeholder="Enter Phone Number" required>
+                placeholder="e.g. 09171234567" maxlength="11" inputmode="numeric" pattern="[0-9]{11}"
+                oninput="this.value=this.value.replace(/\D/g,'').slice(0,11);" required>
               <div class="consultation-field-error" id="err-phone_number"></div>
             </div>
           </div>
@@ -801,7 +823,8 @@ function nav_link(string $label, string $href, string $class = '', string $extra
               <label for="rfq_phone_number" class="consultation-label">Phone Number <span
                   class="text-danger">*</span></label>
               <input type="tel" id="rfq_phone_number" name="phone_number" class="consultation-input"
-                placeholder="e.g. 09171234567" required disabled>
+                placeholder="e.g. 09171234567" maxlength="11" inputmode="numeric" pattern="[0-9]{11}"
+                oninput="this.value=this.value.replace(/\D/g,'').slice(0,11);" required disabled>
               <div class="consultation-field-error" id="err-rfq_phone_number"></div>
             </div>
           </div>
@@ -957,16 +980,17 @@ function nav_link(string $label, string $href, string $class = '', string $extra
       'itemCount' => cart_item_count(),
       'grandTotal' => number_format(cart_total($products), 2),
       'items' => array_values(array_map(function ($item, $id) {
-      return [
-        'id' => $id,
-        'title' => $item['title'],
-        'price' => $item['price'],
-        'quantity' => $item['quantity'],
-        'line_total' => number_format($item['line_total'], 2),
-        'image' => $item['image'],
-        'alt' => $item['alt']
-      ];
-    }, get_cart_items($products), array_keys(get_cart_items($products))))
+        return [
+          'id' => $id,
+          'title' => $item['title'],
+          'price' => $item['price'],
+          'quantity' => $item['quantity'],
+          'line_total' => number_format($item['line_total'], 2),
+          'image' => $item['image'],
+          'alt' => $item['alt']
+        ];
+      }, get_cart_items($products), array_keys(get_cart_items($products)))),
+      'notices' => $cart_notices
     ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
 
     // --- Product Catalog Lookup for Learn More Modal ---

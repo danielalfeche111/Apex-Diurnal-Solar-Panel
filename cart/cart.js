@@ -35,7 +35,7 @@ function isUserAuthenticated() {
   });
 }
 
-// Enhanced fetchCart with authentication handling
+// Enhanced fetchCart with notices handling and automatic drawer sync
 function fetchCart(action, productId, quantity) {
   const body = new URLSearchParams();
   body.set('action', action);
@@ -48,7 +48,6 @@ function fetchCart(action, productId, quantity) {
                          window.location.pathname.includes('/auth/') || 
                          window.location.pathname.includes('/services/');
   const actionEndpoint = isInsideSubdir ? '../cart/cart_action.php' : 'cart/cart_action.php';
-  const loginEndpoint = isInsideSubdir ? '../auth/login.php' : 'auth/login.php';
 
   return fetch(actionEndpoint, {
     method: 'POST',
@@ -57,67 +56,37 @@ function fetchCart(action, productId, quantity) {
   })
     .then(r => {
       if (!r.ok) {
-        if (r.status === 401 || r.status === 403) {
-          const redirect = encodeURIComponent(window.location.pathname + window.location.search);
-          window.location.href = `${loginEndpoint}?redirect=${redirect}`;
-          throw new Error('Authentication required');
-        }
         throw new Error('Cart request failed ' + r.status);
       }
       return r.json();
     })
     .then(data => {
       renderCart(data);
+      if (Array.isArray(data.notices) && data.notices.length > 0) {
+        data.notices.forEach(notice => {
+          if (notice && notice.message) {
+            showToast(notice.message, true);
+          }
+        });
+      }
       return data;
     })
     .catch(err => {
       console.error('Cart action failed:', err);
-      if (err.message !== 'Authentication required') {
-        showToast('Cart action failed: ' + err.message, true);
-      }
+      showToast('Cart update failed: ' + (err.message || 'Please try again'), true);
       throw err;
     });
 }
 
 function addToCart(id, qty) {
-  if (!isUserAuthenticated()) {
-    showToast('Please log in to add items to cart', true);
-    const redirect = encodeURIComponent(window.location.pathname + window.location.search);
-    const isInsideSubdir = window.location.pathname.includes('/cart/') || 
-                           window.location.pathname.includes('/account/') || 
-                           window.location.pathname.includes('/auth/') || 
-                           window.location.pathname.includes('/services/');
-    window.location.href = `${isInsideSubdir ? '../auth/login.php' : 'auth/login.php'}?redirect=${redirect}`;
-    return;
-  }
   fetchCart('add', id, qty || 1).then(() => showToast('Added to cart'));
 }
 
 function changeQty(id, qty) {
-  if (!isUserAuthenticated()) {
-    showToast('Please log in to modify cart', true);
-    const redirect = encodeURIComponent(window.location.pathname + window.location.search);
-    const isInsideSubdir = window.location.pathname.includes('/cart/') || 
-                           window.location.pathname.includes('/account/') || 
-                           window.location.pathname.includes('/auth/') || 
-                           window.location.pathname.includes('/services/');
-    window.location.href = `${isInsideSubdir ? '../auth/login.php' : 'auth/login.php'}?redirect=${redirect}`;
-    return;
-  }
   fetchCart('update', id, qty);
 }
 
 function removeItem(id) {
-  if (!isUserAuthenticated()) {
-    showToast('Please log in to modify cart', true);
-    const redirect = encodeURIComponent(window.location.pathname + window.location.search);
-    const isInsideSubdir = window.location.pathname.includes('/cart/') || 
-                           window.location.pathname.includes('/account/') || 
-                           window.location.pathname.includes('/auth/') || 
-                           window.location.pathname.includes('/services/');
-    window.location.href = `${isInsideSubdir ? '../auth/login.php' : 'auth/login.php'}?redirect=${redirect}`;
-    return;
-  }
   fetchCart('remove', id, 1).then(() => showToast('Removed from cart'));
 }
 
@@ -245,11 +214,21 @@ function renderCart(data) {
     return;
   }
 
+  const isInsideSubdir = window.location.pathname.includes('/cart/') || 
+                         window.location.pathname.includes('/account/') || 
+                         window.location.pathname.includes('/auth/') || 
+                         window.location.pathname.includes('/services/');
+  const pathPrefix = isInsideSubdir ? '../' : '';
+  const fallbackLogo = pathPrefix + 'assets/images/logo-clean.png';
+
   let html = '';
   data.items.forEach(item => {
     const id = item.id || '';
     const title = item.title || item.name || 'Solar Product';
-    const image = item.image || 'assets/images/logo.png';
+    let image = item.image || 'assets/images/logo-clean.png';
+    if (image && !image.startsWith('http://') && !image.startsWith('https://') && !image.startsWith('/') && !image.startsWith('../')) {
+      image = pathPrefix + image;
+    }
     const alt = item.alt || title;
     const qty = parseInt(item.quantity !== undefined ? item.quantity : (item.qty !== undefined ? item.qty : 1), 10) || 1;
 
@@ -281,7 +260,7 @@ function renderCart(data) {
 
     html += `
       <div class="cart-item" data-id="${id}">
-        <img src="${image}" alt="${alt}" onerror="this.src='assets/images/logo.png'">
+        <img src="${image}" alt="${alt}" onerror="this.onerror=null; this.src='${fallbackLogo}';">
         <div class="cart-item-info">
           <h4>${title}</h4>
           <div class="cart-item-price">${priceDisplay}</div>
@@ -317,6 +296,13 @@ document.addEventListener('DOMContentLoaded', function () {
       renderCart(CART_INITIAL);
       if (parseInt(CART_INITIAL.itemCount || 0) === 0) updateCartBadge(0);
       else updateCartBadge(CART_INITIAL.itemCount);
+      if (Array.isArray(CART_INITIAL.notices) && CART_INITIAL.notices.length > 0) {
+        setTimeout(() => {
+          CART_INITIAL.notices.forEach(n => {
+            if (n && n.message) showToast(n.message, true);
+          });
+        }, 300);
+      }
     } catch (e) {
       console.error('Error initializing cart UI:', e);
     }

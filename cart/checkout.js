@@ -125,6 +125,21 @@ document.addEventListener('DOMContentLoaded', function() {
       const streetEl = document.getElementById('street_address');
       let addrValid = true;
 
+      // Phone - exactly 11 digits
+      const phoneEl = document.getElementById('phone');
+      if (phoneEl) {
+        const cleanPhone = phoneEl.value.replace(/\D/g, '');
+        if (!cleanPhone) {
+          addrValid = false;
+          phoneEl.classList.add('has-error');
+          showCheckoutNotif('Phone number is required.');
+        } else if (cleanPhone.length !== 11) {
+          addrValid = false;
+          phoneEl.classList.add('has-error');
+          showCheckoutNotif('Please enter a valid 11-digit mobile number (e.g., 09171234567).');
+        }
+      }
+
       // Street - free text
       if (streetEl && !streetEl.value.trim()) {
         addrValid = false;
@@ -233,8 +248,19 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     }
 
+    // Mobile contact numeric filter & 11-digit enforcement
+    const phoneInput = document.getElementById('phone');
+    if (phoneInput) {
+      phoneInput.addEventListener('input', function() {
+        this.value = this.value.replace(/\D/g, '').slice(0, 11);
+        this.classList.remove('has-error');
+        const errEl = this.parentElement ? this.parentElement.querySelector('.field-error-message') : null;
+        if (errEl) errEl.style.display = 'none';
+      });
+    }
+
     // Clear has-error on input/change
-    ['street_address', 'province', 'city', 'postal_code'].forEach(function(id) {
+    ['street_address', 'province', 'city', 'postal_code', 'phone'].forEach(function(id) {
       const el = document.getElementById(id);
       if (el) {
         el.addEventListener('input', function() { this.classList.remove('has-error'); });
