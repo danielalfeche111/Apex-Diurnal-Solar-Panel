@@ -33,8 +33,8 @@ $status = $quote['status'];
 $badgeClass = 'badge-pending';
 $statusLabel = 'Pending Review';
 
-// Check if client has confirmed order in My Orders
-$chkOrder = $db->prepare("SELECT status, installation_head, installation_date FROM orders WHERE order_number = :ordNum OR notes LIKE :qnum LIMIT 1");
+// Check if client or admin has converted/linked order
+$chkOrder = $db->prepare("SELECT id, order_number, status, installation_head, installation_date FROM orders WHERE order_number = :ordNum OR notes LIKE :qnum LIMIT 1");
 $chkOrder->execute([':ordNum' => 'APD-INST-' . $quote['quote_number'], ':qnum' => '%' . $quote['quote_number'] . '%']);
 $linkedOrder = $chkOrder->fetch(PDO::FETCH_ASSOC);
 if ($linkedOrder && $linkedOrder['status'] === 'client_confirmed' && $status !== 'confirmed') {

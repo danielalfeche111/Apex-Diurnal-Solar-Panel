@@ -131,10 +131,13 @@ try {
     }
 
     // 3. Synchronize with orders so the user's "My Orders" displays it as already confirmed
-    $userStmt = $db->prepare("SELECT id FROM users WHERE LOWER(email) = LOWER(:email) LIMIT 1");
-    $userStmt->execute([':email' => $quote['email']]);
-    $matchedUser = $userStmt->fetch(PDO::FETCH_ASSOC);
-    $orderUserId = $matchedUser ? (int)$matchedUser['id'] : null;
+    $orderUserId = !empty($quote['user_id']) ? (int)$quote['user_id'] : null;
+    if (!$orderUserId && !empty($quote['email'])) {
+        $userStmt = $db->prepare("SELECT id FROM users WHERE LOWER(email) = LOWER(:email) LIMIT 1");
+        $userStmt->execute([':email' => $quote['email']]);
+        $matchedUser = $userStmt->fetch(PDO::FETCH_ASSOC);
+        $orderUserId = $matchedUser ? (int)$matchedUser['id'] : null;
+    }
 
     $orderRef = 'APD-INST-' . $quote['quote_number'];
     $checkOrder = $db->prepare("SELECT id, notes FROM orders WHERE order_number = :ordNum OR notes LIKE :qsearch LIMIT 1");

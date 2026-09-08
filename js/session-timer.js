@@ -33,13 +33,10 @@
   // Determine relative path to session.php
   function getSessionEndpoint() {
     const p = window.location.pathname;
-    if (p.includes('/cart/') || p.includes('/account/') || p.includes('/auth/') || p.includes('/services/')) {
-      return '../session.php?action=ping';
-    }
-    if (p.includes('/admin/orders/') || p.includes('/admin/inventory/') || p.includes('/admin/schedule/') || p.includes('/admin/quotes/')) {
+    if (p.includes('/admin/orders/') || p.includes('/admin/inventory/') || p.includes('/admin/schedule/') || p.includes('/admin/quotes/') || p.includes('/account/orders/')) {
       return '../../session.php?action=ping';
     }
-    if (p.includes('/admin/')) {
+    if (p.includes('/cart/') || p.includes('/account/') || p.includes('/auth/') || p.includes('/services/') || p.includes('/admin/')) {
       return '../session.php?action=ping';
     }
     return 'session.php?action=ping';
@@ -52,6 +49,9 @@
       return (p.includes('/admin/orders/') || p.includes('/admin/inventory/') || p.includes('/admin/schedule/') || p.includes('/admin/quotes/'))
         ? `../login.php?redirect=${redirect}`
         : `login.php?redirect=${redirect}`;
+    }
+    if (p.includes('/account/orders/')) {
+      return `../../auth/login.php?redirect=${redirect}`;
     }
     const isInsideSubdir = p.includes('/cart/') || p.includes('/account/') || p.includes('/auth/') || p.includes('/services/');
     return `${isInsideSubdir ? '../auth/login.php' : 'auth/login.php'}?redirect=${redirect}`;

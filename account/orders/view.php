@@ -656,7 +656,7 @@ if (!function_exists('getOrderDisplayStatus')) {
         }
     </script>
     <?php endif; ?>
-    <script src="../../cart/cart.js" defer></script>
+    <script src="../../cart/cart.js?v=<?php echo filemtime(__DIR__ . '/../../cart/cart.js'); ?>" defer></script>
     <script src="../account.js" defer></script>
     <script src="../../assets/js/order-history.js" defer></script>
     <script src="../../js/main.js" defer></script>

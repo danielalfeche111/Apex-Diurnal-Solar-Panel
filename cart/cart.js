@@ -35,6 +35,28 @@ function isUserAuthenticated() {
   });
 }
 
+// Base URL helper to ensure links and endpoints resolve correctly from any directory or subfolder
+function getAppBaseUrl() {
+  let base = '';
+  const script = document.querySelector('script[src*="cart/cart.js"], script[src*="cart.js"]');
+  if (script && script.src) {
+    base = script.src.replace(/cart\/cart\.js(?:\?.*)?$/i, '');
+  } else {
+    const path = window.location.pathname;
+    const match = path.match(/^(.*?\/(?:account|cart|services|auth|admin|products))\//i);
+    if (match) {
+      base = window.location.origin + match[1].substring(0, match[1].lastIndexOf('/') + 1);
+    } else {
+      const dir = path.substring(0, path.lastIndexOf('/') + 1);
+      base = window.location.origin + (dir || '/');
+    }
+  }
+  if (!base.endsWith('/')) {
+    base += '/';
+  }
+  return base;
+}
+
 // Enhanced fetchCart with notices handling and automatic drawer sync
 function fetchCart(action, productId, quantity) {
   const body = new URLSearchParams();
@@ -42,12 +64,7 @@ function fetchCart(action, productId, quantity) {
   if (productId) body.set('product_id', productId);
   if (quantity !== undefined) body.set('quantity', quantity);
 
-  // Compute relative path to cart_action.php based on current location
-  const isInsideSubdir = window.location.pathname.includes('/cart/') || 
-                         window.location.pathname.includes('/account/') || 
-                         window.location.pathname.includes('/auth/') || 
-                         window.location.pathname.includes('/services/');
-  const actionEndpoint = isInsideSubdir ? '../cart/cart_action.php' : 'cart/cart_action.php';
+  const actionEndpoint = getAppBaseUrl() + 'cart/cart_action.php';
 
   return fetch(actionEndpoint, {
     method: 'POST',
@@ -214,20 +231,17 @@ function renderCart(data) {
     return;
   }
 
-  const isInsideSubdir = window.location.pathname.includes('/cart/') || 
-                         window.location.pathname.includes('/account/') || 
-                         window.location.pathname.includes('/auth/') || 
-                         window.location.pathname.includes('/services/');
-  const pathPrefix = isInsideSubdir ? '../' : '';
-  const fallbackLogo = pathPrefix + 'assets/images/logo-clean.png';
+  const baseUrl = getAppBaseUrl();
+  const fallbackLogo = baseUrl + 'assets/images/logo-clean.png';
 
   let html = '';
   data.items.forEach(item => {
     const id = item.id || '';
     const title = item.title || item.name || 'Solar Product';
     let image = item.image || 'assets/images/logo-clean.png';
-    if (image && !image.startsWith('http://') && !image.startsWith('https://') && !image.startsWith('/') && !image.startsWith('../')) {
-      image = pathPrefix + image;
+    if (image && !image.startsWith('http://') && !image.startsWith('https://') && !image.startsWith('/')) {
+      const cleanRel = image.replace(/^(\.\.\/|\.\/)+/, '');
+      image = baseUrl + cleanRel;
     }
     const alt = item.alt || title;
     const qty = parseInt(item.quantity !== undefined ? item.quantity : (item.qty !== undefined ? item.qty : 1), 10) || 1;
@@ -346,11 +360,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         return;
       }
-      const isInsideSubdir = window.location.pathname.includes('/cart/') || 
-                             window.location.pathname.includes('/account/') || 
-                             window.location.pathname.includes('/auth/') || 
-                             window.location.pathname.includes('/services/');
-      window.location.href = isInsideSubdir ? 'checkout.php' : 'cart/checkout.php';
+      window.location.href = getAppBaseUrl() + 'cart/checkout.php';
     });
   }
 

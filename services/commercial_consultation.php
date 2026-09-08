@@ -428,20 +428,31 @@ try {
         try {
             if ($lead_type === 'rfq') {
                 $quoteNum = 'RFQ-' . date('Ymd') . '-' . sprintf('%04d', $lead_id);
+                $loggedInUserId = null;
+                if (function_exists('isLoggedIn') && isLoggedIn()) {
+                    $loggedInUserId = getCurrentUserId();
+                }
+                if (!$loggedInUserId && !empty($corporate_email)) {
+                    $uStmt = $db->prepare("SELECT id FROM users WHERE LOWER(email) = LOWER(:email) LIMIT 1");
+                    $uStmt->execute([':email' => $corporate_email]);
+                    $loggedInUserId = $uStmt->fetchColumn() ?: null;
+                }
+
                 $stmtQ = $db->prepare("
                     INSERT INTO quote_requests (
-                        quote_number, company_name, contact_person, email, phone, facility_type,
+                        user_id, quote_number, company_name, contact_person, email, phone, facility_type,
                         facility_size, current_monthly_bill, target_timeline, estimated_system_size,
                         estimated_installation_cost, estimated_annual_savings, estimated_payback_period,
                         applicable_discounts, installation_address, access_notes, status
                     ) VALUES (
-                        :qnum, :cname, :cperson, :email, :phone, :ftype,
+                        :uid, :qnum, :cname, :cperson, :email, :phone, :ftype,
                         :fsize, :cbill, :ttime, :ssize,
                         :icost, :asav, :pback,
                         :disc, :addr, :notes, 'new'
                     )
                 ");
                 $stmtQ->execute([
+                    ':uid' => $loggedInUserId,
                     ':qnum' => $quoteNum,
                     ':cname' => $company_name,
                     ':cperson' => $contact_person,
@@ -460,17 +471,7 @@ try {
                     ':notes' => $access_notes
                 ]);
 
-                // Immediately create order so it directly appears in the client's "My Orders"
-                $orderUserId = null;
-                if (function_exists('isLoggedIn') && isLoggedIn()) {
-                    $orderUserId = getCurrentUserId();
-                }
-                if (!$orderUserId && !empty($corporate_email)) {
-                    $uStmt = $db->prepare("SELECT id FROM users WHERE LOWER(email) = LOWER(:email) LIMIT 1");
-                    $uStmt->execute([':email' => $corporate_email]);
-                    $orderUserId = $uStmt->fetchColumn() ?: null;
-                }
-
+                // Put order into "My Orders" right when requesting
                 $orderRef = 'APD-INST-' . $quoteNum;
                 $orderTotal = (float) $estimated_installation_cost;
                 $orderSubtotal = round($orderTotal / 1.12, 2);
@@ -500,7 +501,7 @@ try {
                 ");
                 $stmtOrder->execute([
                     ':ord_num' => $orderRef,
-                    ':uid' => $orderUserId,
+                    ':uid' => $loggedInUserId,
                     ':name' => $company_name . ' (' . $contact_person . ')',
                     ':email' => $corporate_email,
                     ':phone' => $phone_number,
@@ -526,6 +527,7 @@ try {
                     ':price' => $orderSubtotal
                 ]);
 
+                $response['quote_number'] = $quoteNum;
                 $response['order_id'] = $newOrderId;
                 $response['order_number'] = $orderRef;
             } else {
@@ -549,13 +551,14 @@ try {
                     ':addr' => $property_address,
                     ':notes' => $access_notes
                 ]);
+                $response['booking_reference'] = $bookingRef;
             }
         } catch (Exception $syncEx) {
             error_log('Admin sync error in commercial_consultation.php: ' . $syncEx->getMessage());
         }
 
         if ($lead_type === 'rfq') {
-            $response['message'] = 'Commercial grid proposal successfully generated and added to your Orders! You can review full project pricing and confirm or cancel the request in My Orders.';
+            $response['message'] = 'Commercial grid proposal successfully generated and added to your Orders! You can review full project pricing and details in My Orders.';
             $response['disclaimer'] = 'This is a preliminary quote request. Final pricing requires site assessment and detailed system design.';
         } else {
             $response['message'] = 'Commercial consultation successfully scheduled! Our engineering team will contact you shortly.';

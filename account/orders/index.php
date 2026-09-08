@@ -19,10 +19,28 @@ $db = $database->getConnection();
 $userId = getCurrentUserId();
 $userEmail = getCurrentUserEmail() ?? '';
 
-// Automatically claim any orders placed with the user's email if user_id was unassigned
+// Automatically claim any orders placed with the user's email or linked quotes if user_id was unassigned
 if (!empty($userEmail)) {
-    $claimStmt = $db->prepare("UPDATE orders SET user_id = :uid WHERE user_id IS NULL AND LOWER(customer_email) = LOWER(:uemail)");
-    $claimStmt->execute([':uid' => $userId, ':uemail' => $userEmail]);
+    $claimStmt = $db->prepare("
+        UPDATE orders SET user_id = :uid 
+        WHERE user_id IS NULL AND (
+            LOWER(customer_email) = LOWER(:uemail)
+            OR LOWER(customer_email) = REPLACE(LOWER(:uemail2), '@gmail.com', '@gmai.com')
+            OR LOWER(customer_email) = REPLACE(LOWER(:uemail3), '@gmai.com', '@gmail.com')
+        )
+    ");
+    $claimStmt->execute([':uid' => $userId, ':uemail' => $userEmail, ':uemail2' => $userEmail, ':uemail3' => $userEmail]);
+
+    try {
+        $db->prepare("
+            UPDATE orders o
+            JOIN quote_requests q ON (o.order_number = CONCAT('APD-INST-', q.quote_number) OR o.notes LIKE CONCAT('%', q.quote_number, '%'))
+            SET o.user_id = :uid
+            WHERE o.user_id IS NULL AND q.user_id = :uid2
+        ")->execute([':uid' => $userId, ':uid2' => $userId]);
+    } catch (Exception $e) {
+        // ignore if quote_requests column check fails
+    }
 }
 
 // Initial Server-Side Query for fast first paint & SEO / noscript fallback
@@ -371,7 +389,7 @@ if (!empty($_SESSION['cart_notifications']) && is_array($_SESSION['cart_notifica
             'notices' => $cart_notices
         ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
     </script>
-    <script src="../../cart/cart.js" defer></script>
+    <script src="../../cart/cart.js?v=<?php echo filemtime(__DIR__ . '/../../cart/cart.js'); ?>" defer></script>
     <script src="../account.js" defer></script>
     <script src="../../assets/js/order-history.js" defer></script>
     <script src="../../js/main.js" defer></script>

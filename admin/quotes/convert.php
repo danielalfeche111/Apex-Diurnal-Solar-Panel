@@ -35,6 +35,15 @@ try {
         throw new Exception("Quote request #$quoteId was not found.");
     }
 
+    // Check if quote was already converted to an order
+    $checkExisting = $db->prepare("SELECT id, order_number FROM orders WHERE notes LIKE :qnum LIMIT 1");
+    $checkExisting->execute([':qnum' => '%' . $quote['quote_number'] . '%']);
+    $alreadyConverted = $checkExisting->fetch(PDO::FETCH_ASSOC);
+    if ($alreadyConverted) {
+        header("Location: ../orders/view.php?id={$alreadyConverted['id']}&msg=" . urlencode("Quote {$quote['quote_number']} was already converted to Order {$alreadyConverted['order_number']}."));
+        exit;
+    }
+
     $db->beginTransaction();
 
     // Generate formal Order Number
@@ -45,16 +54,27 @@ try {
     $subtotal = round($totalAmount / 1.08, 2);
     $tax = $totalAmount - $subtotal;
 
+    // Associate user_id from quote or if an account exists with this email
+    $orderUserId = !empty($quote['user_id']) ? (int)$quote['user_id'] : null;
+    if (!$orderUserId && !empty($quote['email'])) {
+        $uStmt = $db->prepare("SELECT id FROM users WHERE LOWER(email) = LOWER(:email) LIMIT 1");
+        $uStmt->execute([':email' => $quote['email']]);
+        $orderUserId = $uStmt->fetchColumn() ?: null;
+    }
+
+    $instHead = !empty($quote['installation_head']) ? $quote['installation_head'] : null;
+    $instDate = !empty($quote['installation_date']) ? $quote['installation_date'] : null;
+
     // 1. Insert into orders
     $insertOrder = $db->prepare("
         INSERT INTO orders (
             order_number, user_id, customer_name, customer_email, customer_phone,
             property_type, payment_method, status, subtotal, tax_amount, total_amount,
-            shipping_address, notes
+            shipping_address, notes, installation_head, installation_date
         ) VALUES (
-            :ord_num, NULL, :name, :email, :phone,
+            :ord_num, :uid, :name, :email, :phone,
             'Commercial', 'Direct Commercial Wire / Invoiced', 'processing', :subtotal, :tax, :total,
-            :addr, :notes
+            :addr, :notes, :head, :idate
         )
     ");
 
@@ -62,6 +82,7 @@ try {
 
     $insertOrder->execute([
         ':ord_num' => $orderNumber,
+        ':uid' => $orderUserId,
         ':name' => $quote['company_name'] . ' (' . $quote['contact_person'] . ')',
         ':email' => $quote['email'],
         ':phone' => $quote['phone'],
@@ -69,7 +90,9 @@ try {
         ':tax' => $tax,
         ':total' => $totalAmount,
         ':addr' => $quote['installation_address'] ?? 'Site address as per commercial proposal',
-        ':notes' => $notes
+        ':notes' => $notes,
+        ':head' => $instHead,
+        ':idate' => $instDate
     ]);
 
     $newOrderId = (int)$db->lastInsertId();
@@ -86,8 +109,15 @@ try {
         ':price' => $subtotal
     ]);
 
-    // 3. Mark quote as accepted
-    $updQuote = $db->prepare("UPDATE quote_requests SET status = 'accepted' WHERE id = :id");
+    // 3. Record order status history
+    $histStmt = $db->prepare("INSERT INTO order_status_history (order_id, status, notes) VALUES (:oid, 'processing', :notes)");
+    $histStmt->execute([
+        ':oid' => $newOrderId,
+        ':notes' => "Official order created by admin conversion from Quote #{$quote['quote_number']}"
+    ]);
+
+    // 4. Mark quote as accepted
+    $updQuote = $db->prepare("UPDATE quote_requests SET status = 'accepted', updated_at = CURRENT_TIMESTAMP WHERE id = :id");
     $updQuote->execute([':id' => $quoteId]);
 
     $db->commit();
