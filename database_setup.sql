@@ -375,3 +375,45 @@ CREATE TABLE IF NOT EXISTS cart_items (
     FOREIGN KEY (cart_id) REFERENCES carts(id) ON DELETE CASCADE,
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- -----------------------------------------------------------------------------
+-- 15. ORDER STATUS HISTORY TABLE & TRIGGERS (Lifecycle Tracking)
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS order_status_history (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    order_id INT NOT NULL,
+    status ENUM('pending', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded') NOT NULL,
+    changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    changed_by INT NULL COMMENT 'Admin/user ID who made the change',
+    notes TEXT NULL,
+    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+    KEY idx_order_status_order_id (order_id),
+    KEY idx_order_status_changed_at (changed_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+DELIMITER //
+
+CREATE TRIGGER IF NOT EXISTS order_status_insert
+AFTER INSERT ON orders
+FOR EACH ROW
+BEGIN
+    INSERT INTO order_status_history (order_id, status, changed_by, notes)
+    VALUES (NEW.id, NEW.status, NULL, 'Order placed');
+END//
+
+CREATE TRIGGER IF NOT EXISTS order_status_update
+AFTER UPDATE ON orders
+FOR EACH ROW
+BEGIN
+    IF NEW.status <> OLD.status THEN
+        INSERT INTO order_status_history (order_id, status, changed_by, notes)
+        VALUES (
+            NEW.id, 
+            NEW.status,
+            COALESCE(@current_admin_id, (SELECT id FROM admin_users WHERE username = SUBSTRING_INDEX(USER(), '@', 1)), NULL),
+            CONCAT('Status changed from ', OLD.status, ' to ', NEW.status)
+        );
+    END IF;
+END//
+
+DELIMITER ;

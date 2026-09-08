@@ -158,10 +158,14 @@
             border-radius: 12px;
             transition: all 0.2s ease;
         }
-        .form-control:read-only {
+        input.form-control:read-only,
+        textarea.form-control:read-only {
             background: #f8fafc;
             color: #64748b;
             cursor: not-allowed;
+        }
+        select.form-control {
+            cursor: pointer;
         }
         .form-control:focus {
             outline: none;
@@ -264,11 +268,44 @@
         .form-select {
             appearance: none;
             -webkit-appearance: none;
+            background-color: #ffffff;
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%231b335f' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
             background-repeat: no-repeat;
             background-position: right 14px center;
             background-size: 16px;
             cursor: pointer;
+        }
+        .return-home-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--color-navy);
+            font-weight: 600;
+            font-size: 0.92rem;
+            text-decoration: none;
+            padding: 8px 18px;
+            border-radius: 50px;
+            background: rgba(27, 51, 95, 0.04);
+            border: 1px solid transparent;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .return-home-link .link-arrow {
+            display: inline-block;
+            transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .return-home-link:hover {
+            color: var(--color-navy);
+            background: #ffffff;
+            border-color: rgba(27, 51, 95, 0.15);
+            box-shadow: 0 4px 14px rgba(27, 51, 95, 0.08);
+            transform: translateY(-1px);
+        }
+        .return-home-link:hover .link-arrow {
+            transform: translateX(-4px);
+        }
+        .return-home-link:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 6px rgba(27, 51, 95, 0.05);
         }
         @media (max-width: 640px) {
             .settings-card { padding: 24px 20px; border-radius: 20px; }

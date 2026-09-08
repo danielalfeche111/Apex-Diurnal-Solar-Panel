@@ -58,6 +58,10 @@ if ($action === 'quick_update_status') {
             restoreStockForOrder($orderId, $adminId);
         }
 
+        if ($adminId) {
+            $db->exec("SET @current_admin_id = " . (int)$adminId);
+        }
+
         $upd = $db->prepare("UPDATE orders SET status = :st WHERE id = :id");
         $upd->execute([':st' => $newStatus, ':id' => $orderId]);
 

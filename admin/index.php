@@ -67,10 +67,6 @@ include __DIR__ . '/includes/header.php';
   style="background: linear-gradient(135deg, var(--navy-dark) 0%, var(--navy-primary) 100%); color:#ffffff; border-radius: var(--radius-md); padding: 1.75rem 2rem; margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.25rem; border: 1px solid rgba(255,255,255,0.08); box-shadow: var(--shadow-md);">
   <div>
     <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.25rem;">
-      <span
-        style="background:var(--yellow-accent); color:var(--navy-primary); font-size:0.7rem; font-weight:700; padding:0.15rem 0.5rem; border-radius:9999px; text-transform:uppercase;">
-        <?php echo htmlspecialchars($admin['role'] ?? 'Staff'); ?>
-      </span>
       <span style="font-size:0.8rem; color:#cbd5e1;"><?php echo date('l, F j, Y'); ?></span>
     </div>
     <h2 style="font-size: 1.5rem; font-weight: 700; color: #ffffff; letter-spacing: -0.02em;">
@@ -80,42 +76,10 @@ include __DIR__ . '/includes/header.php';
       Apex Diurnal Solar Panels E-Commerce & Service Operations Mission Control.
     </p>
   </div>
-
-  <div style="display: flex; gap: 0.75rem;">
-    <a href="orders/index.php?status=pending" class="btn btn-primary btn-sm">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
-      </svg>
-      <span>Review Orders (<?php echo $pending_orders; ?>)</span>
-    </a>
-    <a href="schedule/index.php" class="btn btn-secondary btn-sm"
-      style="background:rgba(255,255,255,0.12); color:#ffffff; border-color:rgba(255,255,255,0.2);">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-        <line x1="16" y1="2" x2="16" y2="6"></line>
-        <line x1="8" y1="2" x2="8" y2="6"></line>
-      </svg>
-      <span>View Calendar</span>
-    </a>
-  </div>
 </div>
 
-<!-- 5 Primary Executive KPIs -->
+<!-- Primary Executive KPIs -->
 <div class="metrics-grid">
-  <!-- Revenue -->
-  <div class="metric-card">
-    <div class="metric-details">
-      <h3>Total Sales Revenue</h3>
-      <div class="metric-value">&#8369;<?php echo number_format($total_revenue, 2); ?></div>
-      <div class="metric-subtext">Verified customer checkouts</div>
-    </div>
-    <div class="metric-icon success">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <line x1="12" y1="1" x2="12" y2="23"></line>
-        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-      </svg>
-    </div>
-  </div>
 
   <!-- Pending Orders -->
   <div class="metric-card">

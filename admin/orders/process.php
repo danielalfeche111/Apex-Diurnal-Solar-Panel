@@ -74,6 +74,11 @@ try {
         $updatedNotes .= "\n[" . $timestamp . " " . ($admin['username'] ?? 'Admin') . "]: " . $adminNote;
     }
 
+    // Pass current admin ID to MySQL session so order_status_update trigger logs changed_by
+    if ($adminId) {
+        $db->exec("SET @current_admin_id = " . (int)$adminId);
+    }
+
     // Update order status
     $stmtUpdate = $db->prepare("UPDATE orders SET status = :st, notes = :nt WHERE id = :id");
     $stmtUpdate->execute([

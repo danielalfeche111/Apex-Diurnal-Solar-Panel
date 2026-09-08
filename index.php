@@ -182,6 +182,7 @@ function nav_link(string $label, string $href, string $class = '', string $extra
             </button>
             <div class="user-dropdown-menu" id="user-dropdown-menu">
               <a href="account/settings.php" class="user-dropdown-item">Settings</a>
+              <a href="account/orders/index.php" class="user-dropdown-item">My Orders</a>
               <a href="auth/logout.php" class="user-dropdown-item">Logout</a>
             </div>
           </div>

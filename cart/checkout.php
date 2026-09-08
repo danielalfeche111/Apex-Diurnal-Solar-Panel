@@ -66,8 +66,8 @@ $allowed_property_types = ['Residential', 'Commercial'];
 $allowed_payment_methods = [
     'Credit Card' => 'Credit / Debit Card (Visa, Mastercard, Amex)',
     'Bank Transfer' => 'Direct Bank Wire Transfer / ACH',
-    'PayPal' => 'PayPal Express Checkout',
-    'Financing / Cash on Delivery' => 'Flexible Solar Financing / Pay on Delivery',
+    'PayPal' => 'PayPal',
+    'Cash on Delivery' => 'Cash on Delivery',
 ];
 // Province -> Cities/Municipalities mapping using standard Philippine locations
 require_once __DIR__ . '/../philippine_locations.php';
@@ -455,11 +455,6 @@ function safe(string $str): string {
       <div class="confirmation-container">
         
         <div class="conf-hero-banner">
-          <div class="conf-success-icon">
-            <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-              <polyline points="20 6 9 17 4 12"></polyline>
-            </svg>
-          </div>
           <h1 class="conf-hero-title">Order Confirmed!</h1>
           <p class="conf-hero-subtitle">
             Thank you, <strong><?php echo safe($full_name); ?></strong>. Your solar technology and service request has been safely received. A consultation and installation team member will reach out shortly.
@@ -475,13 +470,7 @@ function safe(string $str): string {
           <!-- Customer & Property Details Card -->
           <div class="card-panel">
             <div class="card-header">
-              <h2 class="card-header-title">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                  <circle cx="12" cy="7" r="4"></circle>
-                </svg>
-                Customer Details
-              </h2>
+              <h2 class="card-header-title">Customer Details</h2>
               <span class="card-step-badge">Verified</span>
             </div>
             <div class="card-body">
@@ -545,14 +534,7 @@ function safe(string $str): string {
           <!-- Order Cost & Summary Card -->
           <div class="card-panel">
             <div class="card-header">
-              <h2 class="card-header-title">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
-                  <line x1="3" y1="6" x2="21" y2="6"></line>
-                  <path d="M16 10a4 4 0 0 1-8 0"></path>
-                </svg>
-                Itemized Summary
-              </h2>
+              <h2 class="card-header-title">Itemized Summary</h2>
               <span class="card-step-badge">8% Tax Applied</span>
             </div>
             <div class="card-body">
@@ -607,26 +589,14 @@ function safe(string $str): string {
         <!-- Confirmation Actions -->
         <div class="conf-actions">
           <button type="button" onclick="window.print();" class="btn-action-accent">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="6 9 6 2 18 2 18 9"></polyline>
-              <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-              <rect x="6" y="14" width="12" height="8"></rect>
-            </svg>
             Print Receipt
           </button>
           
           <a href="../index.php#products" class="btn-action-outline">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 5v14M5 12h14"></path>
-            </svg>
             Order More Products
           </a>
 
           <a href="../index.php" class="btn-action-primary">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-              <polyline points="9 22 9 12 15 12 15 22"></polyline>
-            </svg>
             Return to Homepage
           </a>
         </div>
@@ -640,30 +610,13 @@ function safe(string $str): string {
       <div class="empty-cart-container">
         <div class="checkout-breadcrumb-bar">
           <a href="../index.php" class="back-pill-link" title="Return to Apex Diurnal Homepage">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <line x1="19" y1="12" x2="5" y2="12"></line>
-              <polyline points="12 19 5 12 12 5"></polyline>
-            </svg>
-            <span>Back to Homepage</span>
+            <span>&larr; Back to Homepage</span>
           </a>
         </div>
 
         <div class="empty-cart-card">
-          <div class="empty-cart-icon-wrapper">
-            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="9" cy="21" r="1"></circle>
-              <circle cx="20" cy="21" r="1"></circle>
-              <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
-            </svg>
-          </div>
-
           <span class="checkout-badge">No Order Found</span>
           <div class="empty-selection-alert" style="display:inline-flex; align-items:center; gap:10px; margin: 12px auto 18px; font-size:0.92rem; padding:12px 20px; background:#fef2f2; color:#b91c1c; border:1.5px solid #f87171; border-radius:8px;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <circle cx="12" cy="12" r="10"></circle>
-              <line x1="12" y1="8" x2="12" y2="12"></line>
-              <line x1="12" y1="16" x2="12.01" y2="16"></line>
-            </svg>
             <span><strong>Notification:</strong> You cannot checkout without an order! Please select products from our catalog first.</span>
           </div>
           <h1 class="empty-cart-title">Your Cart is Currently Empty</h1>
@@ -690,11 +643,6 @@ function safe(string $str): string {
 
           <div class="empty-cart-actions">
             <a href="../index.php#products" class="btn-action-accent">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                <line x1="8" y1="21" x2="16" y2="21"></line>
-                <line x1="12" y1="17" x2="12" y2="21"></line>
-              </svg>
               Browse Solar Products
             </a>
             <a href="../index.php" class="btn-action-outline">
@@ -712,16 +660,11 @@ function safe(string $str): string {
       <!-- Top Back Navigation Option -->
       <div class="checkout-breadcrumb-bar">
         <a href="../index.php" class="back-pill-link" title="Return to Apex Diurnal Homepage">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <line x1="19" y1="12" x2="5" y2="12"></line>
-            <polyline points="12 19 5 12 12 5"></polyline>
-          </svg>
-          <span>Back to Homepage</span>
+          <span>&larr; Back to Homepage</span>
         </a>
       </div>
 
       <div class="checkout-intro">
-        <span class="checkout-badge">Apex Diurnal Checkout</span>
         <h1 class="checkout-title">Complete Your Solar Order</h1>
         <p class="checkout-subtitle">Secure configuration, certified solar hardware, and professional booking in one step.</p>
       </div>
@@ -730,11 +673,6 @@ function safe(string $str): string {
         <!-- Error summary banner highlighting validation failures -->
         <div class="error-summary-banner" role="alert" aria-live="assertive">
           <div class="error-summary-header">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <circle cx="12" cy="12" r="10"></circle>
-              <line x1="12" y1="8" x2="12" y2="12"></line>
-              <line x1="12" y1="16" x2="12.01" y2="16"></line>
-            </svg>
             <span>Please correct the <?php echo count($errors); ?> highlighted issue(s) below:</span>
           </div>
           <ul class="error-summary-list">
@@ -748,17 +686,9 @@ function safe(string $str): string {
       <?php if (!isLoggedIn()): ?>
         <!-- Guest Checkout Encouragement Banner -->
         <div class="guest-checkout-banner" style="display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, #1b335f 0%, #25467d 100%); color: #ffffff; padding: 1.15rem 1.4rem; border-radius: 12px; margin-bottom: 1.5rem; box-shadow: 0 4px 14px rgba(27,51,95,0.12); flex-wrap: wrap; gap: 12px;">
-          <div style="display: flex; align-items: center; gap: 1rem;">
-            <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(254, 224, 0, 0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fee000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-              </svg>
-            </div>
-            <div>
-              <div style="font-weight: 700; font-size: 0.98rem; color: #ffffff;">Checking out as Guest</div>
-              <div style="font-size: 0.85rem; color: #cbd5e1; margin-top: 2px;">Have an Apex account? Sign in to automatically pre-fill your saved shipping address and track orders.</div>
-            </div>
+          <div>
+            <div style="font-weight: 700; font-size: 0.98rem; color: #ffffff;">Checking out as Guest</div>
+            <div style="font-size: 0.85rem; color: #cbd5e1; margin-top: 2px;">Have an Apex account? Sign in to automatically pre-fill your saved shipping address and track orders.</div>
           </div>
           <a href="../auth/login.php?redirect=<?php echo urlencode('../cart/checkout.php'); ?>" style="background: #fee000; color: #1b335f; font-weight: 700; font-size: 0.88rem; padding: 0.6rem 1.15rem; border-radius: 8px; text-decoration: none; white-space: nowrap; transition: background 0.2s; box-shadow: 0 2px 6px rgba(0,0,0,0.15);">Sign In &amp; Auto-fill</a>
         </div>
@@ -774,20 +704,13 @@ function safe(string $str): string {
             <!-- Customer Contact Information Card -->
             <div class="card-panel">
               <div class="card-header">
-                <h2 class="card-header-title">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="12" cy="7" r="4"></circle>
-                  </svg>
-                  1. Customer Details
-                </h2>
+                <h2 class="card-header-title">1. Customer Details</h2>
                 <span class="card-step-badge">Required</span>
               </div>
               <div class="card-body">
                 
                 <?php if (!empty($is_prefilled)): ?>
                   <div class="checkout-prefill-badge" style="display: flex; align-items: center; gap: 8px; background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; padding: 10px 14px; border-radius: 8px; font-size: 0.86rem; font-weight: 600; margin-bottom: 1.25rem;">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                     <span>Delivery details auto-filled from your saved profile.</span>
                   </div>
                 <?php endif; ?>
@@ -809,11 +732,6 @@ function safe(string $str): string {
                   >
                   <?php if (isset($errors['full_name'])): ?>
                     <div class="field-error-message">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="12" y1="8" x2="12" y2="12"></line>
-                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                      </svg>
                       <?php echo safe($errors['full_name']); ?>
                     </div>
                   <?php endif; ?>
@@ -837,11 +755,6 @@ function safe(string $str): string {
                     >
                     <?php if (isset($errors['email'])): ?>
                       <div class="field-error-message">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                          <circle cx="12" cy="12" r="10"></circle>
-                          <line x1="12" y1="8" x2="12" y2="12"></line>
-                          <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                        </svg>
                         <?php echo safe($errors['email']); ?>
                       </div>
                     <?php endif; ?>
@@ -867,11 +780,6 @@ function safe(string $str): string {
                     >
                     <?php if (isset($errors['phone'])): ?>
                       <div class="field-error-message">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                          <circle cx="12" cy="12" r="10"></circle>
-                          <line x1="12" y1="8" x2="12" y2="12"></line>
-                          <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                        </svg>
                         <?php echo safe($errors['phone']); ?>
                       </div>
                     <?php endif; ?>
@@ -897,11 +805,6 @@ function safe(string $str): string {
                     </select>
                     <?php if (isset($errors['province'])): ?>
                       <div class="field-error-message">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                          <circle cx="12" cy="12" r="10"></circle>
-                          <line x1="12" y1="8" x2="12" y2="12"></line>
-                          <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                        </svg>
                         <?php echo safe($errors['province']); ?>
                       </div>
                     <?php endif; ?>
@@ -929,11 +832,6 @@ function safe(string $str): string {
                     </select>
                     <?php if (isset($errors['city'])): ?>
                       <div class="field-error-message">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                          <circle cx="12" cy="12" r="10"></circle>
-                          <line x1="12" y1="8" x2="12" y2="12"></line>
-                          <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                        </svg>
                         <?php echo safe($errors['city']); ?>
                       </div>
                     <?php endif; ?>
@@ -956,11 +854,6 @@ function safe(string $str): string {
                   >
                   <?php if (isset($errors['street_address'])): ?>
                     <div class="field-error-message">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="12" y1="8" x2="12" y2="12"></line>
-                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                      </svg>
                       <?php echo safe($errors['street_address']); ?>
                     </div>
                   <?php endif; ?>
@@ -988,11 +881,6 @@ function safe(string $str): string {
                   >
                   <?php if (isset($errors['postal_code'])): ?>
                     <div class="field-error-message">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="12" y1="8" x2="12" y2="12"></line>
-                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                      </svg>
                       <?php echo safe($errors['postal_code']); ?>
                     </div>
                   <?php endif; ?>
@@ -1014,13 +902,7 @@ function safe(string $str): string {
             <!-- Property Type Card (Residential vs Commercial) -->
             <div class="card-panel">
               <div class="card-header">
-                <h2 class="card-header-title">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
-                  </svg>
-                  2. Property Type
-                </h2>
+                <h2 class="card-header-title">2. Property Type</h2>
                 <span class="card-step-badge">Required</span>
               </div>
               <div class="card-body">
@@ -1037,7 +919,6 @@ function safe(string $str): string {
                         <?php echo ($property_type === 'Residential' || $property_type === '') ? 'checked' : ''; ?>
                       >
                       <div class="radio-card-content">
-                        <div class="radio-card-icon">🏡</div>
                         <div class="radio-card-title">Residential</div>
                         <div class="radio-card-desc">Single-family, townhouse, or duplex rooftop setup</div>
                       </div>
@@ -1051,7 +932,6 @@ function safe(string $str): string {
                         <?php echo ($property_type === 'Commercial') ? 'checked' : ''; ?>
                       >
                       <div class="radio-card-content">
-                        <div class="radio-card-icon">🏢</div>
                         <div class="radio-card-title">Commercial</div>
                         <div class="radio-card-desc">Office building, warehouse, or enterprise solar grid</div>
                       </div>
@@ -1059,11 +939,6 @@ function safe(string $str): string {
                   </div>
                   <?php if (isset($errors['property_type'])): ?>
                     <div class="field-error-message">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="12" y1="8" x2="12" y2="12"></line>
-                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                      </svg>
                       <?php echo safe($errors['property_type']); ?>
                     </div>
                   <?php endif; ?>
@@ -1074,13 +949,7 @@ function safe(string $str): string {
             <!-- Payment Method Card -->
             <div class="card-panel">
               <div class="card-header">
-                <h2 class="card-header-title">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
-                    <line x1="1" y1="10" x2="23" y2="10"></line>
-                  </svg>
-                  3. Payment Method
-                </h2>
+                <h2 class="card-header-title">3. Payment Method</h2>
                 <span class="card-step-badge">Required</span>
               </div>
               <div class="card-body">
@@ -1106,11 +975,6 @@ function safe(string $str): string {
                   </div>
                   <?php if (isset($errors['payment_method'])): ?>
                     <div class="field-error-message">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="12" y1="8" x2="12" y2="12"></line>
-                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                      </svg>
                       <?php echo safe($errors['payment_method']); ?>
                     </div>
                   <?php endif; ?>
@@ -1139,31 +1003,13 @@ function safe(string $str): string {
 
             <div class="card-panel">
               <div class="card-header">
-                <h2 class="card-header-title">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="5"></circle>
-                    <line x1="12" y1="1" x2="12" y2="3"></line>
-                    <line x1="12" y1="21" x2="12" y2="23"></line>
-                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                    <line x1="1" y1="12" x2="3" y2="12"></line>
-                    <line x1="21" y1="12" x2="23" y2="12"></line>
-                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-                  </svg>
-                  Product Selection
-                </h2>
+                <h2 class="card-header-title">Product Selection</h2>
                 <span class="card-step-badge">Configurator</span>
               </div>
               <div class="card-body">
                 
                 <?php if (isset($errors['products'])): ?>
                   <div class="field-error-message" style="margin-bottom:14px;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <circle cx="12" cy="12" r="10"></circle>
-                      <line x1="12" y1="8" x2="12" y2="12"></line>
-                      <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                    </svg>
                     <?php echo safe($errors['products']); ?>
                   </div>
                 <?php endif; ?>
@@ -1240,11 +1086,6 @@ function safe(string $str): string {
                     <strong id="display-tax">₱<?php echo number_format($tax_amount, 2); ?></strong>
                   </div>
                   <div class="tax-badge-note">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <circle cx="12" cy="12" r="10"></circle>
-                      <line x1="12" y1="16" x2="12" y2="12"></line>
-                      <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                    </svg>
                     <span>Applicable diurnal solar equipment rate</span>
                   </div>
 
@@ -1256,36 +1097,20 @@ function safe(string $str): string {
 
                 <!-- Product Selection Warning -->
                 <div id="no-products-warning" class="empty-selection-alert" style="<?php echo empty($selected_items) ? 'display:flex;' : 'display:none;'; ?>">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <line x1="12" y1="8" x2="12" y2="12"></line>
-                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                  </svg>
                   <span>At least one product must be selected to complete checkout.</span>
                 </div>
 
                 <!-- Submit Button -->
                 <button type="submit" class="btn-submit-order <?php echo empty($selected_items) ? 'disabled' : ''; ?>" id="btn-submit" aria-disabled="<?php echo empty($selected_items) ? 'true' : 'false'; ?>" title="<?php echo empty($selected_items) ? 'Please select at least one product to checkout' : 'Confirm and place order'; ?>">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                  </svg>
                   Confirm &amp; Place Order
                 </button>
 
                 <!-- Back to Homepage Option -->
                 <a href="../index.php" class="btn-cancel-return" title="Cancel Order">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                    <line x1="19" y1="12" x2="5" y2="12"></line>
-                    <polyline points="12 19 5 12 12 5"></polyline>
-                  </svg>
                   <span>Cancel Order</span>
                 </a>
 
                 <div class="security-guarantee-note">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-                  </svg>
                   <span>100% Satisfaction Guarantee & Certified Warranty</span>
                 </div>
 

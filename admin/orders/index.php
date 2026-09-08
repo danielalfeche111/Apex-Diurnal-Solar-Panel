@@ -64,17 +64,6 @@ include __DIR__ . '/../includes/header.php';
 <div class="metrics-grid">
   <div class="metric-card">
     <div class="metric-details">
-      <h3>Total Sales Revenue</h3>
-      <div class="metric-value">&#8369;<?php echo number_format($kpi_revenue, 2); ?></div>
-      <div class="metric-subtext">Active orders (excl. refunds)</div>
-    </div>
-    <div class="metric-icon success">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
-    </div>
-  </div>
-
-  <div class="metric-card">
-    <div class="metric-details">
       <h3>Pending Approvals</h3>
       <div class="metric-value" style="<?php echo $kpi_pending > 0 ? 'color:#b45309;' : ''; ?>">
         <?php echo $kpi_pending; ?>
