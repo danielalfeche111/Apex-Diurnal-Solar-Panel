@@ -1,0 +1,257 @@
+        :root {
+            --color-navy: #1b335f;
+            --color-navy-dark: #122444;
+            --color-yellow: #fee000;
+            --color-yellow-hover: #e5ca00;
+            --color-border: rgba(27, 51, 95, 0.12);
+            --color-text-muted: #576579;
+        }
+        body {
+            background: radial-gradient(circle at 50% 10%, rgba(254,224,0,0.08), transparent 45%),
+                        linear-gradient(145deg, #f3f6fa 0%, #e9edf5 50%, #f7f9fc 100%);
+            min-height: 100vh;
+        }
+        .settings-page {
+            padding: 110px 20px 60px;
+            min-height: calc(100vh - 200px);
+        }
+        .settings-wrapper {
+            max-width: 640px;
+            margin: 0 auto;
+        }
+        .settings-header {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+        .settings-avatar-large {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: var(--color-navy);
+            color: var(--color-yellow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin: 0 auto 16px;
+            border: 3px solid var(--color-yellow);
+            box-shadow: 0 8px 24px rgba(27,51,95,0.15);
+        }
+        .settings-title {
+            font-size: 1.9rem;
+            font-weight: 800;
+            color: var(--color-navy);
+            letter-spacing: -0.5px;
+            margin-bottom: 6px;
+        }
+        .settings-subtitle {
+            color: var(--color-text-muted);
+            font-size: 0.95rem;
+        }
+        .settings-card {
+            background: #ffffff;
+            border-radius: 24px;
+            padding: 32px;
+            box-shadow: 0 20px 45px -10px rgba(27,51,95,0.12), 0 0 0 1px rgba(27,51,95,0.06);
+            margin-bottom: 24px;
+        }
+        .settings-card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(27,51,95,0.08);
+        }
+        .settings-card-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: rgba(27,51,95,0.06);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--color-navy);
+        }
+        .settings-card-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--color-navy);
+        }
+        .settings-card-desc {
+            font-size: 0.85rem;
+            color: var(--color-text-muted);
+            margin-top: 2px;
+        }
+        .alert-success {
+            background: #f0fdf4;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+            border-left: 4px solid #22c55e;
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            font-size: 0.9rem;
+        }
+        .alert-error {
+            background: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+            border-left: 4px solid #ef4444;
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+        }
+        .alert-error div + div { margin-top: 4px; }
+        .form-group { margin-bottom: 18px; }
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: var(--color-navy);
+        }
+        .input-group {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .input-icon {
+            position: absolute;
+            left: 14px;
+            color: #788aa3;
+            pointer-events: none;
+        }
+        .form-control {
+            width: 100%;
+            padding: 12px 14px 12px 42px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            color: var(--color-navy);
+            background: #ffffff;
+            border: 2px solid rgba(27,51,95,0.12);
+            border-radius: 12px;
+            transition: all 0.2s ease;
+        }
+        .form-control:read-only {
+            background: #f8fafc;
+            color: #64748b;
+            cursor: not-allowed;
+        }
+        .form-control:focus {
+            outline: none;
+            border-color: var(--color-yellow);
+            box-shadow: 0 0 0 4px rgba(254,224,0,0.25);
+        }
+        .btn-settings {
+            width: 100%;
+            padding: 14px 24px;
+            background: var(--color-yellow);
+            color: var(--color-navy);
+            border: none;
+            border-radius: 50px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(254,224,0,0.4);
+            transition: all 0.25s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn-settings:hover {
+            background: var(--color-yellow-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(254,224,0,0.5);
+        }
+        .account-email-display {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            background: #f8fafc;
+            border: 1px solid rgba(27,51,95,0.06);
+            border-radius: 12px;
+            font-weight: 600;
+            color: var(--color-navy);
+        }
+        .account-email-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--color-navy);
+            color: var(--color-yellow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .profile-progress-wrap {
+            margin-bottom: 24px;
+            background: #f8fafc;
+            border: 1px solid rgba(27,51,95,0.08);
+            border-radius: 16px;
+            padding: 16px 20px;
+        }
+        .profile-progress-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .profile-progress-title {
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: var(--color-navy);
+        }
+        .profile-progress-val {
+            font-size: 0.82rem;
+            font-weight: 800;
+            color: #166534;
+        }
+        .profile-progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 50px;
+            overflow: hidden;
+        }
+        .profile-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #22c55e 0%, #16a34a 100%);
+            border-radius: 50px;
+            transition: width 0.4s ease;
+        }
+        .profile-progress-hint {
+            font-size: 0.78rem;
+            color: var(--color-text-muted);
+            margin-top: 6px;
+        }
+        .form-row-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        .form-select {
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%231b335f' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            background-size: 16px;
+            cursor: pointer;
+        }
+        @media (max-width: 640px) {
+            .settings-card { padding: 24px 20px; border-radius: 20px; }
+            .settings-page { padding-top: 90px; }
+            .form-row-2 { grid-template-columns: 1fr; gap: 0; }
+        }

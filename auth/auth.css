@@ -1,0 +1,313 @@
+/**
+ * auth/auth.css - Apex Diurnal Authentication Styles
+ * Dedicated styling for Login, Registration, and Password Reset screens
+ */
+
+:root {
+    --color-navy: #1b335f;
+    --color-navy-dark: #122444;
+    --color-navy-light: #25447c;
+    --color-yellow: #fee000;
+    --color-yellow-hover: #e5ca00;
+    --color-grey-light: #f5f6f8;
+    --color-border: rgba(27, 51, 95, 0.12);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: radial-gradient(circle at 50% 10%, rgba(254, 224, 0, 0.08), transparent 45%),
+                linear-gradient(145deg, #f3f6fa 0%, #e9edf5 50%, #f7f9fc 100%);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    color: var(--color-navy);
+    position: relative;
+}
+
+/* Top floating back link */
+.top-nav {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px 24px 0;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+.back-home-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-navy);
+    text-decoration: none;
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(8px);
+    border-radius: 50px;
+    border: 1px solid var(--color-border);
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(27, 51, 95, 0.04);
+}
+
+.back-home-link:hover {
+    background: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(27, 51, 95, 0.08);
+}
+
+.brand-logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+}
+
+.logo-mark {
+    height: 48px;
+    width: auto;
+    object-fit: contain;
+}
+
+/* Center card wrapper */
+.auth-wrapper {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px 48px;
+}
+
+.login-card {
+    background: #ffffff;
+    width: 100%;
+    max-width: 440px;
+    border-radius: 24px;
+    box-shadow: 0 20px 40px -15px rgba(27, 51, 95, 0.08),
+                0 0 0 1px rgba(27, 51, 95, 0.06);
+    padding: 40px 36px;
+    position: relative;
+    overflow: hidden;
+}
+
+.login-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.login-header .logo-mark {
+    height: 52px;
+    width: auto;
+    display: block;
+    margin: 0 auto 16px auto;
+}
+
+.login-title {
+    font-size: 1.65rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--color-navy);
+    margin-bottom: 8px;
+}
+
+.login-subtitle {
+    font-size: 0.92rem;
+    color: #64748b;
+    line-height: 1.45;
+}
+
+/* Alert messages */
+.error-alert {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #b91c1c;
+    padding: 12px 16px;
+    border-radius: 12px;
+    font-size: 0.88rem;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    line-height: 1.4;
+}
+
+.error-alert svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+    color: #ef4444;
+}
+
+/* Form Controls */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-label-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.form-label {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--color-navy);
+}
+
+.form-hint {
+    font-size: 0.78rem;
+    color: #788aa3;
+    font-weight: 500;
+}
+
+.forgot-link {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: #4b6389;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.forgot-link:hover {
+    color: var(--color-navy);
+    text-decoration: underline;
+}
+
+.input-group {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-icon {
+    position: absolute;
+    left: 14px;
+    color: #788aa3;
+    pointer-events: none;
+    transition: color 0.2s;
+}
+
+.form-control {
+    width: 100%;
+    padding: 12px 14px 12px 42px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    color: var(--color-navy);
+    background: #ffffff;
+    border: 1.5px solid rgba(27, 51, 95, 0.16);
+    border-radius: 12px;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.form-control:focus {
+    border-color: var(--color-navy);
+    box-shadow: 0 0 0 4px rgba(27, 51, 95, 0.08);
+}
+
+.form-control:focus + .input-icon,
+.input-group:focus-within .input-icon {
+    color: var(--color-navy);
+}
+
+.password-toggle {
+    position: absolute;
+    right: 12px;
+    background: none;
+    border: none;
+    color: #788aa3;
+    cursor: pointer;
+    padding: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: color 0.2s, background-color 0.2s;
+}
+
+.password-toggle:hover {
+    color: var(--color-navy);
+    background-color: rgba(27, 51, 95, 0.04);
+}
+
+/* Submit button */
+.btn-signin {
+    width: 100%;
+    padding: 13px 20px;
+    margin-top: 8px;
+    background-color: var(--color-yellow);
+    color: var(--color-navy-dark);
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 700;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 4px 14px rgba(254, 224, 0, 0.4);
+    transition: all 0.2s ease;
+}
+
+.btn-signin:hover {
+    background-color: var(--color-yellow-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(254, 224, 0, 0.55);
+}
+
+.btn-signin:active {
+    transform: translateY(0);
+}
+
+/* Footer inside card */
+.card-footer {
+    margin-top: 24px;
+    text-align: center;
+    font-size: 0.88rem;
+    color: #64748b;
+    border-top: 1px solid rgba(27, 51, 95, 0.06);
+    padding-top: 20px;
+}
+
+.card-footer a {
+    color: var(--color-navy);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.card-footer a:hover {
+    text-decoration: underline;
+}
+
+/* Minimal Page Footer */
+.page-footer {
+    text-align: center;
+    padding: 18px 24px;
+    font-size: 0.8rem;
+    color: #7b8a9e;
+}
+
+@media (max-width: 480px) {
+    .login-card {
+        padding: 32px 22px;
+        border-radius: 20px;
+    }
+    .login-title {
+        font-size: 1.45rem;
+    }
+}

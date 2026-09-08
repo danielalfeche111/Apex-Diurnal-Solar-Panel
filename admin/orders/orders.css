@@ -1,0 +1,18 @@
+/**
+ * admin/orders/orders.css - Orders Feature Specific Styles
+ */
+.orders-table-wrapper {
+  overflow-x: auto;
+}
+
+.order-detail-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 1.5rem;
+}
+
+@media (max-width: 900px) {
+  .order-detail-grid {
+    grid-template-columns: 1fr;
+  }
+}

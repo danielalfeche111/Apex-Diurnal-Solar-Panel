@@ -32,9 +32,11 @@ foreach ($items as $it) {
     }
 }
 
-// Check for flash messages
 $msg = $_GET['msg'] ?? '';
 $err = $_GET['err'] ?? '';
+
+$extra_head = '<link rel="stylesheet" href="inventory.css">';
+$extra_scripts = '<script src="inventory.js" defer></script>';
 
 include __DIR__ . '/../includes/header.php';
 ?>
@@ -285,28 +287,5 @@ include __DIR__ . '/../includes/header.php';
     </form>
   </div>
 </div>
-
-<script>
-let currentModalStock = 0;
-
-function openStockModal(productId, productName, currentStock) {
-  currentModalStock = currentStock;
-  document.getElementById('modal-product-id').value = productId;
-  document.getElementById('modal-product-name').textContent = 'Adjust Stock: ' + productName;
-  document.getElementById('modal-current-stock').textContent = currentStock;
-  document.getElementById('modal-quantity').value = 5;
-  document.getElementById('reason').value = '';
-  updateCalcPreview();
-  openAdminModal('stock-modal');
-}
-
-function updateCalcPreview() {
-  const type = document.getElementById('adjustment_type').value;
-  const qty = parseInt(document.getElementById('modal-quantity').value || 0, 10);
-  let projected = (type === 'add') ? (currentModalStock + qty) : (currentModalStock - qty);
-  if (projected < 0) projected = 0;
-  document.getElementById('modal-projected-stock').textContent = projected;
-}
-</script>
 
 <?php include __DIR__ . '/../includes/footer.php'; ?>

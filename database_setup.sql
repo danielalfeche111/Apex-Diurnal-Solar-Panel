@@ -12,6 +12,14 @@ CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     email VARCHAR(255) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
+    full_name VARCHAR(255) NULL,
+    phone VARCHAR(50) NULL,
+    street_address VARCHAR(255) NULL,
+    city VARCHAR(100) NULL,
+    province VARCHAR(100) NULL,
+    postal_code VARCHAR(20) NULL,
+    is_default_shipping BOOLEAN DEFAULT TRUE,
+    is_default_billing BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -127,6 +135,11 @@ ALTER TABLE commercial_leads
     MODIFY best_call_time ENUM('Morning', 'Afternoon', 'Anytime') NULL,
     MODIFY preferred_date DATE NULL,
     MODIFY preferred_time_slot ENUM('Morning', 'Afternoon') NULL;
+
+-- Ensure users profile fields exist
+SET @col_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='solar_db' AND TABLE_NAME='users' AND COLUMN_NAME='full_name');
+SET @sql = IF(@col_exists=0, 'ALTER TABLE users ADD COLUMN full_name VARCHAR(255) NULL AFTER email, ADD COLUMN phone VARCHAR(50) NULL AFTER full_name, ADD COLUMN street_address VARCHAR(255) NULL AFTER phone, ADD COLUMN city VARCHAR(100) NULL AFTER street_address, ADD COLUMN province VARCHAR(100) NULL AFTER city, ADD COLUMN postal_code VARCHAR(20) NULL AFTER province, ADD COLUMN is_default_shipping BOOLEAN DEFAULT TRUE AFTER postal_code, ADD COLUMN is_default_billing BOOLEAN DEFAULT TRUE AFTER is_default_shipping', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 -- -----------------------------------------------------------------------------
 -- 5. ADMIN USERS TABLE (Admin Authentication & Roles)

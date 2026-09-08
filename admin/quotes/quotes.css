@@ -1,0 +1,15 @@
+/**
+ * admin/quotes/quotes.css - Quotes Feature Styles
+ */
+.quote-card-meta {
+  display: flex;
+  gap: 12px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.quote-status-badge {
+  font-weight: 700;
+  border-radius: 6px;
+  padding: 4px 10px;
+}

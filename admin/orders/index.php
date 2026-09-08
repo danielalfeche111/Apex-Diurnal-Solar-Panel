@@ -51,9 +51,11 @@ $kpi_pending = (int)$db->query("SELECT COUNT(*) FROM orders WHERE status = 'pend
 $kpi_processing = (int)$db->query("SELECT COUNT(*) FROM orders WHERE status IN ('processing', 'shipped')")->fetchColumn();
 $kpi_revenue = (float)$db->query("SELECT SUM(total_amount) FROM orders WHERE status NOT IN ('cancelled', 'refunded')")->fetchColumn();
 
-// Check for flash messages
 $msg = $_GET['msg'] ?? '';
 $err = $_GET['err'] ?? '';
+
+$extra_head = '<link rel="stylesheet" href="orders.css">';
+$extra_scripts = '<script src="orders.js" defer></script>';
 
 include __DIR__ . '/../includes/header.php';
 ?>
@@ -295,14 +297,5 @@ include __DIR__ . '/../includes/header.php';
     </form>
   </div>
 </div>
-
-<script>
-function openStatusModal(orderId, orderNum, defaultStatus) {
-  document.getElementById('modal-order-id').value = orderId;
-  document.getElementById('modal-order-title').textContent = 'Process Order: ' + orderNum;
-  document.getElementById('modal-new-status').value = defaultStatus;
-  openAdminModal('status-modal');
-}
-</script>
 
 <?php include __DIR__ . '/../includes/footer.php'; ?>

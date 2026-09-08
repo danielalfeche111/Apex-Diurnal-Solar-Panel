@@ -16,7 +16,7 @@ $nav_links = [
 
 // --- Load product cart, session helpers, and authentication ---
 require_once __DIR__ . '/product_data.php';
-require_once __DIR__ . '/cart_functions.php';
+require_once __DIR__ . '/cart/cart_functions.php';
 require_once __DIR__ . '/auth.php';
 
 // --- Service / Feature Cards ---
@@ -95,24 +95,9 @@ function nav_link(string $label, string $href, string $class = '', string $extra
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css?v=<?php echo filemtime(__DIR__ . '/styles.css'); ?>">
-  <style>
-    /* Critical default hidden state for consultation modal to prevent FOUC */
-    .consultation-overlay {
-      display: none;
-    }
-
-    .consultation-modal {
-      display: none;
-    }
-
-    .consultation-overlay.active {
-      display: block !important;
-    }
-
-    .consultation-modal.open {
-      display: flex !important;
-    }
-  </style>
+  <link rel="stylesheet" href="cart/cart.css?v=<?php echo filemtime(__DIR__ . '/cart/cart.css'); ?>">
+  <link rel="stylesheet" href="services/services.css?v=<?php echo filemtime(__DIR__ . '/services/services.css'); ?>">
+  <link rel="stylesheet" href="products/product-modal.css?v=<?php echo filemtime(__DIR__ . '/products/product-modal.css'); ?>">
 </head>
 
 <body>
@@ -122,7 +107,7 @@ function nav_link(string $label, string $href, string $class = '', string $extra
     <div class="header-container">
 
       <a href="#home" class="brand-logo" aria-label="Apex Diurnal Home">
-        <img src="assets/images/logo.png" alt="Apex Diurnal Logo" class="logo-mark">
+        <img src="assets/images/LOGO.jpg" alt="Apex Diurnal Logo" class="logo-mark">
         <div class="brand-text">
           <span class="brand-title">APEX</span>
           <span class="brand-subtitle">DIURNAL</span>
@@ -175,12 +160,12 @@ function nav_link(string $label, string $href, string $class = '', string $extra
                 class="user-avatar"><?php echo htmlspecialchars(strtoupper(substr(getCurrentUserEmail() ?? 'U', 0, 1))); ?></span>
             </button>
             <div class="user-dropdown-menu" id="user-dropdown-menu">
-              <a href="settings.php" class="user-dropdown-item">Settings</a>
-              <a href="logout.php" class="user-dropdown-item">Logout</a>
+              <a href="account/settings.php" class="user-dropdown-item">Settings</a>
+              <a href="auth/logout.php" class="user-dropdown-item">Logout</a>
             </div>
           </div>
         <?php else: ?>
-          <a href="login.php" class="header-login-btn" aria-label="Log In">
+          <a href="auth/login.php" class="header-login-btn" aria-label="Log In">
             <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"
               aria-hidden="true">
               <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
@@ -227,7 +212,7 @@ function nav_link(string $label, string $href, string $class = '', string $extra
           <?php foreach ($products as $idx => $product): ?>
             <article class="product-card" id="product-<?php echo $idx; ?>">
               <div class="card-badge">
-                <img src="assets/images/logo.png" alt="Apex Diurnal Logo" class="badge-logo">
+                <img src="assets/images/LOGO.jpg" alt="Apex Diurnal Logo" class="badge-logo">
               </div>
               <div class="card-image-wrap">
                 <img src="<?php echo htmlspecialchars($product['image']); ?>"
@@ -244,7 +229,7 @@ function nav_link(string $label, string $href, string $class = '', string $extra
                     if ($upper === 'BUY NOW' || $upper === 'BOOK NOW') {
                       $onclick = "addToCart('" . htmlspecialchars($product['id'], ENT_QUOTES) . "'); openCart();";
                     } elseif ($upper === 'LEARN MORE') {
-                      $onclick = "document.getElementById('about')?.scrollIntoView({behavior:'smooth',block:'start'})";
+                      $onclick = "openProductModal('" . htmlspecialchars($product['id'], ENT_QUOTES) . "');";
                     } elseif ($upper === 'CONTACT SALES' || $upper === 'REQUEST QUOTE') {
                       $onclick = "openConsultationModal('rfq');";
                     } else {
@@ -252,7 +237,10 @@ function nav_link(string $label, string $href, string $class = '', string $extra
                     }
                     ?>
                     <button type="button" data-id="<?php echo htmlspecialchars($product['id']); ?>"
-                      onclick="<?php echo $onclick; ?>" class="<?php echo htmlspecialchars($action['class']); ?>">
+                      data-product-id="<?php echo htmlspecialchars($product['id']); ?>"
+                      <?php if ($upper === 'LEARN MORE'): ?>data-action="learn-more"<?php endif; ?>
+                      onclick="<?php echo $onclick; ?>" class="<?php echo htmlspecialchars($action['class']); ?>"
+                      style="cursor: pointer;">
                       <?php echo htmlspecialchars($label); ?>
                     </button>
                   <?php endforeach; ?>
@@ -910,7 +898,60 @@ function nav_link(string $label, string $href, string $class = '', string $extra
   <!-- TOAST -->
   <div id="cart-toast" class="cart-toast" role="status" aria-live="polite"></div>
 
+  <!-- PRODUCT "LEARN MORE" DETAIL MODAL -->
+  <div id="product-modal-overlay" class="product-modal-overlay" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="product-modal-card">
+      <button type="button" class="product-modal-close" id="product-modal-close" aria-label="Close product details">&times;</button>
+      <div class="product-modal-body">
+        <!-- Media / Photo Stage -->
+        <div class="product-modal-media">
+          <span class="product-modal-badge" id="modal-product-badge">Premium Solar</span>
+          <div class="product-modal-img-wrap">
+            <img src="" alt="" id="modal-product-img" class="product-modal-img">
+          </div>
+          <div class="product-modal-media-caption">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+            <span>Apex Diurnal Tier-1 Quality Assured</span>
+          </div>
+        </div>
+
+        <!-- Information & Specifications -->
+        <div class="product-modal-info">
+          <div class="product-modal-header">
+            <h2 class="product-modal-title" id="modal-product-title"></h2>
+            <div class="product-modal-price-wrap">
+              <span class="product-modal-price" id="modal-product-price"></span>
+              <span class="product-modal-vat" id="modal-product-vat">(VAT Inc.)</span>
+            </div>
+          </div>
+
+          <div class="product-modal-desc-wrap">
+            <div class="product-modal-desc-heading">Overview & Technology</div>
+            <p class="product-modal-desc" id="modal-product-desc"></p>
+          </div>
+
+          <div class="product-modal-specs" id="modal-product-specs-wrap">
+            <div class="product-modal-specs-heading">Key Specifications</div>
+            <ul class="product-modal-specs-list" id="modal-product-specs-list"></ul>
+          </div>
+
+          <div class="product-modal-actions">
+            <button type="button" class="btn-modal-primary" id="modal-primary-action">
+              Add to Cart
+            </button>
+            <button type="button" class="btn-modal-secondary" id="modal-secondary-close">
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
+    // --- Authentication & Session state from PHP ---
+    window.USER_LOGGED_IN = <?php echo isLoggedIn() ? 'true' : 'false'; ?>;
+
     // --- Cart state from PHP ---
     const CART_INITIAL = <?php echo json_encode([
       'itemCount' => cart_item_count(),
@@ -927,94 +968,23 @@ function nav_link(string $label, string $href, string $class = '', string $extra
       ];
     }, get_cart_items($products), array_keys(get_cart_items($products))))
     ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
+
+    // --- Product Catalog Lookup for Learn More Modal ---
+    window.PRODUCT_CATALOG = <?php echo json_encode(catalog_lookup($products), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
+    var PRODUCT_CATALOG = window.PRODUCT_CATALOG;
   </script>
-  <script>
-    // Inline fallback for user dropdown - ensures logout is clickable even if main.js fails or is cached
-    (function () {
-      function initFallbackDropdown() {
-        var btn = document.getElementById('user-account-btn');
-        var menu = document.getElementById('user-dropdown-menu');
-        var dropdown = document.getElementById('user-dropdown');
-        if (!btn || !menu) return;
-        // Avoid double binding
-        if (btn.dataset.fallbackBound) return;
-        btn.dataset.fallbackBound = '1';
-        btn.addEventListener('click', function (e) {
-          e.stopPropagation();
-          e.preventDefault();
-          menu.classList.toggle('show');
-          console.log('Fallback toggle, show:', menu.classList.contains('show'));
-        });
-        document.addEventListener('click', function (e) {
-          if (dropdown && !dropdown.contains(e.target)) {
-            menu.classList.remove('show');
-          }
-        });
-      }
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initFallbackDropdown);
-      } else {
-        initFallbackDropdown();
-      }
-      // Also expose global for inline onclick
-      window.toggleUserDropdown = window.toggleUserDropdown || function () {
-        var m = document.getElementById('user-dropdown-menu');
-        if (m) m.classList.toggle('show');
-      };
-    })();
-  </script>
-
-  <script>
-    // Global dual-mode consultation & RFQ modal controller (accessible via inline onclick or listeners)
-    window.openConsultationModal = window.openConsultationModal || function (mode) {
-      if (typeof window.setConsultationMode === 'function') {
-        window.setConsultationMode(mode || 'consultation');
-      }
-      var overlay = document.getElementById('consultation-overlay');
-      var modal = document.getElementById('consultation-modal');
-      if (!overlay || !modal) return;
-      overlay.style.display = 'block';
-      modal.style.display = 'flex';
-      requestAnimationFrame(function () {
-        overlay.classList.add('active');
-        modal.classList.add('open');
-        modal.setAttribute('aria-hidden', 'false');
-      });
-      document.body.style.overflow = 'hidden';
-    };
-
-    window.closeConsultationModal = window.closeConsultationModal || function () {
-      var overlay = document.getElementById('consultation-overlay');
-      var modal = document.getElementById('consultation-modal');
-      if (!overlay || !modal) return;
-      overlay.classList.remove('active');
-      modal.classList.remove('open');
-      modal.setAttribute('aria-hidden', 'true');
-      setTimeout(function () {
-        if (!modal.classList.contains('open')) {
-          overlay.style.display = 'none';
-          modal.style.display = 'none';
-        }
-      }, 300);
-      document.body.style.overflow = '';
-    };
-
-    // Alias Contact Sales / Request Quote triggers to RFQ mode
-    window.openContactSalesModal = function () {
-      window.openConsultationModal('rfq');
-    };
-    window.closeContactSalesModal = function () {
-      window.closeConsultationModal();
-    };
-  </script>
-
-  <!-- Province -> City filtering: city options depend on selected province -->
+  <!-- Province -> City filtering data -->
   <script>
     const consultProvinceCityMap = <?php echo json_encode($consultProvinceCityMap, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
     const consultCityProvinceMap = <?php echo json_encode($consultCityProvinceMap, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
     const consultAllCities = <?php echo json_encode($consult_cities, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
   </script>
 
+  <!-- Feature Client Scripts -->
+  <script src="cart/cart.js?v=<?php echo filemtime(__DIR__ . '/cart/cart.js'); ?>" defer></script>
+  <script src="services/services.js?v=<?php echo filemtime(__DIR__ . '/services/services.js'); ?>" defer></script>
+  <script src="products/product-modal.js?v=<?php echo filemtime(__DIR__ . '/products/product-modal.js'); ?>" defer></script>
+  <script src="js/session-timer.js?v=<?php echo filemtime(__DIR__ . '/js/session-timer.js'); ?>" defer></script>
   <script src="js/main.js?v=<?php echo filemtime(__DIR__ . '/js/main.js'); ?>" defer></script>
 
 </body>

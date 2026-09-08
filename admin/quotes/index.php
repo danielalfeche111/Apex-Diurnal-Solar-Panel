@@ -43,6 +43,9 @@ $kpi_accepted = (int)$db->query("SELECT COUNT(*) FROM quote_requests WHERE statu
 $msg = $_GET['msg'] ?? '';
 $err = $_GET['err'] ?? '';
 
+$extra_head = '<link rel="stylesheet" href="quotes.css">';
+$extra_scripts = '<script src="quotes.js" defer></script>';
+
 include __DIR__ . '/../includes/header.php';
 ?>
 

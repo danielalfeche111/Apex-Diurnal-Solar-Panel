@@ -53,6 +53,9 @@ elseif ($status === 'shipped') $badgeClass = 'badge-shipped';
 elseif ($status === 'delivered') $badgeClass = 'badge-delivered';
 elseif ($status === 'cancelled' || $status === 'refunded') $badgeClass = 'badge-cancelled';
 
+$extra_head = '<link rel="stylesheet" href="orders.css">';
+$extra_scripts = '<script src="orders.js" defer></script>';
+
 include __DIR__ . '/../includes/header.php';
 ?>
 
@@ -348,12 +351,5 @@ include __DIR__ . '/../includes/header.php';
     </form>
   </div>
 </div>
-
-<script>
-function openStatusModal(orderId, orderNum, defaultStatus) {
-  document.getElementById('modal-new-status').value = defaultStatus;
-  openAdminModal('status-modal');
-}
-</script>
 
 <?php include __DIR__ . '/../includes/footer.php'; ?>

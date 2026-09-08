@@ -9,6 +9,7 @@ requireAdminLogin();
 $page_title = 'Service Scheduling Calendar';
 $active_nav = 'schedule';
 
+/** @var \PDO $db */
 $db = (new Database())->getConnection();
 
 // Booking KPIs
@@ -17,54 +18,15 @@ $kpi_pending = (int)$db->query("SELECT COUNT(*) FROM service_bookings WHERE stat
 $kpi_confirmed = (int)$db->query("SELECT COUNT(*) FROM service_bookings WHERE status = 'confirmed'")->fetchColumn();
 $kpi_completed = (int)$db->query("SELECT COUNT(*) FROM service_bookings WHERE status = 'completed'")->fetchColumn();
 
-// Include FullCalendar CDN in head
+// Include FullCalendar CDN and schedule assets
 $extra_head = '
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
-  <style>
-    .fc {
-      font-family: inherit;
-    }
-    .fc-toolbar-title {
-      font-size: 1.25rem !important;
-      font-weight: 700;
-      color: var(--navy-primary);
-    }
-    .fc-button-primary {
-      background-color: var(--navy-primary) !important;
-      border-color: var(--navy-primary) !important;
-      font-size: 0.8rem !important;
-      font-weight: 600 !important;
-      border-radius: var(--radius-sm) !important;
-    }
-    .fc-button-primary:hover {
-      background-color: var(--navy-dark) !important;
-    }
-    .fc-button-active {
-      background-color: var(--yellow-accent) !important;
-      color: var(--navy-primary) !important;
-      border-color: #e5ca00 !important;
-    }
-    .fc-event {
-      cursor: pointer;
-      border-radius: 4px;
-      padding: 2px 4px;
-      font-size: 0.76rem;
-      font-weight: 600;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.08);
-      transition: transform 0.15s;
-    }
-    .fc-event:hover {
-      transform: scale(1.02);
-    }
-    .fc-day-today {
-      background: var(--navy-subtle) !important;
-    }
-  </style>
+  <link rel="stylesheet" href="schedule.css">
 ';
 
 $extra_scripts = '
-  <script src="../assets/js/schedule.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+  <script src="schedule.js" defer></script>
 ';
 
 $msg = $_GET['msg'] ?? '';

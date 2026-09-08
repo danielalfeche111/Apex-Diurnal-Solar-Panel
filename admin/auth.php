@@ -3,9 +3,10 @@
  * admin/auth.php - Authentication & Authorization for Apex Diurnal Admin Dashboard
  */
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once __DIR__ . '/../session.php';
+
+// Initialize session with enterprise security & inactivity tracking
+SessionManager::start();
 
 require_once __DIR__ . '/../db.php';
 
@@ -13,7 +14,8 @@ require_once __DIR__ . '/../db.php';
  * Check if an admin is currently logged in
  * @return bool
  */
-function isAdminLoggedIn(): bool {
+function isAdminLoggedIn(): bool
+{
     return !empty($_SESSION['admin_id']);
 }
 
@@ -21,12 +23,13 @@ function isAdminLoggedIn(): bool {
  * Get the currently logged-in admin user information
  * @return array|null
  */
-function getAdminUser(): ?array {
+function getAdminUser(): ?array
+{
     if (!isAdminLoggedIn()) {
         return null;
     }
     return [
-        'id' => $_SESSION['admin_id'],
+        'id' => (int) $_SESSION['admin_id'],
         'username' => $_SESSION['admin_username'] ?? 'Admin',
         'email' => $_SESSION['admin_email'] ?? '',
         'role' => $_SESSION['admin_role'] ?? 'staff',
@@ -38,17 +41,23 @@ function getAdminUser(): ?array {
  * @param array|string|null $allowed_roles
  * @param string|null $redirect_url
  */
-function requireAdminLogin($allowed_roles = null, ?string $redirect_url = null): void {
+function requireAdminLogin($allowed_roles = null, ?string $redirect_url = null): void
+{
+    SessionManager::start();
     if (!isAdminLoggedIn()) {
+        if (SessionManager::isExpired()) {
+            SessionManager::setFlash('warning', 'Your admin session has expired due to inactivity. Please sign in again.');
+        }
+
         $target = $redirect_url ?? $_SERVER['REQUEST_URI'] ?? 'index.php';
         $_SESSION['admin_redirect_after_login'] = $target;
-        
+
         // Calculate relative path to admin/login.php
         $login_path = (strpos($_SERVER['PHP_SELF'], '/admin/orders/') !== false ||
-                       strpos($_SERVER['PHP_SELF'], '/admin/inventory/') !== false ||
-                       strpos($_SERVER['PHP_SELF'], '/admin/schedule/') !== false ||
-                       strpos($_SERVER['PHP_SELF'], '/admin/quotes/') !== false) 
-                       ? '../login.php' : 'login.php';
+            strpos($_SERVER['PHP_SELF'], '/admin/inventory/') !== false ||
+            strpos($_SERVER['PHP_SELF'], '/admin/schedule/') !== false ||
+            strpos($_SERVER['PHP_SELF'], '/admin/quotes/') !== false)
+            ? '../login.php' : 'login.php';
 
         header("Location: $login_path");
         exit;
@@ -68,20 +77,24 @@ function requireAdminLogin($allowed_roles = null, ?string $redirect_url = null):
  * Log in an admin user and initialize secure session
  * @param array $user
  */
-function loginAdmin(array $user): void {
-    $_SESSION['admin_id'] = (int)$user['id'];
+function loginAdmin(array $user): void
+{
+    SessionManager::start();
+    $_SESSION['admin_id'] = (int) $user['id'];
     $_SESSION['admin_username'] = $user['username'];
     $_SESSION['admin_email'] = $user['email'];
     $_SESSION['admin_role'] = $user['role'] ?? 'staff';
-    
+    $_SESSION['_last_activity'] = time();
+
     // Regenerate session id to protect against session fixation
-    session_regenerate_id(true);
+    SessionManager::regenerate(true);
 }
 
 /**
  * Log out admin user (clears only admin-related session variables)
  */
-function logoutAdmin(): void {
+function logoutAdmin(): void
+{
     unset(
         $_SESSION['admin_id'],
         $_SESSION['admin_username'],
@@ -89,13 +102,16 @@ function logoutAdmin(): void {
         $_SESSION['admin_role'],
         $_SESSION['admin_redirect_after_login']
     );
+
+    SessionManager::regenerate(true);
 }
 
 /**
  * Generate or get existing CSRF token
  * @return string
  */
-function csrfToken(): string {
+function csrfToken(): string
+{
     if (empty($_SESSION['admin_csrf_token'])) {
         $_SESSION['admin_csrf_token'] = bin2hex(random_bytes(32));
     }
@@ -107,7 +123,8 @@ function csrfToken(): string {
  * @param string|null $token
  * @return bool
  */
-function verifyCsrfToken(?string $token): bool {
+function verifyCsrfToken(?string $token): bool
+{
     if (empty($token) || empty($_SESSION['admin_csrf_token'])) {
         return false;
     }
@@ -118,7 +135,8 @@ function verifyCsrfToken(?string $token): bool {
  * Quick helper to get live badge counts for sidebar
  * @return array
  */
-function getAdminBadgeCounts(): array {
+function getAdminBadgeCounts(): array
+{
     static $counts = null;
     if ($counts !== null) {
         return $counts;
@@ -134,10 +152,10 @@ function getAdminBadgeCounts(): array {
     try {
         $db = (new Database())->getConnection();
         if ($db) {
-            $counts['pending_orders'] = (int)$db->query("SELECT COUNT(*) FROM orders WHERE status = 'pending'")->fetchColumn();
-            $counts['low_stock'] = (int)$db->query("SELECT COUNT(*) FROM inventory WHERE current_stock <= reorder_point")->fetchColumn();
-            $counts['pending_bookings'] = (int)$db->query("SELECT COUNT(*) FROM service_bookings WHERE status = 'pending'")->fetchColumn();
-            $counts['new_quotes'] = (int)$db->query("SELECT COUNT(*) FROM quote_requests WHERE status = 'new'")->fetchColumn();
+            $counts['pending_orders'] = (int) $db->query("SELECT COUNT(*) FROM orders WHERE status = 'pending'")->fetchColumn();
+            $counts['low_stock'] = (int) $db->query("SELECT COUNT(*) FROM inventory WHERE current_stock <= reorder_point")->fetchColumn();
+            $counts['pending_bookings'] = (int) $db->query("SELECT COUNT(*) FROM service_bookings WHERE status = 'pending'")->fetchColumn();
+            $counts['new_quotes'] = (int) $db->query("SELECT COUNT(*) FROM quote_requests WHERE status = 'new'")->fetchColumn();
         }
     } catch (\Exception $e) {
         // Fallback silently if tables are being migrated
