@@ -11,12 +11,54 @@
   color: var(--navy-primary);
 }
 
+/* Toolbar Layout & Button Gaps */
+.fc .fc-toolbar {
+  align-items: center;
+  margin-bottom: 1.25rem !important;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.fc .fc-toolbar-chunk {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.45rem !important;
+}
+
+.fc .fc-button-group {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.45rem !important;
+}
+
+.fc .fc-button-group > .fc-button {
+  margin: 0 !important;
+  border-radius: var(--radius-sm, 6px) !important;
+}
+
+.fc .fc-button-group > .fc-button:not(:first-child) {
+  margin-left: 0 !important;
+  border-top-left-radius: var(--radius-sm, 6px) !important;
+  border-bottom-left-radius: var(--radius-sm, 6px) !important;
+}
+
+.fc .fc-button-group > .fc-button:not(:last-child) {
+  border-top-right-radius: var(--radius-sm, 6px) !important;
+  border-bottom-right-radius: var(--radius-sm, 6px) !important;
+}
+
 .fc-button-primary {
   background-color: var(--navy-primary) !important;
   border-color: var(--navy-primary) !important;
   font-size: 0.8rem !important;
   font-weight: 600 !important;
-  border-radius: var(--radius-sm) !important;
+  border-radius: var(--radius-sm, 6px) !important;
+  padding: 0.4rem 0.8rem !important;
+}
+
+.fc .fc-prev-button,
+.fc .fc-next-button {
+  padding: 0.4rem 0.65rem !important;
 }
 
 .fc-button-primary:hover {

@@ -5,19 +5,24 @@
   overflow-x: auto;
 }
 
-.metrics-grid {
-  grid-template-columns: repeat(3, 1fr);
+.metrics-grid,
+.metrics-grid-3 {
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
 }
 
 @media (max-width: 900px) {
-  .metrics-grid {
-    grid-template-columns: repeat(2, 1fr);
+  .metrics-grid,
+  .metrics-grid-3 {
+    grid-template-columns: repeat(2, 1fr) !important;
   }
 }
 
 @media (max-width: 540px) {
-  .metrics-grid {
-    grid-template-columns: 1fr;
+  .metrics-grid,
+  .metrics-grid-3 {
+    grid-template-columns: 1fr !important;
   }
 }
 

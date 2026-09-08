@@ -3,6 +3,7 @@ if (!headers_sent()) {
     header('Content-Type: application/json; charset=UTF-8');
 }
 require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../auth.php';
 require_once __DIR__ . '/../validation.php';
 
 $response = [
@@ -170,6 +171,22 @@ if ($lead_type === 'rfq') {
         $errors['best_call_time'] = 'Please select a valid preferred contact time.';
     }
 
+    // Step 1 additions: Facility specifications for RFQ
+    $facility_size_raw = trim($_POST['facility_size'] ?? '');
+    $current_bill_raw  = trim($_POST['current_monthly_bill'] ?? '');
+
+    if ($facility_size_raw === '' || !is_numeric($facility_size_raw) || (float)$facility_size_raw <= 0) {
+        $errors['facility_size'] = 'Facility Rooftop / Land Area (in sqm) is required.';
+    } else {
+        $facility_size = (float)$facility_size_raw;
+    }
+
+    if ($current_bill_raw === '' || !is_numeric($current_bill_raw) || (float)$current_bill_raw <= 0) {
+        $errors['current_monthly_bill'] = 'Current Monthly Electricity Bill (in ₱) is required.';
+    } else {
+        $current_monthly_bill = (float)$current_bill_raw;
+    }
+
     if (!empty($errors)) {
         http_response_code(422);
         $response['success'] = false;
@@ -179,17 +196,32 @@ if ($lead_type === 'rfq') {
         exit;
     }
 
-    // Consultation fields set to NULL for RFQ
-    $facility_type = null;
+    // Facility specs & solar engineering projections
+    $facility_type = 'Commercial';
     $power_supply = null;
-    $facility_size = 0.00;
-    $current_monthly_bill = 0.00;
-    $estimated_system_size = null;
-    $estimated_installation_cost = null;
-    $estimated_annual_savings = null;
-    $estimated_payback_period = null;
+
+    if ($facility_size > 0 && $current_monthly_bill > 0) {
+        $rate_per_kwh = 12.00; // Standard Philippine commercial grid tariff
+        $monthly_kwh = $current_monthly_bill / $rate_per_kwh;
+        $daily_kwh = $monthly_kwh / 30.0;
+        $peak_sun_hours = 4.5; // Average solar irradiance in the Philippines
+        $needed_kw = ($daily_kwh / $peak_sun_hours) * 0.70; // 70% daytime solar offset
+        $max_roof_kw = $facility_size / 7.5; // Approx 7.5 sqm per 1 kWp installed
+        $calculated_kw = round(max(5.0, min($needed_kw, $max_roof_kw, 1000.0)), 1);
+
+        $estimated_system_size = $calculated_kw;
+        $estimated_installation_cost = round($calculated_kw * 48000.0, 2); // ~₱48k per kW commercial turnkey
+        $estimated_annual_savings = round($calculated_kw * $peak_sun_hours * 365 * 11.50, 2);
+        $estimated_payback_period = ($estimated_annual_savings > 0) ? round($estimated_installation_cost / $estimated_annual_savings, 1) : 4.0;
+        $estimated_installation_timeline = ($calculated_kw > 100) ? '8-12 Weeks' : '4-6 Weeks';
+    } else {
+        $estimated_system_size = null;
+        $estimated_installation_cost = null;
+        $estimated_annual_savings = null;
+        $estimated_payback_period = null;
+        $estimated_installation_timeline = null;
+    }
     $applicable_discounts_json = null;
-    $estimated_installation_timeline = null;
     $contact_title = trim($_POST['contact_title'] ?? '');
     if ($contact_title === '') $contact_title = null;
     if ($best_call_time === '') $best_call_time = null;
@@ -427,6 +459,75 @@ try {
                     ':addr' => $property_address,
                     ':notes' => $access_notes
                 ]);
+
+                // Immediately create order so it directly appears in the client's "My Orders"
+                $orderUserId = null;
+                if (function_exists('isLoggedIn') && isLoggedIn()) {
+                    $orderUserId = getCurrentUserId();
+                }
+                if (!$orderUserId && !empty($corporate_email)) {
+                    $uStmt = $db->prepare("SELECT id FROM users WHERE LOWER(email) = LOWER(:email) LIMIT 1");
+                    $uStmt->execute([':email' => $corporate_email]);
+                    $orderUserId = $uStmt->fetchColumn() ?: null;
+                }
+
+                $orderRef = 'APD-INST-' . $quoteNum;
+                $orderTotal = (float) $estimated_installation_cost;
+                $orderSubtotal = round($orderTotal / 1.12, 2);
+                $orderTax = $orderTotal - $orderSubtotal;
+
+                $orderNotes = "Commercial Grid Turnkey Solar Installation\n"
+                    . "RFQ Reference: " . $quoteNum . "\n"
+                    . "Facility Type: " . ($facility_type ?: 'Commercial Facility') . "\n"
+                    . "Facility Area: " . number_format((float)$facility_size, 2) . " sqm\n"
+                    . "Current Monthly Electricity Bill: ₱" . number_format((float)$current_monthly_bill, 2) . "\n"
+                    . "Estimated System Capacity: " . number_format((float)$estimated_system_size, 2) . " kWp\n"
+                    . "Estimated Annual Bill Savings: ₱" . number_format((float)$estimated_annual_savings, 2) . "\n"
+                    . "Estimated Payback Period: " . number_format((float)$estimated_payback_period, 1) . " years\n"
+                    . "Target Timeline: " . ($target_timeline ?: 'Immediate') . "\n"
+                    . ($access_notes ? "Notes: " . $access_notes : "");
+
+                $stmtOrder = $db->prepare("
+                    INSERT INTO orders (
+                        order_number, user_id, customer_name, customer_email, customer_phone,
+                        property_type, payment_method, status, subtotal, tax_amount, total_amount,
+                        shipping_address, notes
+                    ) VALUES (
+                        :ord_num, :uid, :name, :email, :phone,
+                        'Commercial', 'Commercial Installation Contract', 'pending', :subtotal, :tax, :total,
+                        :addr, :notes
+                    )
+                ");
+                $stmtOrder->execute([
+                    ':ord_num' => $orderRef,
+                    ':uid' => $orderUserId,
+                    ':name' => $company_name . ' (' . $contact_person . ')',
+                    ':email' => $corporate_email,
+                    ':phone' => $phone_number,
+                    ':subtotal' => $orderSubtotal,
+                    ':tax' => $orderTax,
+                    ':total' => $orderTotal,
+                    ':addr' => $property_address,
+                    ':notes' => $orderNotes
+                ]);
+                $newOrderId = (int) $db->lastInsertId();
+
+                $stmtItem = $db->prepare("
+                    INSERT INTO order_items (
+                        order_id, product_id, product_name, quantity, unit_price, total_price
+                    ) VALUES (
+                        :oid, 'commercial-grids', :pname, 1, :price, :price
+                    )
+                ");
+                $itemLabel = "Commercial Grid Turnkey Solar Installation - " . $company_name . " (" . number_format((float)$estimated_system_size, 2) . " kWp)";
+                $stmtItem->execute([
+                    ':oid' => $newOrderId,
+                    ':pname' => $itemLabel,
+                    ':price' => $orderSubtotal
+                ]);
+
+                $response['order_id'] = $newOrderId;
+                $response['order_number'] = $orderRef;
             } else {
                 $bookingRef = 'COMM-' . date('Ymd') . '-' . sprintf('%04d', $lead_id);
                 $stmtB = $db->prepare("
@@ -454,7 +555,7 @@ try {
         }
 
         if ($lead_type === 'rfq') {
-            $response['message'] = 'Request for Quote successfully submitted! Our commercial sales engineering team will review your specifications and deliver a formal equipment proposal.';
+            $response['message'] = 'Commercial grid proposal successfully generated and added to your Orders! You can review full project pricing and confirm or cancel the request in My Orders.';
             $response['disclaimer'] = 'This is a preliminary quote request. Final pricing requires site assessment and detailed system design.';
         } else {
             $response['message'] = 'Commercial consultation successfully scheduled! Our engineering team will contact you shortly.';

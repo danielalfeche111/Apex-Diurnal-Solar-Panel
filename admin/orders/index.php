@@ -54,14 +54,14 @@ $kpi_revenue = (float)$db->query("SELECT SUM(total_amount) FROM orders WHERE sta
 $msg = $_GET['msg'] ?? '';
 $err = $_GET['err'] ?? '';
 
-$extra_head = '<link rel="stylesheet" href="orders.css">';
+$extra_head = '<link rel="stylesheet" href="orders.css?v=' . (file_exists(__DIR__ . '/orders.css') ? filemtime(__DIR__ . '/orders.css') : time()) . '">';
 $extra_scripts = '<script src="orders.js" defer></script>';
 
 include __DIR__ . '/../includes/header.php';
 ?>
 
 <!-- KPI Header Grid -->
-<div class="metrics-grid">
+<div class="metrics-grid metrics-grid-3">
   <div class="metric-card">
     <div class="metric-details">
       <h3>Pending Approvals</h3>
@@ -69,9 +69,6 @@ include __DIR__ . '/../includes/header.php';
         <?php echo $kpi_pending; ?>
       </div>
       <div class="metric-subtext">Requires stock allocation</div>
-    </div>
-    <div class="metric-icon warning">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
     </div>
   </div>
 
@@ -81,9 +78,6 @@ include __DIR__ . '/../includes/header.php';
       <div class="metric-value"><?php echo $kpi_processing; ?></div>
       <div class="metric-subtext">Processing & Shipped</div>
     </div>
-    <div class="metric-icon info">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
-    </div>
   </div>
 
   <div class="metric-card">
@@ -92,22 +86,17 @@ include __DIR__ . '/../includes/header.php';
       <div class="metric-value"><?php echo $kpi_total_orders; ?></div>
       <div class="metric-subtext">All customer transactions</div>
     </div>
-    <div class="metric-icon">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
-    </div>
   </div>
 </div>
 
 <?php if ($msg): ?>
   <div style="background:#ecfdf5; border:1px solid #a7f3d0; color:#065f46; padding:0.85rem 1.25rem; border-radius:8px; margin-bottom:1.5rem; font-size:0.85rem; display:flex; align-items:center; gap:0.5rem;">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
     <span><?php echo htmlspecialchars($msg); ?></span>
   </div>
 <?php endif; ?>
 
 <?php if ($err): ?>
   <div style="background:#fef2f2; border:1px solid #fecaca; color:#991b1b; padding:0.85rem 1.25rem; border-radius:8px; margin-bottom:1.5rem; font-size:0.85rem; display:flex; align-items:center; gap:0.5rem;">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
     <span><?php echo htmlspecialchars($err); ?></span>
   </div>
 <?php endif; ?>
@@ -156,7 +145,6 @@ include __DIR__ . '/../includes/header.php';
 <div class="card">
   <div class="card-header">
     <div class="card-title">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
       <span>Customer Purchase Records (<?php echo count($orders); ?>)</span>
     </div>
   </div>

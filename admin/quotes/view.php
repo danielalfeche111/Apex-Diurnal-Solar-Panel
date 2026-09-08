@@ -31,10 +31,41 @@ $err = $_GET['err'] ?? '';
 
 $status = $quote['status'];
 $badgeClass = 'badge-pending';
-if ($status === 'reviewed') $badgeClass = 'badge-processing';
-elseif ($status === 'quoted') $badgeClass = 'badge-quoted';
-elseif ($status === 'accepted') $badgeClass = 'badge-accepted';
-elseif ($status === 'rejected' || $status === 'expired') $badgeClass = 'badge-rejected';
+$statusLabel = 'Pending Review';
+
+// Check if client has confirmed order in My Orders
+$chkOrder = $db->prepare("SELECT status, installation_head, installation_date FROM orders WHERE order_number = :ordNum OR notes LIKE :qnum LIMIT 1");
+$chkOrder->execute([':ordNum' => 'APD-INST-' . $quote['quote_number'], ':qnum' => '%' . $quote['quote_number'] . '%']);
+$linkedOrder = $chkOrder->fetch(PDO::FETCH_ASSOC);
+if ($linkedOrder && $linkedOrder['status'] === 'client_confirmed' && $status !== 'confirmed') {
+    $status = 'client_confirmed';
+}
+
+if ($status === 'confirmed') {
+    $badgeClass = 'badge-accepted';
+    $statusLabel = 'Confirmed for Installation';
+} elseif ($status === 'client_confirmed') {
+    $badgeClass = 'badge-processing';
+    $statusLabel = 'Confirmed by Client';
+} elseif ($status === 'in_progress') {
+    $badgeClass = 'badge-processing';
+    $statusLabel = 'Installation In Progress';
+} elseif ($status === 'completed') {
+    $badgeClass = 'badge-accepted';
+    $statusLabel = 'Installation Completed';
+} elseif ($status === 'cancelled' || $status === 'rejected' || $status === 'expired') {
+    $badgeClass = 'badge-rejected';
+    $statusLabel = ucfirst($status);
+} elseif ($status === 'reviewed') {
+    $badgeClass = 'badge-processing';
+    $statusLabel = 'Reviewed';
+} elseif ($status === 'quoted') {
+    $badgeClass = 'badge-quoted';
+    $statusLabel = 'Quoted';
+} elseif ($status === 'accepted') {
+    $badgeClass = 'badge-accepted';
+    $statusLabel = 'Accepted';
+}
 
 // Parse applicable discounts if stored as JSON
 $discounts = [];
@@ -52,7 +83,7 @@ include __DIR__ . '/../includes/header.php';
     <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.25rem;">
       <h2 style="font-size:1.4rem; color:var(--navy-primary); font-weight:700;"><?php echo htmlspecialchars($quote['quote_number']); ?></h2>
       <span class="badge <?php echo $badgeClass; ?>" style="font-size:0.82rem; padding:0.35rem 0.85rem;">
-        <?php echo ucfirst($status); ?>
+        <?php echo htmlspecialchars($statusLabel); ?>
       </span>
     </div>
     <p style="font-size:0.8rem; color:var(--text-muted);">
@@ -63,19 +94,17 @@ include __DIR__ . '/../includes/header.php';
   <div style="display:flex; gap:0.6rem; align-items:center; flex-wrap:wrap;">
     <a href="index.php" class="btn btn-secondary btn-sm">&larr; Back to Queue</a>
     
-    <?php if ($status !== 'accepted'): ?>
+    <?php if ($status !== 'accepted' && $status !== 'confirmed'): ?>
       <form method="POST" action="convert.php" style="display:inline;" onsubmit="return confirm('Are you sure you want to convert this accepted quote into a confirmed commercial purchase order?');">
         <input type="hidden" name="csrf_token" value="<?php echo csrfToken(); ?>">
         <input type="hidden" name="quote_id" value="<?php echo $quote['id']; ?>">
         <button type="submit" class="btn btn-primary btn-sm">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
           <span>Convert to Order</span>
         </button>
       </form>
     <?php endif; ?>
 
     <button type="button" class="btn btn-secondary btn-sm" onclick="window.print()">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
       <span>Print Spec Sheet</span>
     </button>
   </div>
@@ -102,7 +131,6 @@ include __DIR__ . '/../includes/header.php';
     <div class="card">
       <div class="card-header">
         <div class="card-title">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
           <span>Commercial Facility Specifications</span>
         </div>
       </div>
@@ -145,111 +173,95 @@ include __DIR__ . '/../includes/header.php';
       </div>
     </div>
 
-    <!-- Solar Energy Engineering Estimates -->
+    <!-- Commercial Installation Confirmation & Head Assignment -->
     <div class="card">
       <div class="card-header">
         <div class="card-title">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
-          <span>Photovoltaic Solar Sizing & ROI Projections</span>
+          <span>Commercial Installation Confirmation & Head Assignment</span>
         </div>
       </div>
       <div class="card-body">
-        <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:1rem; font-size:0.85rem; text-align:center;">
-          <div style="background:var(--navy-subtle); padding:1rem; border-radius:8px;">
-            <div style="color:var(--text-muted); font-size:0.72rem; text-transform:uppercase;">System Sizing</div>
-            <div style="font-size:1.35rem; font-weight:700; color:var(--navy-primary); margin-top:0.25rem;">
-              <?php echo $quote['estimated_system_size'] ? $quote['estimated_system_size'] . ' kW' : 'Custom'; ?>
+        <?php if ($status === 'confirmed'): ?>
+          <div style="background:#ecfdf5; border:1px solid #a7f3d0; border-radius:8px; padding:1rem 1.25rem; margin-bottom:1.5rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem;">
+            <div>
+              <div style="font-weight:700; color:#065f46; font-size:0.95rem;">Commercial Grid Installation Confirmed</div>
+              <div style="font-size:0.8rem; color:#047857; margin-top:0.2rem;">
+                Assigned Head: <strong><?php echo htmlspecialchars($quote['installation_head'] ?: 'Unassigned'); ?></strong>
+                <?php if (!empty($quote['installation_date'])): ?>
+                  &bull; Scheduled Date: <strong><?php echo date('F j, Y', strtotime($quote['installation_date'])); ?></strong>
+                <?php endif; ?>
+              </div>
             </div>
-            <div style="font-size:0.7rem; color:var(--text-muted);">PV array capacity</div>
+            <span class="badge badge-accepted" style="font-size:0.8rem; padding:0.35rem 0.85rem;">Confirmed for Installation</span>
           </div>
-
-          <div style="background:#ecfdf5; padding:1rem; border-radius:8px;">
-            <div style="color:#065f46; font-size:0.72rem; text-transform:uppercase;">Estimated Cost</div>
-            <div style="font-size:1.35rem; font-weight:700; color:#047857; margin-top:0.25rem;">
-              &#8369;<?php echo $quote['estimated_installation_cost'] ? number_format($quote['estimated_installation_cost'], 2) : 'TBD'; ?>
+        <?php elseif ($status === 'client_confirmed'): ?>
+          <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:1rem 1.25rem; margin-bottom:1.5rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem;">
+            <div>
+              <div style="font-weight:700; color:#1e40af; font-size:0.95rem;">&#10003; Client Confirmed Installation Request</div>
+              <div style="font-size:0.8rem; color:#2563eb; margin-top:0.2rem;">
+                The client has reviewed the commercial turnkey quote and confirmed their project in My Orders. Please assign the lead project engineer and confirm the deployment date below.
+              </div>
             </div>
-            <div style="font-size:0.7rem; color:#065f46;">Turnkey equipment</div>
-          </div>
-
-          <div style="background:#eff6ff; padding:1rem; border-radius:8px;">
-            <div style="color:#1e40af; font-size:0.72rem; text-transform:uppercase;">Annual Savings</div>
-            <div style="font-size:1.35rem; font-weight:700; color:#1d4ed8; margin-top:0.25rem;">
-              &#8369;<?php echo $quote['estimated_annual_savings'] ? number_format($quote['estimated_annual_savings'], 2) : 'TBD'; ?>
-            </div>
-            <div style="font-size:0.7rem; color:#1e40af;">Per year electricity offset</div>
-          </div>
-
-          <div style="background:#fffbeb; padding:1rem; border-radius:8px;">
-            <div style="color:#92400e; font-size:0.72rem; text-transform:uppercase;">Payback Period</div>
-            <div style="font-size:1.35rem; font-weight:700; color:#b45309; margin-top:0.25rem;">
-              <?php echo $quote['estimated_payback_period'] ? $quote['estimated_payback_period'] . ' yrs' : 'TBD'; ?>
-            </div>
-            <div style="font-size:0.7rem; color:#92400e;">CapEx amortization</div>
-          </div>
-        </div>
-
-        <?php if (!empty($discounts)): ?>
-          <div style="margin-top:1.25rem; font-size:0.8rem; border-top:1px solid var(--border-color); padding-top:1rem;">
-            <strong>Applied Commercial Incentives & Discounts:</strong>
-            <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.5rem;">
-              <?php foreach ($discounts as $d): ?>
-                <span style="background:#ecfdf5; color:#047857; border:1px solid #a7f3d0; border-radius:9999px; padding:0.25rem 0.75rem; font-weight:600; font-size:0.75rem;">
-                  &check; <?php echo htmlspecialchars(is_array($d) ? ($d['name'] ?? json_encode($d)) : $d); ?>
-                </span>
-              <?php endforeach; ?>
-            </div>
+            <span class="badge badge-processing" style="font-size:0.8rem; padding:0.35rem 0.85rem;">Client Confirmed</span>
           </div>
         <?php endif; ?>
-      </div>
-    </div>
 
-    <!-- Official Quotation Generator Form -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-          <span>Commercial Quotation Proposal & Response</span>
-        </div>
-      </div>
-      <div class="card-body">
         <form method="POST" action="respond.php">
           <input type="hidden" name="csrf_token" value="<?php echo csrfToken(); ?>">
           <input type="hidden" name="quote_id" value="<?php echo $quote['id']; ?>">
 
           <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1.25rem; margin-bottom:1.25rem;">
             <div class="form-group" style="margin-bottom:0;">
-              <label class="form-label" for="quoted_amount">Formal Proposal Price (₱ / PHP)</label>
-              <input 
-                type="number" 
-                step="0.01" 
-                name="quoted_amount" 
-                id="quoted_amount" 
-                class="form-control" 
-                value="<?php echo htmlspecialchars($quote['quoted_amount'] ?? $quote['estimated_installation_cost'] ?? ''); ?>" 
-                placeholder="e.g. 850000.00" 
-                required>
+              <label class="form-label" for="status">Installation Status</label>
+              <select name="status" id="status" class="form-control" required>
+                <option value="confirmed" <?php echo ($status === 'confirmed' || $status === 'client_confirmed' || $status === 'accepted') ? 'selected' : ''; ?>>Confirmed for Installation</option>
+                <option value="new" <?php echo ($status === 'new' || $status === 'pending') ? 'selected' : ''; ?>>Pending Confirmation</option>
+                <option value="in_progress" <?php echo ($status === 'in_progress') ? 'selected' : ''; ?>>Installation In Progress</option>
+                <option value="completed" <?php echo ($status === 'completed') ? 'selected' : ''; ?>>Installation Completed</option>
+                <option value="cancelled" <?php echo ($status === 'cancelled' || $status === 'rejected') ? 'selected' : ''; ?>>Cancelled / Declined</option>
+              </select>
             </div>
 
             <div class="form-group" style="margin-bottom:0;">
-              <label class="form-label" for="status">Ticket Lifecycle Status</label>
-              <select name="status" id="status" class="form-control" required>
-                <option value="new" <?php echo ($status === 'new') ? 'selected' : ''; ?>>New (Unreviewed)</option>
-                <option value="reviewed" <?php echo ($status === 'reviewed') ? 'selected' : ''; ?>>Reviewed by Engineering</option>
-                <option value="quoted" <?php echo ($status === 'quoted') ? 'selected' : ''; ?>>Quoted (Formal Proposal Sent)</option>
-                <option value="accepted" <?php echo ($status === 'accepted') ? 'selected' : ''; ?>>Accepted by Client</option>
-                <option value="rejected" <?php echo ($status === 'rejected') ? 'selected' : ''; ?>>Rejected / Declined</option>
-                <option value="expired" <?php echo ($status === 'expired') ? 'selected' : ''; ?>>Expired</option>
-              </select>
+              <label class="form-label" for="installation_date">Scheduled Installation Date</label>
+              <input 
+                type="date" 
+                name="installation_date" 
+                id="installation_date" 
+                class="form-control" 
+                value="<?php echo htmlspecialchars($quote['installation_date'] ?? ''); ?>">
             </div>
           </div>
 
           <div class="form-group">
-            <label class="form-label" for="admin_notes">Internal Engineering Notes / Quotation Terms</label>
-            <textarea name="admin_notes" id="admin_notes" class="form-control" rows="4" placeholder="Terms of payment, equipment warranty specifications, solar module model numbers..."><?php echo htmlspecialchars($quote['admin_notes'] ?? ''); ?></textarea>
+            <label class="form-label" for="installation_head">Assigned Head for Installation / Lead Project Engineer <span style="color:#b91c1c;">*</span></label>
+            <input 
+              type="text" 
+              name="installation_head" 
+              id="installation_head" 
+              class="form-control" 
+              list="engineer_suggestions"
+              value="<?php echo htmlspecialchars($quote['installation_head'] ?? ''); ?>" 
+              placeholder="e.g. Engr. Mark Santos" 
+              required>
+            <datalist id="engineer_suggestions">
+              <option value="Engr. Mark Santos (Lead Solar Engineer)">
+              <option value="Engr. David Reyes (Project Lead)">
+              <option value="Lead Tech Alex Cruz (Site Operations)">
+              <option value="Engr. Juan Dela Cruz (Electrical Systems)">
+            </datalist>
+            <small style="color:var(--text-muted); font-size:0.75rem; margin-top:0.25rem; display:block;">
+              Designate the lead engineer or installation head accountable for this commercial solar build.
+            </small>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="admin_notes">Engineering & Site Preparation Notes</label>
+            <textarea name="admin_notes" id="admin_notes" class="form-control" rows="4" placeholder="Equipment staging notes, structural roof load clearances, high-voltage interconnect protocols, crew dispatch reminders..."><?php echo htmlspecialchars($quote['admin_notes'] ?? ''); ?></textarea>
           </div>
 
           <div style="text-align: right; border-top:1px solid var(--border-color); padding-top:1.25rem;">
-            <button type="submit" class="btn btn-primary">Save Proposal & Update Status</button>
+            <button type="submit" class="btn btn-primary">Confirm Installation & Save Assignment</button>
           </div>
         </form>
       </div>
@@ -261,7 +273,6 @@ include __DIR__ . '/../includes/header.php';
     <div class="card">
       <div class="card-header">
         <div class="card-title">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
           <span>Commercial Contact Profile</span>
         </div>
       </div>
@@ -286,9 +297,25 @@ include __DIR__ . '/../includes/header.php';
           <div style="font-weight:600;"><?php echo htmlspecialchars($quote['phone']); ?></div>
         </div>
 
+        <div style="border-top:1px solid var(--border-color); padding-top:1rem;">
+          <div style="font-size:0.75rem; color:var(--text-muted);">Assigned Installation Head</div>
+          <div style="font-weight:700; color:var(--navy-primary); font-size:0.9rem; margin-top:0.2rem;">
+            <?php if (!empty($quote['installation_head'])): ?>
+              <span style="color:#047857;">&#10003; <?php echo htmlspecialchars($quote['installation_head']); ?></span>
+            <?php else: ?>
+              <span style="color:#b45309;">Unassigned</span>
+            <?php endif; ?>
+          </div>
+          <?php if (!empty($quote['installation_date'])): ?>
+            <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.25rem;">
+              Scheduled: <strong><?php echo date('F j, Y', strtotime($quote['installation_date'])); ?></strong>
+            </div>
+          <?php endif; ?>
+        </div>
+
         <?php if (!empty($quote['quoted_by_name'])): ?>
-          <div style="border-top:1px solid var(--border-color); padding-top:1rem;">
-            <div style="font-size:0.75rem; color:var(--text-muted);">Quoted By</div>
+          <div style="border-top:1px solid var(--border-color); padding-top:1rem; margin-top:1rem;">
+            <div style="font-size:0.75rem; color:var(--text-muted);">Confirmed / Updated By</div>
             <div style="font-weight:600;"><?php echo htmlspecialchars($quote['quoted_by_name']); ?></div>
             <div style="font-size:0.72rem; color:var(--text-muted);"><?php echo date('M j, Y - g:i A', strtotime($quote['quoted_at'])); ?></div>
           </div>

@@ -146,6 +146,15 @@ function initOrdersList() {
                 currency: 'PHP'
             }).format(order.total_amount);
 
+            let statusLabel = order.status.charAt(0).toUpperCase() + order.status.slice(1);
+            if (order.status === 'confirmed') {
+                statusLabel = 'Already Confirmed';
+            } else if (order.status === 'client_confirmed') {
+                statusLabel = 'Confirmed by Client';
+            } else if (order.status === 'pending' && order.property_type === 'Commercial') {
+                statusLabel = 'Pending Client Confirmation';
+            }
+
             tr.innerHTML = `
                 <td>
                     <a href="view.php?id=${order.id}" class="order-num-link">
@@ -155,14 +164,14 @@ function initOrdersList() {
                 <td>${dateStr}</td>
                 <td>
                     <span class="status-pill status-${order.status}">
-                        ${escapeHtml(order.status)}
+                        ${statusLabel}
                     </span>
                 </td>
                 <td>${order.item_count} ${order.item_count === 1 ? 'item' : 'items'}</td>
                 <td class="order-price">${formattedPrice}</td>
                 <td style="text-align: right;">
                     <a href="view.php?id=${order.id}" class="btn-view-order" aria-label="View Order ${escapeHtml(order.order_number)}">
-                        View Tracker &rarr;
+                        View Order &rarr;
                     </a>
                 </td>
             `;

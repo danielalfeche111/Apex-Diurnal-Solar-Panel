@@ -22,9 +22,9 @@ document.addEventListener('DOMContentLoaded', function() {
   calendar = new FullCalendar.Calendar(calendarEl, {
     initialView: 'dayGridMonth',
     headerToolbar: {
-      left: 'prev,next today',
+      left: 'prev next today',
       center: 'title',
-      right: 'dayGridMonth,timeGridWeek,listMonth'
+      right: 'dayGridMonth timeGridWeek listMonth'
     },
     buttonText: {
       today: 'Today',

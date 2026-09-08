@@ -588,10 +588,6 @@ function safe(string $str): string {
 
         <!-- Confirmation Actions -->
         <div class="conf-actions">
-          <button type="button" onclick="window.print();" class="btn-action-accent">
-            Print Receipt
-          </button>
-          
           <a href="../index.php#products" class="btn-action-outline">
             Order More Products
           </a>

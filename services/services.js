@@ -372,6 +372,8 @@
       let valid = true;
       const company = document.getElementById('rfq_company_name');
       const regType = document.getElementById('rfq_business_registration_type');
+      const facilitySize = document.getElementById('rfq_facility_size');
+      const monthlyBill = document.getElementById('rfq_current_monthly_bill');
 
       if (!company || company.value.trim().length < 2) {
         showFieldError('rfq_company_name', 'Company Name is required (minimum 2 characters).');
@@ -379,6 +381,14 @@
       }
       if (!regType || !regType.value) {
         showFieldError('rfq_business_registration_type', 'Please select a business registration type.');
+        valid = false;
+      }
+      if (!facilitySize || !facilitySize.value || parseFloat(facilitySize.value) <= 0) {
+        showFieldError('rfq_facility_size', 'Facility Rooftop / Land Area (in sqm) is required.');
+        valid = false;
+      }
+      if (!monthlyBill || !monthlyBill.value || parseFloat(monthlyBill.value) <= 0) {
+        showFieldError('rfq_current_monthly_bill', 'Current Monthly Electricity Bill (in ₱) is required.');
         valid = false;
       }
       return valid;
@@ -583,7 +593,7 @@
             });
 
             // Auto-navigate user to the earliest step containing an error
-            const step1Fields = ['company_name', 'consult_street', 'consult_province', 'consult_city', 'consult_postal', 'facility_type', 'power_supply', 'business_registration_type', 'rfq_company_name', 'rfq_business_registration_type'];
+            const step1Fields = ['company_name', 'consult_street', 'consult_province', 'consult_city', 'consult_postal', 'facility_type', 'power_supply', 'business_registration_type', 'rfq_company_name', 'rfq_business_registration_type', 'facility_size', 'current_monthly_bill', 'rfq_facility_size', 'rfq_current_monthly_bill'];
             const step2Fields = ['contact_person', 'corporate_email', 'phone_number', 'best_call_time', 'rfq_street', 'rfq_province', 'rfq_city', 'rfq_postal'];
             const step3Fields = ['preferred_date', 'preferred_time_slot', 'access_notes', 'target_timeline', 'rfq_target_timeline', 'rfq_contact_person', 'rfq_corporate_email', 'rfq_phone_number'];
 

@@ -21,12 +21,12 @@ $kpi_completed = (int)$db->query("SELECT COUNT(*) FROM service_bookings WHERE st
 // Include FullCalendar CDN and schedule assets
 $extra_head = '
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css">
-  <link rel="stylesheet" href="schedule.css">
+  <link rel="stylesheet" href="schedule.css?v=' . (file_exists(__DIR__ . '/schedule.css') ? filemtime(__DIR__ . '/schedule.css') : time()) . '">
 ';
 
 $extra_scripts = '
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
-  <script src="schedule.js" defer></script>
+  <script src="schedule.js?v=' . (file_exists(__DIR__ . '/schedule.js') ? filemtime(__DIR__ . '/schedule.js') : time()) . '" defer></script>
 ';
 
 $msg = $_GET['msg'] ?? '';
@@ -43,9 +43,6 @@ include __DIR__ . '/../includes/header.php';
       <div class="metric-value"><?php echo $kpi_total; ?></div>
       <div class="metric-subtext">Consultations & Turnkey Installs</div>
     </div>
-    <div class="metric-icon info">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-    </div>
   </div>
 
   <div class="metric-card">
@@ -56,9 +53,6 @@ include __DIR__ . '/../includes/header.php';
       </div>
       <div class="metric-subtext">Requires engineer assignment</div>
     </div>
-    <div class="metric-icon warning">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-    </div>
   </div>
 
   <div class="metric-card">
@@ -66,9 +60,6 @@ include __DIR__ . '/../includes/header.php';
       <h3>Confirmed / Scheduled</h3>
       <div class="metric-value" style="color:var(--navy-primary);"><?php echo $kpi_confirmed; ?></div>
       <div class="metric-subtext">Assigned to field team</div>
-    </div>
-    <div class="metric-icon">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
     </div>
   </div>
 
@@ -78,22 +69,17 @@ include __DIR__ . '/../includes/header.php';
       <div class="metric-value"><?php echo $kpi_completed; ?></div>
       <div class="metric-subtext">Audited & Commissioned</div>
     </div>
-    <div class="metric-icon success">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
-    </div>
   </div>
 </div>
 
 <?php if ($msg): ?>
   <div style="background:#ecfdf5; border:1px solid #a7f3d0; color:#065f46; padding:0.85rem 1.25rem; border-radius:8px; margin-bottom:1.5rem; font-size:0.85rem; display:flex; align-items:center; gap:0.5rem;">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
     <span><?php echo htmlspecialchars($msg); ?></span>
   </div>
 <?php endif; ?>
 
 <?php if ($err): ?>
   <div style="background:#fef2f2; border:1px solid #fecaca; color:#991b1b; padding:0.85rem 1.25rem; border-radius:8px; margin-bottom:1.5rem; font-size:0.85rem; display:flex; align-items:center; gap:0.5rem;">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
     <span><?php echo htmlspecialchars($err); ?></span>
   </div>
 <?php endif; ?>
@@ -122,7 +108,6 @@ include __DIR__ . '/../includes/header.php';
 
   <div style="display:flex; gap:0.5rem;">
     <a href="bookings.php" class="btn btn-secondary btn-sm">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
       <span>Switch to Table List View</span>
     </a>
   </div>

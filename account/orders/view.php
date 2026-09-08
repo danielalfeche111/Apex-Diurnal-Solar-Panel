@@ -68,13 +68,82 @@ if (!empty($_SESSION['cart_notifications']) && is_array($_SESSION['cart_notifica
     unset($_SESSION['cart_notifications']);
 }
 
+// Commercial specifications lookup
+$isCommercial = ($order && $order['property_type'] === 'Commercial');
+$commercialSpecs = [];
+if ($isCommercial) {
+    $quoteNum = null;
+    if (preg_match('/RFQ-\d{8}-\d{4}/', $order['order_number'], $matches)) {
+        $quoteNum = $matches[0];
+    } elseif (preg_match('/RFQ-\d{8}-\d{4}/', $order['notes'] ?? '', $matches)) {
+        $quoteNum = $matches[0];
+    }
+
+    if ($quoteNum) {
+        $qStmt = $db->prepare("SELECT * FROM quote_requests WHERE quote_number = :qnum LIMIT 1");
+        $qStmt->execute([':qnum' => $quoteNum]);
+        $commercialSpecs = $qStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+    }
+
+    // Auto-heal / synchronize status if the quote has already been confirmed by admin
+    if (!empty($commercialSpecs)) {
+        $isQuoteConfirmed = ($commercialSpecs['status'] === 'confirmed' || !empty($commercialSpecs['installation_head']));
+        if ($isQuoteConfirmed && in_array($order['status'], ['pending', 'client_confirmed'], true)) {
+            $order['status'] = 'confirmed';
+            if (!empty($commercialSpecs['installation_head'])) {
+                $order['installation_head'] = $commercialSpecs['installation_head'];
+            }
+            if (!empty($commercialSpecs['installation_date'])) {
+                $order['installation_date'] = $commercialSpecs['installation_date'];
+            }
+            $syncStmt = $db->prepare("
+                UPDATE orders 
+                SET status = 'confirmed',
+                    installation_head = COALESCE(:head, installation_head),
+                    installation_date = COALESCE(:idate, installation_date),
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = :id
+            ");
+            $syncStmt->execute([
+                ':head' => !empty($commercialSpecs['installation_head']) ? $commercialSpecs['installation_head'] : null,
+                ':idate' => !empty($commercialSpecs['installation_date']) ? $commercialSpecs['installation_date'] : null,
+                ':id' => $order['id']
+            ]);
+        }
+    }
+}
+
 // Calculate progress width percentage for line connector
-// 4 nodes: centers at 12.5%, 37.5%, 62.5%, 87.5% (span = 75%).
-// Each stage step is 25%.
-$standardStages = ['pending', 'processing', 'shipped', 'delivered'];
+// Stages: pending (0%) -> client_confirmed (12.5%) -> confirmed (25%) -> processing (50%) -> shipped (75%) -> delivered (75%)
+$standardStages = ['pending', 'client_confirmed', 'confirmed', 'processing', 'shipped', 'delivered'];
 $currentStatus = $order ? $order['status'] : 'pending';
 $stageIndex = array_search($currentStatus, $standardStages);
-$progressWidthPercent = ($stageIndex !== false) ? min(75, $stageIndex * 25) : 0;
+
+if ($currentStatus === 'client_confirmed') {
+    $progressWidthPercent = 12.5;
+} elseif ($currentStatus === 'confirmed') {
+    $progressWidthPercent = 25;
+} elseif ($currentStatus === 'processing') {
+    $progressWidthPercent = 50;
+} elseif ($currentStatus === 'shipped') {
+    $progressWidthPercent = 75;
+} elseif ($currentStatus === 'delivered') {
+    $progressWidthPercent = 75;
+} else {
+    $progressWidthPercent = 0;
+}
+
+if (!function_exists('getOrderDisplayStatus')) {
+    function getOrderDisplayStatus($order) {
+        if (!$order) return 'Unknown';
+        $st = $order['status'];
+        $isComm = ($order['property_type'] === 'Commercial');
+        if ($st === 'confirmed') return 'Already Confirmed';
+        if ($st === 'client_confirmed') return 'Confirmed by Client';
+        if ($st === 'pending') return $isComm ? 'Pending Client Confirmation' : 'Pending';
+        return ucfirst($st);
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -185,22 +254,114 @@ $progressWidthPercent = ($stageIndex !== false) ? min(75, $stageIndex * 25) : 0;
                     
                     <div class="tracker-card-header">
                         <div>
-                            <span style="font-size:0.85rem; font-weight:700; color:var(--color-text-muted); text-transform:uppercase; letter-spacing:0.5px;">Order Tracking</span>
+                            <span style="font-size:0.85rem; font-weight:700; color:var(--color-text-muted); text-transform:uppercase; letter-spacing:0.5px;"><?php echo $isCommercial ? 'Commercial Installation Project' : 'Order Tracking'; ?></span>
                             <h2 style="font-size:1.6rem; font-weight:800; color:var(--color-navy); margin:4px 0 0;">
                                 <?php echo htmlspecialchars($order['order_number']); ?>
                             </h2>
                         </div>
                         <div class="tracker-badge-group">
                             <span class="status-pill status-<?php echo htmlspecialchars($order['status']); ?>" id="order-header-status-pill">
-                                <?php echo htmlspecialchars($order['status']); ?>
+                                <?php echo getOrderDisplayStatus($order); ?>
                             </span>
                         </div>
                     </div>
 
+                    <!-- Flash messages from customer actions -->
+                    <?php 
+                    $showMsg = !empty($_GET['msg']);
+                    // If order is already confirmed by both sides, suppress any stale flash messages saying "Awaiting"
+                    if ($showMsg && $order['status'] === 'confirmed' && stripos($_GET['msg'], 'awaiting') !== false) {
+                        $showMsg = false;
+                    }
+                    ?>
+                    <?php if ($showMsg): ?>
+                        <div style="background:#ecfdf5; border:1px solid #a7f3d0; border-radius:8px; padding:0.9rem 1.25rem; margin-top:1.25rem; margin-bottom:0.75rem; color:#065f46; font-size:0.92rem; font-weight:600;">
+                            &#10003; <?php echo htmlspecialchars($_GET['msg']); ?>
+                        </div>
+                    <?php endif; ?>
+                    <?php if (!empty($_GET['err'])): ?>
+                        <div style="background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:0.9rem 1.25rem; margin-top:1.25rem; margin-bottom:0.75rem; color:#991b1b; font-size:0.92rem; font-weight:600;">
+                            &#9888; <?php echo htmlspecialchars($_GET['err']); ?>
+                        </div>
+                    <?php endif; ?>
+                    <!-- Commercial Workflow Banners & Action Buttons -->
+                    <?php if ($order['status'] === 'confirmed'): ?>
+                        <div style="background:#ecfdf5; border:1px solid #a7f3d0; border-radius:8px; padding:1.25rem 1.5rem; margin-top:1.25rem; <?php echo $isCommercial ? 'margin-bottom:0;' : 'margin-bottom:1.25rem;'; ?>">
+                            <div style="font-weight:800; color:#065f46; font-size:1.1rem;">
+                                &#10003; Commercial Grid Installation Confirmed
+                            </div>
+                            <div style="font-size:0.88rem; color:#047857; margin-top:0.35rem; line-height:1.6;">
+                                Your commercial solar grid installation schedule and assigned project head have been approved and confirmed by our engineering administration.
+                            </div>
+                            <?php 
+                            $head = $commercialSpecs['installation_head'] ?? $order['installation_head'] ?? '';
+                            $date = $commercialSpecs['installation_date'] ?? $order['installation_date'] ?? '';
+                            if (!empty($head) || !empty($date)): ?>
+                                <div style="margin-top:0.75rem; padding-top:0.75rem; border-top:1px dashed #a7f3d0; display:flex; gap:1.5rem; flex-wrap:wrap; font-size:0.88rem;">
+                                    <?php if (!empty($head)): ?>
+                                        <div><strong style="color:#065f46;">Lead Engineer:</strong> <span style="color:#047857; font-weight:700;"><?php echo htmlspecialchars($head); ?></span></div>
+                                    <?php endif; ?>
+                                    <?php if (!empty($date)): ?>
+                                        <div><strong style="color:#065f46;">Scheduled Date:</strong> <span style="color:#047857; font-weight:700;"><?php echo date('F j, Y', strtotime($date)); ?></span></div>
+                                    <?php endif; ?>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    <?php elseif ($isCommercial && $order['status'] === 'client_confirmed'): ?>
+                        <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:1.25rem 1.5rem; margin-top:1.25rem; margin-bottom:0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+                            <div>
+                                <div style="font-weight:700; color:#1e40af; font-size:1.05rem;">
+                                    &#10003; Confirmed by You (Awaiting Admin Approval &amp; Head Engineer Assignment)
+                                </div>
+                                <div style="font-size:0.88rem; color:#2563eb; margin-top:0.35rem; line-height:1.5;">
+                                    Thank you! You have confirmed this commercial installation project. Our engineering team is currently assigning the lead engineer and finalizing the deployment schedule.
+                                </div>
+                            </div>
+                            <div>
+                                <form action="action.php" method="POST" style="margin:0;">
+                                    <input type="hidden" name="order_id" value="<?php echo (int)$order['id']; ?>">
+                                    <input type="hidden" name="action" value="cancel">
+                                    <button type="submit" class="btn-cancel-action" onclick="return confirm('Are you sure you want to cancel this confirmed request?');" style="background:#fff; color:#dc2626; border:1px solid #fca5a5; padding:8px 16px; border-radius:6px; font-weight:600; font-size:0.85rem; cursor:pointer;">
+                                        &#10005; Cancel Request
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    <?php elseif ($isCommercial && $order['status'] === 'pending'): ?>
+                        <div style="background:#fffbeb; border:1px solid #fde68a; border-radius:8px; padding:1.25rem 1.5rem; margin-top:1.25rem; margin-bottom:0;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+                                <div>
+                                    <div style="font-weight:700; color:#92400e; font-size:1.05rem;">
+                                        Commercial Grid Installation Proposal Ready
+                                    </div>
+                                    <div style="font-size:0.88rem; color:#b45309; margin-top:0.35rem; line-height:1.5;">
+                                        Please review the turnkey equipment details and pricing below. Confirm your installation request to notify our engineering team, or cancel the request.
+                                    </div>
+                                </div>
+                                <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+                                    <form action="action.php" method="POST" style="margin:0;">
+                                        <input type="hidden" name="order_id" value="<?php echo (int)$order['id']; ?>">
+                                        <input type="hidden" name="action" value="confirm">
+                                        <button type="submit" class="btn-confirm-action" style="background:#059669; color:#fff; border:none; padding:10px 22px; border-radius:6px; font-weight:700; font-size:0.92rem; cursor:pointer; display:inline-flex; align-items:center; gap:6px; box-shadow:0 2px 4px rgba(5,150,105,0.25);">
+                                            &#10003; Confirm Installation
+                                        </button>
+                                    </form>
+                                    <form action="action.php" method="POST" style="margin:0;">
+                                        <input type="hidden" name="order_id" value="<?php echo (int)$order['id']; ?>">
+                                        <input type="hidden" name="action" value="cancel">
+                                        <button type="submit" class="btn-cancel-action" onclick="return confirm('Are you sure you want to cancel this installation request?');" style="background:#fff; color:#dc2626; border:1px solid #fca5a5; padding:10px 18px; border-radius:6px; font-weight:700; font-size:0.92rem; cursor:pointer;">
+                                            &#10005; Cancel Request
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+
                     <!-- Terminal Banner (if Cancelled or Refunded) -->
                     <div class="terminal-status-banner <?php echo in_array($order['status'], ['cancelled', 'refunded']) ? $order['status'] : ''; ?>" 
                          id="terminal-status-banner" 
-                         style="<?php echo in_array($order['status'], ['cancelled', 'refunded']) ? 'display:flex;' : 'display:none;'; ?>">
+                         style="<?php echo in_array($order['status'], ['cancelled', 'refunded']) ? 'display:flex;' : 'display:none;'; ?> <?php echo $isCommercial ? 'margin-bottom:0;' : ''; ?>">
                         <div class="banner-icon">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <circle cx="12" cy="12" r="10"></circle>
@@ -218,7 +379,8 @@ $progressWidthPercent = ($stageIndex !== false) ? min(75, $stageIndex * 25) : 0;
                         </div>
                     </div>
 
-                    <!-- Standard Visual Progression Timeline -->
+                    <!-- Standard Visual Progression Timeline (Omitted for Commercial Grids) -->
+                    <?php if (!$isCommercial): ?>
                     <div class="status-tracker-timeline" id="standard-status-timeline" 
                          style="<?php echo in_array($order['status'], ['cancelled', 'refunded']) ? 'display:none;' : 'display:flex;'; ?>">
                         
@@ -240,20 +402,34 @@ $progressWidthPercent = ($stageIndex !== false) ? min(75, $stageIndex * 25) : 0;
                             <div class="node-time"><?php echo date('M d, H:i', strtotime($order['created_at'])); ?></div>
                         </div>
 
-                        <!-- 2. Processing (Engineering & Allocation) -->
+                        <!-- 2. Confirmed / Processing -->
                         <?php 
-                            $idxProcessing = array_search('processing', $standardStages);
-                            $classProcessing = ($stageIndex !== false && $stageIndex > $idxProcessing) ? 'completed' : (($stageIndex === $idxProcessing) ? 'active' : 'upcoming');
+                            $isConfirmed = in_array($order['status'], ['confirmed', 'processing', 'shipped', 'delivered'], true);
+                            if ($isConfirmed) {
+                                $classNode2 = 'completed';
+                                $node2Title = 'Processing';
+                                $node2Time  = 'In Progress';
+                            } else {
+                                $classNode2 = 'upcoming';
+                                $node2Title = 'Processing';
+                                $node2Time  = 'Pending';
+                            }
                         ?>
-                        <div class="timeline-node <?php echo $classProcessing; ?>" id="node-processing">
+                        <div class="timeline-node <?php echo $classNode2; ?>" id="node-processing">
                             <div class="node-icon-circle">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                                    <circle cx="12" cy="12" r="3"></circle>
-                                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                                </svg>
+                                <?php if ($isConfirmed): ?>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                <?php else: ?>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                        <circle cx="12" cy="12" r="3"></circle>
+                                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                                    </svg>
+                                <?php endif; ?>
                             </div>
-                            <div class="node-title">Processing</div>
-                            <div class="node-time">Warehouse Prep</div>
+                            <div class="node-title"><?php echo $node2Title; ?></div>
+                            <div class="node-time"><?php echo $node2Time; ?></div>
                         </div>
 
                         <!-- 3. Shipped (In Transit) -->
@@ -290,6 +466,7 @@ $progressWidthPercent = ($stageIndex !== false) ? min(75, $stageIndex * 25) : 0;
                             <div class="node-time">Site Turnkey</div>
                         </div>
                     </div>
+                    <?php endif; ?>
                 </div>
 
                 <!-- ---------------------------------------------------------- -->
@@ -299,12 +476,7 @@ $progressWidthPercent = ($stageIndex !== false) ? min(75, $stageIndex * 25) : 0;
                     <!-- Left: Purchased Equipment Items -->
                     <div class="detail-card">
                         <div class="detail-card-title">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-2z"></path>
-                                <line x1="3" y1="6" x2="21" y2="6"></line>
-                                <path d="M16 10a4 4 0 0 1-8 0"></path>
-                            </svg>
-                            Solar Hardware & Installation Items
+                            Solar Hardware &amp; Installation Items
                         </div>
 
                         <div class="order-items-container">
@@ -337,21 +509,64 @@ $progressWidthPercent = ($stageIndex !== false) ? min(75, $stageIndex * 25) : 0;
                                 <span>&#8369;<?php echo number_format($order['tax_amount'], 2); ?></span>
                             </div>
                             <div class="totals-row grand-total">
-                                <span>Total Paid</span>
+                                <span>Total Price</span>
                                 <span>&#8369;<?php echo number_format($order['total_amount'], 2); ?></span>
                             </div>
                         </div>
+
+                        <?php if ($isCommercial): ?>
+                            <!-- Commercial Solar Engineering Specifications -->
+                            <div style="margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--color-border);">
+                                <div style="font-size: 0.95rem; font-weight: 700; color: var(--color-navy); margin-bottom: 0.85rem; display: flex; align-items: center; gap: 6px;">
+                                    Commercial Solar Engineering Specifications
+                                </div>
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem;">
+                                    <div style="background: #f8fafc; padding: 0.85rem 1rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+                                        <div style="font-size: 0.74rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.4px;">System Capacity</div>
+                                        <div style="font-size: 1.15rem; font-weight: 800; color: var(--color-navy); margin-top: 3px;">
+                                            <?php echo !empty($commercialSpecs['estimated_system_size']) ? number_format((float)$commercialSpecs['estimated_system_size'], 2) . ' kWp' : 'Turnkey Array'; ?>
+                                        </div>
+                                    </div>
+                                    <div style="background: #f8fafc; padding: 0.85rem 1rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+                                        <div style="font-size: 0.74rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.4px;">Facility Area</div>
+                                        <div style="font-size: 1.15rem; font-weight: 800; color: var(--color-navy); margin-top: 3px;">
+                                            <?php echo !empty($commercialSpecs['facility_size']) ? number_format((float)$commercialSpecs['facility_size'], 2) . ' sqm' : 'N/A'; ?>
+                                        </div>
+                                    </div>
+                                    <div style="background: #f8fafc; padding: 0.85rem 1rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+                                        <div style="font-size: 0.74rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.4px;">Monthly Bill</div>
+                                        <div style="font-size: 1.15rem; font-weight: 800; color: var(--color-navy); margin-top: 3px;">
+                                            <?php echo !empty($commercialSpecs['current_monthly_bill']) ? '&#8369;' . number_format((float)$commercialSpecs['current_monthly_bill'], 2) : 'N/A'; ?>
+                                        </div>
+                                    </div>
+                                    <div style="background: #f8fafc; padding: 0.85rem 1rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+                                        <div style="font-size: 0.74rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.4px;">Est. Annual Savings</div>
+                                        <div style="font-size: 1.15rem; font-weight: 800; color: #059669; margin-top: 3px;">
+                                            <?php echo !empty($commercialSpecs['estimated_annual_savings']) ? '&#8369;' . number_format((float)$commercialSpecs['estimated_annual_savings'], 2) : 'N/A'; ?>
+                                        </div>
+                                    </div>
+                                    <div style="background: #f8fafc; padding: 0.85rem 1rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+                                        <div style="font-size: 0.74rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.4px;">Estimated Payback</div>
+                                        <div style="font-size: 1.15rem; font-weight: 800; color: var(--color-navy); margin-top: 3px;">
+                                            <?php echo !empty($commercialSpecs['estimated_payback_period']) ? number_format((float)$commercialSpecs['estimated_payback_period'], 1) . ' years' : 'N/A'; ?>
+                                        </div>
+                                    </div>
+                                    <div style="background: #f8fafc; padding: 0.85rem 1rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+                                        <div style="font-size: 0.74rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.4px;">Target Timeline</div>
+                                        <div style="font-size: 1.15rem; font-weight: 800; color: var(--color-navy); margin-top: 3px;">
+                                            <?php echo !empty($commercialSpecs['target_timeline']) ? htmlspecialchars($commercialSpecs['target_timeline']) : 'Immediate'; ?>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endif; ?>
                     </div>
 
                     <!-- Right: Customer, Shipping & Payment Summary -->
                     <div>
                         <div class="detail-card">
                             <div class="detail-card-title">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                                    <circle cx="12" cy="10" r="3"></circle>
-                                </svg>
-                                Shipping & Deployment
+                                Shipping &amp; Deployment
                             </div>
                             <div style="font-size:0.9rem; line-height:1.6; color:#334155;">
                                 <div style="font-weight:700; color:var(--color-navy);"><?php echo htmlspecialchars($order['customer_name']); ?></div>
@@ -365,10 +580,6 @@ $progressWidthPercent = ($stageIndex !== false) ? min(75, $stageIndex * 25) : 0;
 
                         <div class="detail-card">
                             <div class="detail-card-title">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
-                                    <line x1="1" y1="10" x2="23" y2="10"></line>
-                                </svg>
                                 Payment Details
                             </div>
                             <div style="font-size:0.9rem; line-height:1.6; color:#334155;">
@@ -384,14 +595,6 @@ $progressWidthPercent = ($stageIndex !== false) ? min(75, $stageIndex * 25) : 0;
                         </div>
 
                         <div style="display:flex; flex-direction:column; gap:10px;">
-                            <button type="button" onclick="window.print();" class="btn-filter-reset" style="width:100%; height:44px;">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:8px;">
-                                    <polyline points="6 9 6 2 18 2 18 9"></polyline>
-                                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-                                    <rect x="6" y="14" width="12" height="8"></rect>
-                                </svg>
-                                Print Order Receipt
-                            </button>
                             <a href="../../index.php#contact" class="btn-filter-reset" style="width:100%; height:44px;">
                                 Need Help? Contact Support
                             </a>
@@ -445,6 +648,14 @@ $progressWidthPercent = ($stageIndex !== false) ? min(75, $stageIndex * 25) : 0;
             'notices' => $cart_notices
         ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
     </script>
+    <?php if ($order && $order['status'] === 'confirmed' && !empty($_GET['msg']) && stripos($_GET['msg'], 'awaiting') !== false): ?>
+    <script>
+        if (window.history.replaceState) {
+            const cleanUrl = window.location.pathname + window.location.search.replace(/([?&])msg=[^&]*(&|$)/, '$1').replace(/[?&]$/, '');
+            window.history.replaceState({}, document.title, cleanUrl);
+        }
+    </script>
+    <?php endif; ?>
     <script src="../../cart/cart.js" defer></script>
     <script src="../account.js" defer></script>
     <script src="../../assets/js/order-history.js" defer></script>

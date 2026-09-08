@@ -64,10 +64,15 @@ try {
     $sortDir = ($sortDirParam === 'asc') ? 'ASC' : 'DESC';
 
     // Filters
+    $userEmail = getCurrentUserEmail() ?? '';
+    if (!empty($userEmail)) {
+        $db->prepare("UPDATE orders SET user_id = :uid WHERE user_id IS NULL AND LOWER(customer_email) = LOWER(:uemail)")->execute([':uid' => $userId, ':uemail' => $userEmail]);
+    }
+
     $whereClauses = ['o.user_id = :user_id'];
     $params = [':user_id' => $userId];
 
-    $validStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded'];
+    $validStatuses = ['pending', 'client_confirmed', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded'];
     if (!empty($_GET['status'])) {
         $filterStatus = strtolower(trim($_GET['status']));
         if (in_array($filterStatus, $validStatuses, true)) {
@@ -111,6 +116,7 @@ try {
             o.order_number,
             o.created_at,
             o.status,
+            o.property_type,
             o.total_amount,
             COALESCE((SELECT SUM(oi.quantity) FROM order_items oi WHERE oi.order_id = o.id), 0) AS item_count
         FROM orders o
@@ -130,12 +136,13 @@ try {
     $orders = [];
     while ($row = $listStmt->fetch(PDO::FETCH_ASSOC)) {
         $orders[] = [
-            'id'           => (int)$row['id'],
-            'order_number' => $row['order_number'],
-            'created_at'   => $row['created_at'],
-            'status'       => $row['status'],
-            'total_amount' => (float)$row['total_amount'],
-            'item_count'   => (int)$row['item_count']
+            'id'            => (int)$row['id'],
+            'order_number'  => $row['order_number'],
+            'created_at'    => $row['created_at'],
+            'status'        => $row['status'],
+            'property_type' => $row['property_type'] ?? 'Residential',
+            'total_amount'  => (float)$row['total_amount'],
+            'item_count'    => (int)$row['item_count']
         ];
     }
 

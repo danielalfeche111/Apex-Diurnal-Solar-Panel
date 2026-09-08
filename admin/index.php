@@ -90,12 +90,6 @@ include __DIR__ . '/includes/header.php';
       </div>
       <div class="metric-subtext">Awaiting fulfillment & stock check</div>
     </div>
-    <div class="metric-icon warning">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="10"></circle>
-        <polyline points="12 6 12 12 16 14"></polyline>
-      </svg>
-    </div>
   </div>
 
   <!-- Low Stock Alerts -->
@@ -107,11 +101,6 @@ include __DIR__ . '/includes/header.php';
       </div>
       <div class="metric-subtext">Items at reorder threshold</div>
     </div>
-    <div class="metric-icon" style="<?php echo $low_stock_items > 0 ? 'background:#fff7ed; color:#ea580c;' : ''; ?>">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-      </svg>
-    </div>
   </div>
 
   <!-- Pending Bookings -->
@@ -121,13 +110,6 @@ include __DIR__ . '/includes/header.php';
       <div class="metric-value"><?php echo $pending_bookings; ?></div>
       <div class="metric-subtext">Installation & audits to confirm</div>
     </div>
-    <div class="metric-icon info">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-        <line x1="16" y1="2" x2="16" y2="6"></line>
-        <line x1="8" y1="2" x2="8" y2="6"></line>
-      </svg>
-    </div>
   </div>
 
   <!-- New Quotes -->
@@ -136,13 +118,6 @@ include __DIR__ . '/includes/header.php';
       <h3>New RFQ Inquiries</h3>
       <div class="metric-value"><?php echo $new_quotes; ?></div>
       <div class="metric-subtext">Commercial solar inquiries</div>
-    </div>
-    <div class="metric-icon">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-        <polyline points="14 2 14 8 20 8"></polyline>
-        <line x1="16" y1="13" x2="8" y2="13"></line>
-      </svg>
     </div>
   </div>
 </div>
@@ -155,11 +130,6 @@ include __DIR__ . '/includes/header.php';
     <div class="card">
       <div class="card-header">
         <div class="card-title">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
-            <line x1="3" y1="6" x2="21" y2="6"></line>
-            <path d="M16 10a4 4 0 0 1-8 0"></path>
-          </svg>
           <span>Recent Customer Purchases</span>
         </div>
         <a href="orders/index.php" class="btn btn-secondary btn-sm">View All Orders &rarr;</a>
@@ -234,12 +204,6 @@ include __DIR__ . '/includes/header.php';
     <div class="card">
       <div class="card-header">
         <div class="card-title">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-            <polyline points="14 2 14 8 20 8"></polyline>
-            <line x1="16" y1="13" x2="8" y2="13"></line>
-            <line x1="16" y1="17" x2="8" y2="17"></line>
-          </svg>
           <span>Commercial Grid Quotation Requests</span>
         </div>
         <a href="quotes/index.php" class="btn btn-secondary btn-sm">All Quotes &rarr;</a>
@@ -267,14 +231,26 @@ include __DIR__ . '/includes/header.php';
               <?php foreach ($recent_quotes as $q):
                 $qst = $q['status'];
                 $qbClass = 'badge-pending';
-                if ($qst === 'reviewed')
-                  $qbClass = 'badge-processing';
-                elseif ($qst === 'quoted')
-                  $qbClass = 'badge-quoted';
-                elseif ($qst === 'accepted')
+                $qbLabel = 'Pending';
+                if ($qst === 'confirmed' || $qst === 'accepted') {
                   $qbClass = 'badge-accepted';
-                elseif ($qst === 'rejected')
+                  $qbLabel = 'Confirmed';
+                } elseif ($qst === 'in_progress') {
+                  $qbClass = 'badge-processing';
+                  $qbLabel = 'In Progress';
+                } elseif ($qst === 'completed') {
+                  $qbClass = 'badge-accepted';
+                  $qbLabel = 'Completed';
+                } elseif ($qst === 'reviewed') {
+                  $qbClass = 'badge-processing';
+                  $qbLabel = 'Reviewed';
+                } elseif ($qst === 'quoted') {
+                  $qbClass = 'badge-quoted';
+                  $qbLabel = 'Quoted';
+                } elseif ($qst === 'rejected' || $qst === 'cancelled' || $qst === 'expired') {
                   $qbClass = 'badge-rejected';
+                  $qbLabel = ucfirst($qst);
+                }
                 ?>
                 <tr>
                   <td>
@@ -296,12 +272,12 @@ include __DIR__ . '/includes/header.php';
                       style="font-size: 0.75rem; color: var(--text-muted); white-space: nowrap;"><?php echo htmlspecialchars($q['target_timeline'] ?? 'Flexible'); ?></span>
                   </td>
                   <td>
-                    <span class="badge <?php echo $qbClass; ?>"><?php echo ucfirst($qst); ?></span>
+                    <span class="badge <?php echo $qbClass; ?>"><?php echo htmlspecialchars($qbLabel); ?></span>
                   </td>
                   <td style="text-align: right; width: 80px; min-width: 80px; white-space: nowrap;">
                     <a href="quotes/view.php?id=<?php echo $q['id']; ?>" class="btn btn-secondary btn-sm"
                       style="padding: 0.3rem 0.6rem; font-size: 0.72rem;">
-                      Respond
+                      Manage
                     </a>
                   </td>
                 </tr>
@@ -319,11 +295,6 @@ include __DIR__ . '/includes/header.php';
     <div class="card">
       <div class="card-header">
         <div class="card-title">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path
-              d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z">
-            </path>
-          </svg>
           <span>Inventory</span>
         </div>
         <a href="inventory/index.php" class="btn btn-secondary btn-sm">Manage</a>
@@ -358,7 +329,7 @@ include __DIR__ . '/includes/header.php';
             </div>
             <?php if ($isLow): ?>
               <div style="font-size: 0.72rem; color: #ea580c; font-weight: 600; margin-top: 0.2rem;">
-                ⚠️ Below reorder point (<?php echo $reorder; ?> units)
+                Below reorder point (<?php echo $reorder; ?> units)
               </div>
             <?php endif; ?>
           </div>
@@ -370,11 +341,6 @@ include __DIR__ . '/includes/header.php';
     <div class="card">
       <div class="card-header">
         <div class="card-title">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-            <line x1="16" y1="2" x2="16" y2="6"></line>
-            <line x1="8" y1="2" x2="8" y2="6"></line>
-          </svg>
           <span>Upcoming Service Schedule</span>
         </div>
         <a href="schedule/index.php" class="btn btn-secondary btn-sm">Calendar</a>

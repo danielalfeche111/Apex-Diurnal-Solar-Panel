@@ -713,6 +713,23 @@ function nav_link(string $label, string $href, string $class = '', string $extra
             <div class="consultation-field-error" id="err-rfq_business_registration_type"></div>
           </div>
 
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="rfq_facility_size" class="consultation-label">Facility Rooftop / Land Area (sqm) <span
+                  class="text-danger">*</span></label>
+              <input type="number" id="rfq_facility_size" name="facility_size" class="consultation-input"
+                placeholder="e.g. 500" min="1" step="any" required disabled>
+              <div class="consultation-field-error" id="err-rfq_facility_size"></div>
+            </div>
+            <div class="form-group">
+              <label for="rfq_current_monthly_bill" class="consultation-label">Current Monthly Electricity Bill (₱) <span
+                  class="text-danger">*</span></label>
+              <input type="number" id="rfq_current_monthly_bill" name="current_monthly_bill" class="consultation-input"
+                placeholder="e.g. 75000" min="1" step="any" required disabled>
+              <div class="consultation-field-error" id="err-rfq_current_monthly_bill"></div>
+            </div>
+          </div>
+
           <div class="consultation-actions modal-actions-right">
             <button type="button" class="btn btn-yellow consultation-nav-btn" id="btn-rfq-next-1">
               <span>Next: Installation Address</span>

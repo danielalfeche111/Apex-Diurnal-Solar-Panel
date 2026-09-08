@@ -37,8 +37,8 @@ $quotes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 // KPIs
 $kpi_total = (int)$db->query("SELECT COUNT(*) FROM quote_requests")->fetchColumn();
 $kpi_new = (int)$db->query("SELECT COUNT(*) FROM quote_requests WHERE status = 'new'")->fetchColumn();
-$kpi_quoted = (int)$db->query("SELECT COUNT(*) FROM quote_requests WHERE status = 'quoted'")->fetchColumn();
-$kpi_accepted = (int)$db->query("SELECT COUNT(*) FROM quote_requests WHERE status = 'accepted'")->fetchColumn();
+$kpi_confirmed = (int)$db->query("SELECT COUNT(*) FROM quote_requests WHERE status IN ('confirmed', 'accepted')")->fetchColumn();
+$kpi_in_progress = (int)$db->query("SELECT COUNT(*) FROM quote_requests WHERE status = 'in_progress'")->fetchColumn();
 
 $msg = $_GET['msg'] ?? '';
 $err = $_GET['err'] ?? '';
@@ -53,61 +53,47 @@ include __DIR__ . '/../includes/header.php';
 <div class="metrics-grid">
   <div class="metric-card">
     <div class="metric-details">
-      <h3>New RFQ Inquiries</h3>
+      <h3>Pending Confirmation</h3>
       <div class="metric-value" style="<?php echo $kpi_new > 0 ? 'color:#b45309;' : ''; ?>">
         <?php echo $kpi_new; ?>
       </div>
-      <div class="metric-subtext">Awaiting sales engineering review</div>
-    </div>
-    <div class="metric-icon warning">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+      <div class="metric-subtext">Awaiting admin review & confirmation</div>
     </div>
   </div>
 
   <div class="metric-card">
     <div class="metric-details">
-      <h3>Proposals Issued</h3>
-      <div class="metric-value"><?php echo $kpi_quoted; ?></div>
-      <div class="metric-subtext">Commercial pricing sent</div>
-    </div>
-    <div class="metric-icon info">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+      <h3>Confirmed Installations</h3>
+      <div class="metric-value" style="color:#047857;"><?php echo $kpi_confirmed; ?></div>
+      <div class="metric-subtext">Commercial solar builds confirmed</div>
     </div>
   </div>
 
   <div class="metric-card">
     <div class="metric-details">
-      <h3>Contracts Accepted</h3>
-      <div class="metric-value" style="color:#047857;"><?php echo $kpi_accepted; ?></div>
-      <div class="metric-subtext">Converted to active solar builds</div>
-    </div>
-    <div class="metric-icon success">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+      <h3>Active Builds</h3>
+      <div class="metric-value" style="color:#1d4ed8;"><?php echo $kpi_in_progress; ?></div>
+      <div class="metric-subtext">Installations currently in progress</div>
     </div>
   </div>
 
   <div class="metric-card">
     <div class="metric-details">
-      <h3>Lifetime Inquiries</h3>
+      <h3>Total Requests</h3>
       <div class="metric-value"><?php echo $kpi_total; ?></div>
-      <div class="metric-subtext">Commercial & Industrial grid RFQs</div>
-    </div>
-    <div class="metric-icon">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+      <div class="metric-subtext">Commercial & industrial inquiries</div>
     </div>
   </div>
 </div>
 
 <?php if ($msg): ?>
-  <div style="background:#ecfdf5; border:1px solid #a7f3d0; color:#065f46; padding:0.85rem 1.25rem; border-radius:8px; margin-bottom:1.5rem; font-size:0.85rem; display:flex; align-items:center; gap:0.5rem;">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+  <div style="background:#ecfdf5; border:1px solid #a7f3d0; color:#065f46; padding:0.85rem 1.25rem; border-radius:8px; margin-bottom:1.5rem; font-size:0.85rem;">
     <span><?php echo htmlspecialchars($msg); ?></span>
   </div>
 <?php endif; ?>
 
 <?php if ($err): ?>
-  <div style="background:#fef2f2; border:1px solid #fecaca; color:#991b1b; padding:0.85rem 1.25rem; border-radius:8px; margin-bottom:1.5rem; font-size:0.85rem; display:flex; align-items:center; gap:0.5rem;">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+  <div style="background:#fef2f2; border:1px solid #fecaca; color:#991b1b; padding:0.85rem 1.25rem; border-radius:8px; margin-bottom:1.5rem; font-size:0.85rem;">
     <span><?php echo htmlspecialchars($err); ?></span>
   </div>
 <?php endif; ?>
@@ -119,19 +105,19 @@ include __DIR__ . '/../includes/header.php';
       All (<?php echo $kpi_total; ?>)
     </a>
     <a href="index.php?status=new<?php echo !empty($search) ? '&search=' . urlencode($search) : ''; ?>" class="filter-pill <?php echo ($status_filter === 'new') ? 'active' : ''; ?>">
-      New (<?php echo $kpi_new; ?>)
+      Pending (<?php echo $kpi_new; ?>)
     </a>
-    <a href="index.php?status=reviewed<?php echo !empty($search) ? '&search=' . urlencode($search) : ''; ?>" class="filter-pill <?php echo ($status_filter === 'reviewed') ? 'active' : ''; ?>">
-      Reviewed
+    <a href="index.php?status=confirmed<?php echo !empty($search) ? '&search=' . urlencode($search) : ''; ?>" class="filter-pill <?php echo ($status_filter === 'confirmed') ? 'active' : ''; ?>">
+      Confirmed (<?php echo $kpi_confirmed; ?>)
     </a>
-    <a href="index.php?status=quoted<?php echo !empty($search) ? '&search=' . urlencode($search) : ''; ?>" class="filter-pill <?php echo ($status_filter === 'quoted') ? 'active' : ''; ?>">
-      Quoted
+    <a href="index.php?status=in_progress<?php echo !empty($search) ? '&search=' . urlencode($search) : ''; ?>" class="filter-pill <?php echo ($status_filter === 'in_progress') ? 'active' : ''; ?>">
+      In Progress (<?php echo $kpi_in_progress; ?>)
     </a>
-    <a href="index.php?status=accepted<?php echo !empty($search) ? '&search=' . urlencode($search) : ''; ?>" class="filter-pill <?php echo ($status_filter === 'accepted') ? 'active' : ''; ?>">
-      Accepted
+    <a href="index.php?status=completed<?php echo !empty($search) ? '&search=' . urlencode($search) : ''; ?>" class="filter-pill <?php echo ($status_filter === 'completed') ? 'active' : ''; ?>">
+      Completed
     </a>
-    <a href="index.php?status=rejected<?php echo !empty($search) ? '&search=' . urlencode($search) : ''; ?>" class="filter-pill <?php echo ($status_filter === 'rejected') ? 'active' : ''; ?>">
-      Rejected
+    <a href="index.php?status=cancelled<?php echo !empty($search) ? '&search=' . urlencode($search) : ''; ?>" class="filter-pill <?php echo ($status_filter === 'cancelled') ? 'active' : ''; ?>">
+      Cancelled
     </a>
   </div>
 
@@ -146,8 +132,7 @@ include __DIR__ . '/../includes/header.php';
 <div class="card">
   <div class="card-header">
     <div class="card-title">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-      <span>Commercial Grid Inquiry Queue (<?php echo count($quotes); ?>)</span>
+      <span>Commercial Grid Installation Requests (<?php echo count($quotes); ?>)</span>
     </div>
   </div>
 
@@ -157,29 +142,44 @@ include __DIR__ . '/../includes/header.php';
         <tr>
           <th>Quote #</th>
           <th>Company / Contact</th>
-          <th style="width: 100px;">Facility</th>
-          <th style="width: 85px;">Bill</th>
-          <th style="width: 90px;">System</th>
-          <th style="width: 80px;">Timeline</th>
-          <th style="width: 75px;">Status</th>
+          <th style="width: 110px;">Facility Specs</th>
+          <th style="width: 140px;">Installation Head</th>
+          <th style="width: 110px;">Target / Date</th>
+          <th style="width: 90px;">Status</th>
           <th style="text-align: right; width: 75px;">Action</th>
         </tr>
       </thead>
       <tbody>
         <?php if (empty($quotes)): ?>
           <tr>
-            <td colspan="8" style="text-align:center; padding:3rem; color:var(--text-muted);">
-              No commercial quote requests found.
+            <td colspan="7" style="text-align:center; padding:3rem; color:var(--text-muted);">
+              No commercial installation requests found.
             </td>
           </tr>
         <?php else: ?>
           <?php foreach ($quotes as $q): 
             $status = $q['status'];
             $badgeClass = 'badge-pending';
-            if ($status === 'reviewed') $badgeClass = 'badge-processing';
-            elseif ($status === 'quoted') $badgeClass = 'badge-quoted';
-            elseif ($status === 'accepted') $badgeClass = 'badge-accepted';
-            elseif ($status === 'rejected' || $status === 'expired') $badgeClass = 'badge-rejected';
+            $statusLabel = 'Pending';
+            if ($status === 'confirmed' || $status === 'accepted') {
+                $badgeClass = 'badge-accepted';
+                $statusLabel = 'Confirmed';
+            } elseif ($status === 'in_progress') {
+                $badgeClass = 'badge-processing';
+                $statusLabel = 'In Progress';
+            } elseif ($status === 'completed') {
+                $badgeClass = 'badge-accepted';
+                $statusLabel = 'Completed';
+            } elseif ($status === 'cancelled' || $status === 'rejected' || $status === 'expired') {
+                $badgeClass = 'badge-rejected';
+                $statusLabel = ucfirst($status);
+            } elseif ($status === 'reviewed') {
+                $badgeClass = 'badge-processing';
+                $statusLabel = 'Reviewed';
+            } elseif ($status === 'quoted') {
+                $badgeClass = 'badge-quoted';
+                $statusLabel = 'Quoted';
+            }
           ?>
           <tr>
             <td>
@@ -196,28 +196,36 @@ include __DIR__ . '/../includes/header.php';
               <div style="font-weight:600; color:var(--navy-primary); font-size:0.76rem;"><?php echo htmlspecialchars($q['facility_type'] ?? 'Commercial'); ?></div>
               <div style="font-size:0.68rem; color:var(--text-muted); white-space:nowrap;"><?php echo number_format($q['facility_size']); ?> sqm</div>
             </td>
-            <td style="white-space:nowrap; font-weight:600; font-size:0.76rem;">
-              &#8369;<?php echo number_format($q['current_monthly_bill'], 2); ?>
-            </td>
             <td>
-              <div style="font-weight:700; color:var(--navy-primary); font-size:0.78rem;"><?php echo $q['estimated_system_size'] ? $q['estimated_system_size'] . ' kW' : 'Custom'; ?></div>
-              <?php if (!empty($q['quoted_amount'])): ?>
-                <div style="font-size:0.68rem; color:#047857; font-weight:700; white-space:nowrap;">Quoted: &#8369;<?php echo number_format($q['quoted_amount'], 2); ?></div>
+              <?php if (!empty($q['installation_head'])): ?>
+                <div style="font-weight:700; color:#047857; font-size:0.78rem;">
+                  &#10003; <?php echo htmlspecialchars($q['installation_head']); ?>
+                </div>
+              <?php else: ?>
+                <span style="font-size:0.7rem; color:#b45309; background:#fef3c7; padding:0.15rem 0.45rem; border-radius:4px; font-weight:600;">
+                  Unassigned
+                </span>
               <?php endif; ?>
             </td>
             <td>
-              <span style="font-size:0.7rem; padding:0.15rem 0.45rem; background:#f1f5f9; border-radius:4px; font-weight:600; color:#334155; white-space:nowrap;">
-                <?php echo htmlspecialchars($q['target_timeline'] ?? 'Flexible'); ?>
-              </span>
+              <?php if (!empty($q['installation_date'])): ?>
+                <div style="font-weight:600; color:var(--text-main); font-size:0.75rem;">
+                  <?php echo date('M j, Y', strtotime($q['installation_date'])); ?>
+                </div>
+              <?php else: ?>
+                <span style="font-size:0.7rem; padding:0.15rem 0.45rem; background:#f1f5f9; border-radius:4px; font-weight:500; color:var(--text-muted); white-space:nowrap;">
+                  <?php echo htmlspecialchars($q['target_timeline'] ?? 'Flexible'); ?>
+                </span>
+              <?php endif; ?>
             </td>
             <td>
               <span class="badge <?php echo $badgeClass; ?>" style="font-size: 0.66rem; padding: 0.15rem 0.5rem;">
-                <?php echo ucfirst($status); ?>
+                <?php echo htmlspecialchars($statusLabel); ?>
               </span>
             </td>
             <td style="text-align: right; width: 75px; white-space:nowrap;">
-              <a href="view.php?id=<?php echo $q['id']; ?>" class="btn btn-secondary btn-sm" style="padding:0.25rem 0.5rem; font-size:0.7rem;">
-                Quote
+              <a href="view.php?id=<?php echo $q['id']; ?>" class="btn btn-secondary btn-sm" style="padding:0.25rem 0.55rem; font-size:0.72rem;">
+                Manage
               </a>
             </td>
           </tr>

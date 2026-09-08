@@ -17,7 +17,13 @@ if (!isLoggedIn()) {
 $database = new Database();
 $db = $database->getConnection();
 $userId = getCurrentUserId();
-$userEmail = getCurrentUserEmail() ?? 'U';
+$userEmail = getCurrentUserEmail() ?? '';
+
+// Automatically claim any orders placed with the user's email if user_id was unassigned
+if (!empty($userEmail)) {
+    $claimStmt = $db->prepare("UPDATE orders SET user_id = :uid WHERE user_id IS NULL AND LOWER(customer_email) = LOWER(:uemail)");
+    $claimStmt->execute([':uid' => $userId, ':uemail' => $userEmail]);
+}
 
 // Initial Server-Side Query for fast first paint & SEO / noscript fallback
 $statusFilter = trim($_GET['status'] ?? '');
@@ -32,7 +38,7 @@ $offset = ($page - 1) * $limit;
 $whereClauses = ['o.user_id = :user_id'];
 $params = [':user_id' => $userId];
 
-$validStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded'];
+$validStatuses = ['pending', 'client_confirmed', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded'];
 if (!empty($statusFilter) && in_array($statusFilter, $validStatuses, true)) {
     $whereClauses[] = 'o.status = :status';
     $params[':status'] = $statusFilter;
@@ -77,6 +83,7 @@ $listSql = "
         o.order_number,
         o.created_at,
         o.status,
+        o.property_type,
         o.total_amount,
         COALESCE((SELECT SUM(oi.quantity) FROM order_items oi WHERE oi.order_id = o.id), 0) AS item_count
     FROM orders o
@@ -242,8 +249,21 @@ if (!empty($_SESSION['cart_notifications']) && is_array($_SESSION['cart_notifica
                                     <?php echo date('M d, Y', strtotime($ord['created_at'])); ?>
                                 </td>
                                 <td>
-                                    <span class="status-pill status-<?php echo htmlspecialchars($ord['status']); ?>">
-                                        <?php echo htmlspecialchars($ord['status']); ?>
+                                    <?php
+                                        $st = $ord['status'];
+                                        $isComm = (($ord['property_type'] ?? '') === 'Commercial');
+                                        if ($st === 'confirmed') {
+                                            $stLabel = 'Already Confirmed';
+                                        } elseif ($st === 'client_confirmed') {
+                                            $stLabel = 'Confirmed by Client';
+                                        } elseif ($st === 'pending' && $isComm) {
+                                            $stLabel = 'Pending Client Confirmation';
+                                        } else {
+                                            $stLabel = ucfirst($st);
+                                        }
+                                    ?>
+                                    <span class="status-pill status-<?php echo htmlspecialchars($st); ?>">
+                                        <?php echo htmlspecialchars($stLabel); ?>
                                     </span>
                                 </td>
                                 <td>

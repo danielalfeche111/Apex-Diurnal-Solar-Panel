@@ -454,14 +454,31 @@ a {
   margin-bottom: 1.25rem;
 }
 
+.metrics-grid.metrics-grid-3,
+.metrics-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
 @media (max-width: 1100px) {
   .metrics-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
+@media (max-width: 900px) {
+  .metrics-grid.metrics-grid-3,
+  .metrics-grid-3 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 @media (max-width: 540px) {
-  .metrics-grid {
+  .metrics-grid,
+  .metrics-grid.metrics-grid-3,
+  .metrics-grid-3 {
     grid-template-columns: 1fr;
   }
 }
@@ -469,13 +486,15 @@ a {
 .metric-card {
   background: var(--bg-card);
   border-radius: var(--radius-md);
-  padding: 0.85rem 1rem;
+  padding: 1.25rem 1rem;
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border-color);
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
+  justify-content: center;
+  text-align: center;
+  gap: 0.25rem;
   min-width: 0;
   transition: transform 0.2s, box-shadow 0.2s;
 }
@@ -487,67 +506,53 @@ a {
 
 .metric-details {
   min-width: 0;
-  flex: 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 
 .metric-details h3 {
-  font-size: 0.67rem;
+  font-size: 0.72rem;
   text-transform: uppercase;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
   color: var(--text-muted);
-  margin-bottom: 0.2rem;
+  margin-bottom: 0.35rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   font-weight: 700;
+  text-align: center;
+  width: 100%;
 }
 
 .metric-value {
-  font-size: 1.35rem;
+  font-size: 1.65rem;
   font-weight: 700;
   color: var(--navy-primary);
   line-height: 1.2;
+  text-align: center;
+  width: 100%;
+  margin-bottom: 0.2rem;
 }
 
 .metric-subtext {
-  font-size: 0.66rem;
+  font-size: 0.7rem;
   color: var(--text-muted);
-  margin-top: 0.15rem;
+  margin-top: 0.1rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-align: center;
+  width: 100%;
 }
 
-.metric-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--navy-subtle);
-  color: var(--navy-primary);
-  flex-shrink: 0;
-}
-
-.metric-icon svg {
-  width: 18px;
-  height: 18px;
-}
-
-.metric-icon.warning {
-  background: var(--warning-bg);
-  color: var(--warning);
-}
-
-.metric-icon.success {
-  background: var(--success-bg);
-  color: var(--success);
-}
-
-.metric-icon.info {
-  background: var(--info-bg);
-  color: var(--info);
+.metric-icon,
+.card-title svg,
+.btn-view-store svg {
+  display: none !important;
 }
 
 /* Cards & Panels */
@@ -919,3 +924,33 @@ a {
     grid-template-columns: 1fr;
   }
 }
+
+/* FullCalendar Toolbar Button Spacing */
+.fc .fc-toolbar-chunk {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.45rem !important;
+}
+
+.fc .fc-button-group {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.45rem !important;
+}
+
+.fc .fc-button-group > .fc-button {
+  margin: 0 !important;
+  border-radius: var(--radius-sm, 6px) !important;
+}
+
+.fc .fc-button-group > .fc-button:not(:first-child) {
+  margin-left: 0 !important;
+  border-top-left-radius: var(--radius-sm, 6px) !important;
+  border-bottom-left-radius: var(--radius-sm, 6px) !important;
+}
+
+.fc .fc-button-group > .fc-button:not(:last-child) {
+  border-top-right-radius: var(--radius-sm, 6px) !important;
+  border-bottom-right-radius: var(--radius-sm, 6px) !important;
+}
+
