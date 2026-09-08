@@ -38,7 +38,8 @@ class Database {
                 ]
             );
         } catch (PDOException $exception) {
-            die("Connection failed: " . $exception->getMessage());
+            error_log("Database connection error: " . $exception->getMessage());
+            die("Database connection failed. Please ensure the database server is running and try again.");
         }
 
         return $this->conn;
@@ -57,6 +58,7 @@ try {
         ]
     );
 } catch (PDOException $e) {
-    die("Connection failed: " . $e->getMessage());
+    error_log("Database connection error: " . $e->getMessage());
+    die("Database connection failed. Please ensure the database server is running and try again.");
 }
 ?>
