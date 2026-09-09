@@ -1,7 +1,5 @@
 <?php
-/**
- * admin/orders/process.php - Order Processing Controller with Inventory Sync
- */
+// Process order and sync inventory
 
 require_once __DIR__ . '/../auth.php';
 requireAdminLogin();
@@ -38,7 +36,7 @@ if ($orderId <= 0 || !in_array($newStatus, $allowedStatuses, true)) {
 try {
     $db = getConnection();
     
-    // Fetch current order state
+    // Fetch current order
     $stmt = $db->prepare("SELECT * FROM orders WHERE id = :id");
     $stmt->execute([':id' => $orderId]);
     $order = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -49,20 +47,19 @@ try {
 
     $currentStatus = $order['status'];
 
-    // If status isn't changing, return
+    // Return if status unchanged
     if ($currentStatus === $newStatus) {
         $dest = ($redirectSource === 'view') ? "view.php?id=$orderId&msg=" . urlencode('No change in status.') : "index.php?msg=" . urlencode('No change in status.');
         header("Location: $dest");
         exit;
     }
 
-    // Handle Inventory Synchronizations:
-    // 1. Pending -> Processing (Order Accepted): Deduct physical stock
+    // Deduct stock for active order
     if ($currentStatus === 'pending' && in_array($newStatus, ['processing', 'shipped', 'delivered'])) {
         deductStockForOrder($orderId, $adminId);
     }
 
-    // 2. Cancellation or Refund from a previously allocated state: Restore physical stock
+    // Restore stock for cancelled order
     if (in_array($currentStatus, ['processing', 'shipped', 'delivered']) && in_array($newStatus, ['cancelled', 'refunded'])) {
         restoreStockForOrder($orderId, $adminId);
     }
@@ -74,7 +71,7 @@ try {
         $updatedNotes .= "\n[" . $timestamp . " " . ($admin['username'] ?? 'Admin') . "]: " . $adminNote;
     }
 
-    // Pass current admin ID to MySQL session so order_status_update trigger logs changed_by
+    // Set admin id in session
     if ($adminId) {
         $db->exec("SET @current_admin_id = " . (int)$adminId);
     }

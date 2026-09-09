@@ -1,17 +1,5 @@
 <?php
-/**
- * api/user/orders/list.php
- * Authenticated User Order History List REST API
- * 
- * Query Parameters:
- * - page (int, default: 1)
- * - limit (int, default: 10, max: 50)
- * - sort_by (order_number, created_at, total_amount, status; default: created_at)
- * - sort_dir (asc, desc; default: desc)
- * - status (pending, processing, shipped, delivered, cancelled, refunded; optional)
- * - start_date (YYYY-MM-DD, optional)
- * - end_date (YYYY-MM-DD, optional)
- */
+// User orders list API
 
 require_once __DIR__ . '/../../../auth.php';
 require_once __DIR__ . '/../../../config.php';
@@ -45,7 +33,7 @@ try {
         throw new Exception('Database connection unavailable.');
     }
 
-    // Input parsing & sanitization
+    // Parse input
     $page = max(1, (int)($_GET['page'] ?? 1));
     $limit = max(1, min(50, (int)($_GET['limit'] ?? 10)));
     $offset = ($page - 1) * $limit;
@@ -62,7 +50,7 @@ try {
     $sortDirParam = strtolower(trim($_GET['sort_dir'] ?? 'desc'));
     $sortDir = ($sortDirParam === 'asc') ? 'ASC' : 'DESC';
 
-    // Filters
+    // Filter by user and dates
     $userEmail = getCurrentUserEmail() ?? '';
     if (!empty($userEmail)) {
         $db->prepare("UPDATE orders SET user_id = :uid WHERE user_id IS NULL AND LOWER(customer_email) = LOWER(:uemail)")->execute([':uid' => $userId, ':uemail' => $userEmail]);
@@ -98,7 +86,7 @@ try {
 
     $whereSql = implode(' AND ', $whereClauses);
 
-    // 1. Total count query
+    // Count total orders
     $countSql = "SELECT COUNT(*) FROM orders o WHERE {$whereSql}";
     $countStmt = $db->prepare($countSql);
     foreach ($params as $key => $val) {
@@ -108,7 +96,7 @@ try {
     $totalOrders = (int)$countStmt->fetchColumn();
     $totalPages = (int)ceil($totalOrders / $limit);
 
-    // 2. Orders list query
+    // Query orders
     $listSql = "
         SELECT 
             o.id,

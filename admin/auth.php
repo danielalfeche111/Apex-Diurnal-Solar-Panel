@@ -1,28 +1,20 @@
 <?php
-/**
- * admin/auth.php - Authentication & Authorization for Apex Diurnal Admin Dashboard
- */
+// Admin authentication
 
 require_once __DIR__ . '/../session.php';
 
-// Initialize session with enterprise security & inactivity tracking
+// Start session
 SessionManager::start();
 
 require_once __DIR__ . '/../config.php';
 
-/**
- * Check if an admin is currently logged in
- * @return bool
- */
+// Check if admin is logged in
 function isAdminLoggedIn(): bool
 {
     return !empty($_SESSION['admin_id']);
 }
 
-/**
- * Get the currently logged-in admin user information
- * @return array|null
- */
+// Get logged in admin data
 function getAdminUser(): ?array
 {
     if (!isAdminLoggedIn()) {
@@ -36,11 +28,7 @@ function getAdminUser(): ?array
     ];
 }
 
-/**
- * Enforce admin authentication. Redirects to login page if unauthenticated.
- * @param array|string|null $allowed_roles
- * @param string|null $redirect_url
- */
+// Enforce admin login
 function requireAdminLogin($allowed_roles = null, ?string $redirect_url = null): void
 {
     SessionManager::start();
@@ -52,7 +40,7 @@ function requireAdminLogin($allowed_roles = null, ?string $redirect_url = null):
         $target = $redirect_url ?? $_SERVER['REQUEST_URI'] ?? 'index.php';
         $_SESSION['admin_redirect_after_login'] = $target;
 
-        // Calculate relative path to unified login page at auth/login.php
+        // Determine login path
         $login_path = (strpos($_SERVER['PHP_SELF'], '/admin/orders/') !== false ||
             strpos($_SERVER['PHP_SELF'], '/admin/inventory/') !== false ||
             strpos($_SERVER['PHP_SELF'], '/admin/schedule/') !== false ||
@@ -73,10 +61,7 @@ function requireAdminLogin($allowed_roles = null, ?string $redirect_url = null):
     }
 }
 
-/**
- * Log in an admin user and initialize secure session
- * @param array $user
- */
+// Log in admin
 function loginAdmin(array $user): void
 {
     SessionManager::start();
@@ -86,13 +71,11 @@ function loginAdmin(array $user): void
     $_SESSION['admin_role'] = $user['role'] ?? 'staff';
     $_SESSION['_last_activity'] = time();
 
-    // Regenerate session id to protect against session fixation
+    // Regenerate session id
     SessionManager::regenerate(true);
 }
 
-/**
- * Log out admin user (clears only admin-related session variables)
- */
+// Log out admin
 function logoutAdmin(): void
 {
     unset(
@@ -106,10 +89,7 @@ function logoutAdmin(): void
     SessionManager::regenerate(true);
 }
 
-/**
- * Generate or get existing CSRF token
- * @return string
- */
+// Get csrf token
 function csrfToken(): string
 {
     if (empty($_SESSION['admin_csrf_token'])) {
@@ -118,11 +98,7 @@ function csrfToken(): string
     return $_SESSION['admin_csrf_token'];
 }
 
-/**
- * Verify CSRF token from request
- * @param string|null $token
- * @return bool
- */
+// Verify csrf token
 function verifyCsrfToken(?string $token): bool
 {
     if (empty($token) || empty($_SESSION['admin_csrf_token'])) {
@@ -131,10 +107,7 @@ function verifyCsrfToken(?string $token): bool
     return hash_equals($_SESSION['admin_csrf_token'], $token);
 }
 
-/**
- * Quick helper to get live badge counts for sidebar
- * @return array
- */
+// Get sidebar badge counts
 function getAdminBadgeCounts(): array
 {
     static $counts = null;
@@ -158,7 +131,7 @@ function getAdminBadgeCounts(): array
             $counts['new_quotes'] = (int) $db->query("SELECT COUNT(*) FROM quote_requests WHERE status = 'new'")->fetchColumn();
         }
     } catch (\Exception $e) {
-        // Fallback silently if tables are being migrated
+        // Fallback if database error occurs
     }
 
     return $counts;

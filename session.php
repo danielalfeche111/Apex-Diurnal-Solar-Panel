@@ -1,29 +1,15 @@
 <?php
-/**
- * session.php - Enterprise Session Management for Apex Diurnal Solar Platform
- * 
- * Provides centralized, secure session lifecycle management:
- * - Strict cookie security (HttpOnly, SameSite=Lax, Secure on HTTPS, strict mode)
- * - Inactivity / idle timeout handling (30 minutes default)
- * - Session fixation and hijacking protection (periodic regeneration, User-Agent fingerprinting)
- * - One-time flash messaging system (success, error, warning, info)
- * - Graceful expiration, keepalive, and session inspection API
- */
+// Session management
 
 class SessionManager {
-    public const DEFAULT_IDLE_TIMEOUT = 1800;       // 30 minutes in seconds
-    public const DEFAULT_REGENERATE_INTERVAL = 900;  // 15 minutes in seconds
+    public const DEFAULT_IDLE_TIMEOUT = 1800;
+    public const DEFAULT_REGENERATE_INTERVAL = 900;
 
     private static bool $started = false;
     private static int $idleTimeout = self::DEFAULT_IDLE_TIMEOUT;
     private static int $regenerateInterval = self::DEFAULT_REGENERATE_INTERVAL;
 
-    /**
-     * Configure session parameters and start the session with strict security
-     * 
-     * @param int|null $idleTimeout Inactivity timeout in seconds (default 1800)
-     * @param int|null $regenerateInterval Interval between automatic session ID regenerations (default 900)
-     */
+    // Start session and configure settings
     public static function start(?int $idleTimeout = null, ?int $regenerateInterval = null): void {
         if ($idleTimeout !== null) {
             self::$idleTimeout = max(60, $idleTimeout);
@@ -33,7 +19,7 @@ class SessionManager {
         }
 
         if (session_status() === PHP_SESSION_NONE) {
-            // Enforce secure PHP ini session settings before session_start()
+            // Enforce secure session settings
             if (!headers_sent()) {
                 ini_set('session.use_only_cookies', '1');
                 ini_set('session.use_trans_sid', '0');
@@ -43,12 +29,12 @@ class SessionManager {
                     || (isset($_SERVER['SERVER_PORT']) && (int)$_SERVER['SERVER_PORT'] === 443);
 
                 session_set_cookie_params([
-                    'lifetime' => 0,          // Expire when browser closes
+                    'lifetime' => 0,
                     'path'     => '/',
                     'domain'   => '',
-                    'secure'   => $isHttps,   // Send only over HTTPS if available
-                    'httponly' => true,       // Prevent JavaScript XSS access to PHPSESSID
-                    'samesite' => 'Lax'       // CSRF mitigation
+                    'secure'   => $isHttps,
+                    'httponly' => true,
+                    'samesite' => 'Lax'
                 ]);
             }
 
@@ -57,22 +43,18 @@ class SessionManager {
 
         self::$started = true;
 
-        // Perform security validations
+        // Run security checks
         self::validateFingerprint();
         self::checkInactivity();
         self::checkPeriodicRegeneration();
     }
 
-    /**
-     * Check if the session is currently active
-     */
+    // Check if session is active
     public static function isStarted(): bool {
         return session_status() === PHP_SESSION_ACTIVE;
     }
 
-    /**
-     * Validate the client's browser fingerprint (User-Agent) to prevent session hijacking
-     */
+    // Validate browser fingerprint
     public static function validateFingerprint(): bool {
         if (session_status() !== PHP_SESSION_ACTIVE) {
             return false;
@@ -87,7 +69,7 @@ class SessionManager {
         }
 
         if (!hash_equals($_SESSION['_session_fingerprint'], $currentFingerprint)) {
-            // Potential session hijacking attempt detected!
+            // Fingerprint mismatch detected
             error_log("[SessionManager] Session fingerprint mismatch detected. Invalidator IP: " . ($_SERVER['REMOTE_ADDR'] ?? 'unknown'));
             unset(
                 $_SESSION['user_id'],
@@ -105,9 +87,7 @@ class SessionManager {
         return true;
     }
 
-    /**
-     * Check for idle/inactivity timeout
-     */
+    // Check inactivity timeout
     public static function checkInactivity(): void {
         if (session_status() !== PHP_SESSION_ACTIVE) {
             return;
@@ -116,11 +96,11 @@ class SessionManager {
         $currentTime = time();
         $isLoggedIn = !empty($_SESSION['user_id']) || !empty($_SESSION['admin_id']);
 
-        // Check inactivity only if user/admin is authenticated and last activity timestamp is set
+        // Check timeout for logged in user
         if ($isLoggedIn && isset($_SESSION['_last_activity'])) {
             $elapsed = $currentTime - (int)$_SESSION['_last_activity'];
             if ($elapsed > self::$idleTimeout) {
-                // Session has expired due to inactivity
+                // Session expired
                 self::expire();
                 return;
             }
@@ -130,9 +110,7 @@ class SessionManager {
         $_SESSION['_last_activity'] = $currentTime;
     }
 
-    /**
-     * Periodically regenerate session ID to defend against session fixation
-     */
+    // Periodically regenerate session id
     public static function checkPeriodicRegeneration(): void {
         if (session_status() !== PHP_SESSION_ACTIVE) {
             return;
@@ -149,9 +127,7 @@ class SessionManager {
         }
     }
 
-    /**
-     * Regenerate session ID safely, updating creation timestamp
-     */
+    // Regenerate session id
     public static function regenerate(bool $deleteOld = true): bool {
         if (session_status() !== PHP_SESSION_ACTIVE) {
             return false;
@@ -168,15 +144,13 @@ class SessionManager {
         return false;
     }
 
-    /**
-     * Expire the authenticated session due to inactivity without destroying cart items
-     */
+    // Expire session for inactivity
     public static function expire(): void {
         if (session_status() !== PHP_SESSION_ACTIVE) {
             return;
         }
 
-        // Clear user & admin credentials
+        // Clear user and admin credentials
         unset(
             $_SESSION['user_id'],
             $_SESSION['email'],
@@ -192,9 +166,7 @@ class SessionManager {
         self::regenerate(true);
     }
 
-    /**
-     * Check whether the session was recently flagged as expired
-     */
+    // Check if session expired
     public static function isExpired(): bool {
         if (session_status() !== PHP_SESSION_ACTIVE) {
             return false;
@@ -207,9 +179,7 @@ class SessionManager {
         return $expired;
     }
 
-    /**
-     * Get remaining time in seconds before idle expiration
-     */
+    // Get remaining idle time
     public static function getTimeRemaining(): int {
         if (session_status() !== PHP_SESSION_ACTIVE || !isset($_SESSION['_last_activity'])) {
             return self::$idleTimeout;
@@ -220,24 +190,20 @@ class SessionManager {
         return max(0, $remaining);
     }
 
-    /**
-     * Refresh the last activity timestamp (keepalive)
-     */
+    // Keep session alive
     public static function keepAlive(): void {
         if (session_status() === PHP_SESSION_ACTIVE) {
             $_SESSION['_last_activity'] = time();
         }
     }
 
-    /**
-     * Completely destroy the current session and wipe cookies
-     */
+    // Destroy session and cookies
     public static function destroy(): void {
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
 
-        // Preserve temporary flash messages if any exist
+        // Preserve flash messages
         $flashes = $_SESSION['_flash'] ?? null;
 
         $_SESSION = [];
@@ -266,9 +232,7 @@ class SessionManager {
         self::$started = false;
     }
 
-    // =========================================================================
-    // Generic Session State Helpers
-    // =========================================================================
+    // Session helpers
 
     public static function get(string $key, $default = null) {
         return $_SESSION[$key] ?? $default;
@@ -286,16 +250,9 @@ class SessionManager {
         unset($_SESSION[$key]);
     }
 
-    // =========================================================================
-    // Flash Messages System
-    // =========================================================================
+    // Flash messages
 
-    /**
-     * Add a flash message that persists for exactly one subsequent request
-     * 
-     * @param string $type Message category: 'success', 'error', 'warning', 'info'
-     * @param string $message The message text
-     */
+    // Add flash message
     public static function setFlash(string $type, string $message): void {
         if (session_status() !== PHP_SESSION_ACTIVE) {
             self::start();
@@ -309,12 +266,7 @@ class SessionManager {
         $_SESSION['_flash'][$type][] = $message;
     }
 
-    /**
-     * Retrieve and immediately remove flash messages
-     * 
-     * @param string|null $type Specific category or null for all flash messages
-     * @return array Array of flash message strings or associative array of categories
-     */
+    // Get and clear flash messages
     public static function getFlash(?string $type = null): array {
         if (session_status() !== PHP_SESSION_ACTIVE || empty($_SESSION['_flash'])) {
             return [];
@@ -334,15 +286,13 @@ class SessionManager {
         return $all;
     }
 
-    /**
-     * Check if a flash message exists for a given category
-     */
+    // Check if flash message exists
     public static function hasFlash(string $type): bool {
         return !empty($_SESSION['_flash'][$type]);
     }
 }
 
-// Procedural convenience functions
+// Helper functions
 if (!function_exists('session_get')) {
     function session_get(string $key, $default = null) {
         return SessionManager::get($key, $default);
@@ -376,7 +326,7 @@ if (!function_exists('session_flash')) {
     }
 }
 
-// Optional direct AJAX ping endpoint for keepalive
+// Ajax ping endpoint
 if (isset($_GET['action']) && $_GET['action'] === 'ping') {
     SessionManager::start();
     SessionManager::keepAlive();
@@ -388,4 +338,3 @@ if (isset($_GET['action']) && $_GET['action'] === 'ping') {
     ]);
     exit;
 }
-
