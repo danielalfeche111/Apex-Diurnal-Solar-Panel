@@ -8,7 +8,7 @@
  */
 
 require_once __DIR__ . '/../auth.php';
-require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../validation.php';
 require_once __DIR__ . '/../User.php';
 require_once __DIR__ . '/../philippine_locations.php';
@@ -37,8 +37,7 @@ if (!isLoggedIn()) {
 $userId = getCurrentUserId();
 
 try {
-    $database = new Database();
-    $db = $database->getConnection();
+    $db = getConnection();
     if (!$db) {
         throw new Exception('Database service unavailable.');
     }

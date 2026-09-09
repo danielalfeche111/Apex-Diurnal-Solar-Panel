@@ -9,7 +9,7 @@ requireAdminLogin();
 $page_title = 'Dashboard Overview';
 $active_nav = 'dashboard';
 
-$db = (new Database())->getConnection();
+$db = getConnection();
 
 // --- 1. Key Metrics & Financials ---
 $total_revenue = (float) $db->query("SELECT SUM(total_amount) FROM orders WHERE status NOT IN ('cancelled', 'refunded')")->fetchColumn();

@@ -9,7 +9,7 @@ requireAdminLogin();
 $page_title = 'Order Management';
 $active_nav = 'orders';
 
-$db = (new Database())->getConnection();
+$db = getConnection();
 
 // Filter parameter
 $status_filter = trim($_GET['status'] ?? 'all');

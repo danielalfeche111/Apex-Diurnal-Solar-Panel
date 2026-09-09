@@ -14,7 +14,7 @@
  */
 
 require_once __DIR__ . '/../../../auth.php';
-require_once __DIR__ . '/../../../db.php';
+require_once __DIR__ . '/../../../config.php';
 
 if (!headers_sent()) {
     header('Content-Type: application/json; charset=utf-8');
@@ -40,8 +40,7 @@ if (!isLoggedIn()) {
 $userId = getCurrentUserId();
 
 try {
-    $database = new Database();
-    $db = $database->getConnection();
+    $db = getConnection();
     if (!$db) {
         throw new Exception('Database connection unavailable.');
     }

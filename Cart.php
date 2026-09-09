@@ -9,7 +9,7 @@
  * - Conversion lifecycle management upon order checkout
  */
 
-require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/auth.php';
 
 class Cart {
@@ -19,12 +19,7 @@ class Cart {
         if ($db !== null) {
             $this->db = $db;
         } else {
-            $database = new Database();
-            $conn = $database->getConnection();
-            if (!$conn) {
-                throw new Exception('Database connection failed in Cart service.');
-            }
-            $this->db = $conn;
+            $this->db = getConnection();
         }
     }
 

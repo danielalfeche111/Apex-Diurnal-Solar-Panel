@@ -10,7 +10,7 @@ require_once __DIR__ . '/../auth.php';
  * @return array
  */
 function getInventoryItems(): array {
-    $db = (new Database())->getConnection();
+    $db = getConnection();
     if (!$db) return [];
 
     $sql = "
@@ -40,7 +40,7 @@ function getInventoryItems(): array {
  * @return array ['can_fulfill' => bool, 'shortages' => array]
  */
 function checkOrderStockAvailability(int $orderId): array {
-    $db = (new Database())->getConnection();
+    $db = getConnection();
     if (!$db) return ['can_fulfill' => false, 'shortages' => ['Database connection unavailable']];
 
     $sql = "
@@ -86,7 +86,7 @@ function checkOrderStockAvailability(int $orderId): array {
  * @throws Exception
  */
 function deductStockForOrder(int $orderId, ?int $adminId = null): bool {
-    $db = (new Database())->getConnection();
+    $db = getConnection();
     if (!$db) throw new Exception("Database unavailable");
 
     // Fetch order number
@@ -142,7 +142,7 @@ function deductStockForOrder(int $orderId, ?int $adminId = null): bool {
  * @throws Exception
  */
 function restoreStockForOrder(int $orderId, ?int $adminId = null): bool {
-    $db = (new Database())->getConnection();
+    $db = getConnection();
     if (!$db) throw new Exception("Database unavailable");
 
     $stmtOrd = $db->prepare("SELECT order_number FROM orders WHERE id = :oid");
@@ -213,7 +213,7 @@ function restoreStockForOrder(int $orderId, ?int $adminId = null): bool {
  * @throws Exception
  */
 function adjustInventoryStock(string $productId, int $delta, string $reason, ?int $adminId = null): bool {
-    $db = (new Database())->getConnection();
+    $db = getConnection();
     if (!$db) throw new Exception("Database unavailable");
 
     // Fetch current stock
@@ -260,7 +260,7 @@ function adjustInventoryStock(string $productId, int $delta, string $reason, ?in
  * @return array
  */
 function getLowStockAlerts(): array {
-    $db = (new Database())->getConnection();
+    $db = getConnection();
     if (!$db) return [];
 
     $sql = "

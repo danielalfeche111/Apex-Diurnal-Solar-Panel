@@ -37,7 +37,7 @@ if ($quoteId <= 0) {
 }
 
 try {
-    $db = (new Database())->getConnection();
+    $db = getConnection();
 
     // Fetch existing quote details
     $curStmt = $db->prepare("SELECT * FROM quote_requests WHERE id = :id");
@@ -213,13 +213,14 @@ try {
 
             $insItem = $db->prepare("
                 INSERT INTO order_items (order_id, product_id, product_name, quantity, unit_price, total_price)
-                VALUES (:oid, 'commercial-grids', :pname, 1, :price, :price)
+                VALUES (:oid, 'commercial-grids', :pname, 1, :uprice, :tprice)
             ");
             $productLabel = "Commercial Grid Turnkey Solar Installation - " . $quote['company_name'];
             $insItem->execute([
                 ':oid' => $newOrderId,
                 ':pname' => $productLabel,
-                ':price' => $orderSubtotal
+                ':uprice' => $orderSubtotal,
+                ':tprice' => $orderSubtotal
             ]);
 
             $histStmt = $db->prepare("INSERT INTO order_status_history (order_id, status, notes) VALUES (:oid, 'confirmed', :notes)");

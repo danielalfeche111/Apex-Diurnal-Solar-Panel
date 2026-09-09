@@ -9,7 +9,7 @@ requireAdminLogin();
 $page_title = 'Service Bookings List';
 $active_nav = 'schedule';
 
-$db = (new Database())->getConnection();
+$db = getConnection();
 
 $status_filter = trim($_GET['status'] ?? 'all');
 $service_filter = trim($_GET['service_type'] ?? 'all');

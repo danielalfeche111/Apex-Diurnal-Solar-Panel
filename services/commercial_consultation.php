@@ -2,7 +2,7 @@
 if (!headers_sent()) {
     header('Content-Type: application/json; charset=UTF-8');
 }
-require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../auth.php';
 require_once __DIR__ . '/../validation.php';
 
@@ -367,8 +367,7 @@ if ($lead_type === 'rfq') {
 // DATABASE INSERTION
 // =========================================================================
 try {
-    $database = new Database();
-    $db = $database->getConnection();
+    $db = getConnection();
 
     if (!$db) {
         http_response_code(500);
@@ -517,14 +516,15 @@ try {
                     INSERT INTO order_items (
                         order_id, product_id, product_name, quantity, unit_price, total_price
                     ) VALUES (
-                        :oid, 'commercial-grids', :pname, 1, :price, :price
+                        :oid, 'commercial-grids', :pname, 1, :uprice, :tprice
                     )
                 ");
                 $itemLabel = "Commercial Grid Turnkey Solar Installation - " . $company_name . " (" . number_format((float)$estimated_system_size, 2) . " kWp)";
                 $stmtItem->execute([
                     ':oid' => $newOrderId,
                     ':pname' => $itemLabel,
-                    ':price' => $orderSubtotal
+                    ':uprice' => $orderSubtotal,
+                    ':tprice' => $orderSubtotal
                 ]);
 
                 $response['quote_number'] = $quoteNum;

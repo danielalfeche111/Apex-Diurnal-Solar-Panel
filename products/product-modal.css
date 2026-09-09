@@ -18,14 +18,16 @@
   padding: 20px;
   opacity: 0;
   pointer-events: none;
-  transition: none; /* No exit animation */
+  transition: none;
+  /* No exit animation */
 }
 
 .product-modal-overlay.is-active {
   display: flex !important;
   opacity: 1 !important;
   pointer-events: auto !important;
-  transition: opacity 0.22s ease-out; /* Entry transition only */
+  transition: opacity 0.22s ease-out;
+  /* Entry transition only */
 }
 
 .product-modal-card {
@@ -36,19 +38,23 @@
   max-height: 92vh;
   border-radius: 24px;
   box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.35),
-              0 0 0 1px rgba(15, 23, 42, 0.08);
+    0 0 0 1px rgba(15, 23, 42, 0.08);
   overflow: hidden;
   display: flex;
   flex-direction: column;
   transform: translateY(16px) scale(0.97);
   opacity: 0;
-  transition: none; /* Instant exit: no lingering exit animation */
-  scrollbar-width: none; /* Firefox: hide drag bar */
-  -ms-overflow-style: none; /* IE / Edge: hide drag bar */
+  transition: none;
+  /* Instant exit: no lingering exit animation */
+  scrollbar-width: none;
+  /* Firefox: hide drag bar */
+  -ms-overflow-style: none;
+  /* IE / Edge: hide drag bar */
 }
 
 .product-modal-card::-webkit-scrollbar {
-  display: none !important; /* Chrome / Safari / Edge: hide drag bar */
+  display: none !important;
+  /* Chrome / Safari / Edge: hide drag bar */
   width: 0 !important;
   height: 0 !important;
 }
@@ -57,7 +63,8 @@
   transform: translateY(0) scale(1);
   opacity: 1;
   transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
-              opacity 0.24s cubic-bezier(0.16, 1, 0.3, 1); /* Entry transition only */
+    opacity 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+  /* Entry transition only */
 }
 
 /* Close Button */
@@ -93,12 +100,15 @@
   display: grid;
   grid-template-columns: 360px 1fr;
   min-height: 440px;
-  scrollbar-width: none; /* Firefox: hide drag bar */
-  -ms-overflow-style: none; /* IE / Edge: hide drag bar */
+  scrollbar-width: none;
+  /* Firefox: hide drag bar */
+  -ms-overflow-style: none;
+  /* IE / Edge: hide drag bar */
 }
 
 .product-modal-body::-webkit-scrollbar {
-  display: none !important; /* Chrome / Safari / Edge: hide drag bar */
+  display: none !important;
+  /* Chrome / Safari / Edge: hide drag bar */
   width: 0 !important;
   height: 0 !important;
 }

@@ -8,7 +8,7 @@ require_once __DIR__ . '/../session.php';
 // Initialize session with enterprise security & inactivity tracking
 SessionManager::start();
 
-require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../config.php';
 
 /**
  * Check if an admin is currently logged in
@@ -150,7 +150,7 @@ function getAdminBadgeCounts(): array
     ];
 
     try {
-        $db = (new Database())->getConnection();
+        $db = getConnection();
         if ($db) {
             $counts['pending_orders'] = (int) $db->query("SELECT COUNT(*) FROM orders WHERE status = 'pending'")->fetchColumn();
             $counts['low_stock'] = (int) $db->query("SELECT COUNT(*) FROM inventory WHERE current_stock <= reorder_point")->fetchColumn();

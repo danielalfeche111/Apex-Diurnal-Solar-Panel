@@ -10,7 +10,7 @@ require_once __DIR__ . '/../inventory/sync.php';
 
 $orderId = (int)($_GET['id'] ?? 0);
 
-$db = (new Database())->getConnection();
+$db = getConnection();
 
 $stmt = $db->prepare("SELECT * FROM orders WHERE id = :id");
 $stmt->execute([':id' => $orderId]);

@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../User.php';
 require_once __DIR__ . '/../auth.php';
 require_once __DIR__ . '/../validation.php';
@@ -35,8 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // If initial validation passes, check uniqueness and proceed
     if (empty($errors)) {
-        $database = new Database();
-        $db = $database->getConnection();
+        $db = getConnection();
         if (!$db) {
             $errors['general'] = 'Database connection error. Please try again later.';
         } else {

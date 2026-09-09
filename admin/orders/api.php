@@ -24,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !verifyCsrfToken($csrf)) {
     exit;
 }
 
-$db = (new Database())->getConnection();
+$db = getConnection();
 
 if ($action === 'check_stock') {
     $orderId = (int)($_GET['order_id'] ?? 0);

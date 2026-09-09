@@ -5,7 +5,7 @@
  */
 
 require_once __DIR__ . '/../../auth.php';
-require_once __DIR__ . '/../../db.php';
+require_once __DIR__ . '/../../config.php';
 requireLogin();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -23,8 +23,7 @@ if ($orderId <= 0 || !in_array($action, ['confirm', 'cancel'], true)) {
 }
 
 try {
-    $database = new Database();
-    $db = $database->getConnection();
+    $db = getConnection();
 
     // Verify order ownership
     $stmt = $db->prepare("SELECT * FROM orders WHERE id = :id AND user_id = :uid LIMIT 1");

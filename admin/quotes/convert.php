@@ -24,7 +24,7 @@ if ($quoteId <= 0) {
     exit;
 }
 
-$db = (new Database())->getConnection();
+$db = getConnection();
 
 try {
     $stmt = $db->prepare("SELECT * FROM quote_requests WHERE id = :id");
@@ -100,13 +100,14 @@ try {
     // 2. Insert line item
     $insertItem = $db->prepare("
         INSERT INTO order_items (order_id, product_id, product_name, quantity, unit_price, total_price)
-        VALUES (:oid, 'commercial-grids', :pname, 1, :price, :price)
+        VALUES (:oid, 'commercial-grids', :pname, 1, :uprice, :tprice)
     ");
     $productLabel = "Commercial Grid Turnkey Solar Project - " . ($quote['estimated_system_size'] ? $quote['estimated_system_size'] . ' kW' : 'Custom Array');
     $insertItem->execute([
         ':oid' => $newOrderId,
         ':pname' => $productLabel,
-        ':price' => $subtotal
+        ':uprice' => $subtotal,
+        ':tprice' => $subtotal
     ]);
 
     // 3. Record order status history

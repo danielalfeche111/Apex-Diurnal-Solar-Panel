@@ -6,7 +6,7 @@
 require_once __DIR__ . '/../auth.php';
 requireAdminLogin();
 
-$db = (new Database())->getConnection();
+$db = getConnection();
 
 // Handle POST updates
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

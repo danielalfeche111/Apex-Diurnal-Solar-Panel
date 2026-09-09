@@ -13,7 +13,7 @@ if (!isAdminLoggedIn()) {
     exit;
 }
 
-$db = (new Database())->getConnection();
+$db = getConnection();
 if (!$db) {
     echo json_encode([]);
     exit;

@@ -21,8 +21,9 @@
 
 require_once __DIR__ . '/../auth.php';
 require_once __DIR__ . '/../validation.php';
-require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../User.php';
+require_once __DIR__ . '/../Cart.php';
 
 // Guest checkout is fully permitted; authenticated users receive auto-prefilling
 
@@ -201,9 +202,8 @@ if ($is_post) {
 
         // Persist order and line items to database
         try {
-            require_once __DIR__ . '/../db.php';
-            $database = new Database();
-            $db = $database->getConnection();
+            require_once __DIR__ . '/../config.php';
+            $db = getConnection();
             if ($db) {
                 $user_id = getCurrentUserId();
                 $stmtOrd = $db->prepare("
@@ -332,8 +332,7 @@ if ($is_post) {
     if (isLoggedIn()) {
         try {
             require_once __DIR__ . '/../Cart.php';
-            $cartDatabase = new Database();
-            $cartDb = $cartDatabase->getConnection();
+            $cartDb = getConnection();
             if ($cartDb) {
                 $cartService = new Cart($cartDb);
                 $cartService->validateAndHydrate((int)getCurrentUserId());
@@ -370,8 +369,7 @@ if ($is_post) {
     // If user is authenticated, pre-fill form fields from saved user profile
     if (isLoggedIn()) {
         try {
-            $database = new Database();
-            $db = $database->getConnection();
+            $db = getConnection();
             if ($db) {
                 $uid = getCurrentUserId();
                 $userModel = new User($db);

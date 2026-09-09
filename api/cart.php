@@ -9,7 +9,7 @@
  */
 
 require_once __DIR__ . '/../auth.php';
-require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../Cart.php';
 require_once __DIR__ . '/../cart/cart_functions.php';
 require_once __DIR__ . '/../product_data.php';
@@ -25,8 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 $method = $_SERVER['REQUEST_METHOD'];
-$database = new Database();
-$db = $database->getConnection();
+$db = getConnection();
 $cartService = $db ? new Cart($db) : null;
 $userId = getCurrentUserId();
 $isAuth = isLoggedIn() && !empty($userId);

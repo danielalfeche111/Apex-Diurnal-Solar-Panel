@@ -14,7 +14,7 @@ $active_nav = 'inventory';
 $alerts = getLowStockAlerts();
 
 // Fetch recent inventory transactions
-$db = (new Database())->getConnection();
+$db = getConnection();
 $transactions = [];
 if ($db) {
     $sql = "

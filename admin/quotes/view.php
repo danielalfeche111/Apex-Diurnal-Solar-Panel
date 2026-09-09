@@ -7,7 +7,7 @@ require_once __DIR__ . '/../auth.php';
 requireAdminLogin();
 
 $quoteId = (int)($_GET['id'] ?? 0);
-$db = (new Database())->getConnection();
+$db = getConnection();
 
 $stmt = $db->prepare("
     SELECT q.*, u.username as quoted_by_name 

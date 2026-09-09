@@ -33,9 +33,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = $validator->firstError();
     } else {
         try {
-            $db = (new Database())->getConnection();
-            $stmt = $db->prepare("SELECT * FROM admin_users WHERE username = :u OR email = :u LIMIT 1");
-            $stmt->execute([':u' => $username]);
+            $db = getConnection();
+            $stmt = $db->prepare("SELECT * FROM admin_users WHERE username = :u OR email = :e LIMIT 1");
+            $stmt->execute([':u' => $username, ':e' => $username]);
             $admin = $stmt->fetch(PDO::FETCH_ASSOC);
 
             if ($admin && password_verify($password, $admin['password_hash'])) {

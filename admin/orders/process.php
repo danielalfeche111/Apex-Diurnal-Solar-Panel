@@ -36,7 +36,7 @@ if ($orderId <= 0 || !in_array($newStatus, $allowedStatuses, true)) {
 }
 
 try {
-    $db = (new Database())->getConnection();
+    $db = getConnection();
     
     // Fetch current order state
     $stmt = $db->prepare("SELECT * FROM orders WHERE id = :id");

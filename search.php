@@ -3,7 +3,7 @@
  * search.php - Product & System Catalog Search
  * Conforms to Week 7 Module: Capturing Form Data with $_GET (Slide 3)
  */
-require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/product_data.php';
 
 // Slide 3: $term = $_GET['term'];

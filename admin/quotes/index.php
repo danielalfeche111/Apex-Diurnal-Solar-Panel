@@ -9,7 +9,7 @@ requireAdminLogin();
 $page_title = 'Quote Requests Queue';
 $active_nav = 'quotes';
 
-$db = (new Database())->getConnection();
+$db = getConnection();
 
 $status_filter = trim($_GET['status'] ?? 'all');
 $search = trim($_GET['search'] ?? '');

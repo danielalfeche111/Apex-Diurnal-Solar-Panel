@@ -5,7 +5,7 @@
  */
 
 require_once __DIR__ . '/../../auth.php';
-require_once __DIR__ . '/../../db.php';
+require_once __DIR__ . '/../../config.php';
 require_once __DIR__ . '/../../product_data.php';
 require_once __DIR__ . '/../../cart/cart_functions.php';
 
@@ -14,8 +14,7 @@ if (!isLoggedIn()) {
     exit;
 }
 
-$database = new Database();
-$db = $database->getConnection();
+$db = getConnection();
 $userId = getCurrentUserId();
 $userEmail = getCurrentUserEmail() ?? '';
 

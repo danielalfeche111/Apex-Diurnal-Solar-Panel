@@ -9,8 +9,7 @@ requireAdminLogin();
 $page_title = 'Service Scheduling Calendar';
 $active_nav = 'schedule';
 
-/** @var \PDO $db */
-$db = (new Database())->getConnection();
+$db = getConnection();
 
 // Booking KPIs
 $kpi_total = (int)$db->query("SELECT COUNT(*) FROM service_bookings")->fetchColumn();

@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../User.php';
 require_once __DIR__ . '/../auth.php';
 require_once __DIR__ . '/../validation.php';
@@ -33,8 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // If no validation errors, try to log in
     if (empty($errors)) {
-        $database = new Database();
-        $db = $database->getConnection();
+        $db = getConnection();
         $user = new User($db);
 
         $user->email = $email;

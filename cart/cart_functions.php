@@ -16,11 +16,10 @@ function get_cart_service(): ?Cart {
         return $cartService;
     }
     if (isLoggedIn()) {
-        require_once __DIR__ . '/../db.php';
+        require_once __DIR__ . '/../config.php';
         require_once __DIR__ . '/../Cart.php';
         try {
-            $database = new Database();
-            $db = $database->getConnection();
+            $db = getConnection();
             if ($db) {
                 $cartService = new Cart($db);
                 return $cartService;
