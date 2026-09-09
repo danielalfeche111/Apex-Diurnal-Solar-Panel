@@ -2,7 +2,14 @@
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../User.php';
 require_once __DIR__ . '/../auth.php';
+require_once __DIR__ . '/../admin/auth.php';
 require_once __DIR__ . '/../validation.php';
+
+// If admin is already logged in, redirect directly to admin dashboard
+if (isAdminLoggedIn()) {
+    header('Location: ../admin/index.php');
+    exit;
+}
 
 // If user is already logged in, redirect to homepage
 if (isLoggedIn()) {
@@ -14,43 +21,125 @@ $email = '';
 $password = '';
 $errors = [];
 
+if (isset($_GET['logged_out'])) {
+    SessionManager::setFlash('success', 'You have been signed out successfully.');
+}
+
 if (isset($_GET['redirect']) && !empty($_GET['redirect'])) {
-    $_SESSION['redirect_after_login'] = $_GET['redirect'];
+    $r = $_GET['redirect'];
+    $_SESSION['redirect_after_login'] = $r;
+    if (strpos($r, 'admin') !== false) {
+        $_SESSION['admin_redirect_after_login'] = $r;
+    }
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Single centralized validation & sanitization
     $validator = new Validator($_POST);
     $validator->required([
-        'email'    => 'Email is required',
+        'email'    => 'Email or username is required',
         'password' => 'Password is required'
     ]);
 
     $errors = $validator->errors();
     $clean = $validator->sanitized();
-    $email = $clean['email'] ?? '';
-    $password = $_POST['password'] ?? '';
+    $identity = trim($clean['email'] ?? $_POST['email'] ?? '');
+    $password = (string)($_POST['password'] ?? '');
+    $email = $identity;
 
-    // If no validation errors, try to log in
+    // If no validation errors, identify and authenticate the account
     if (empty($errors)) {
         $db = getConnection();
-        $user = new User($db);
+        $accountMatched = false;
 
-        $user->email = $email;
-        if ($user->findByEmail($email)) {
-            // Validate password
-            if ($user->validatePassword($password)) {
-                // Capture guest cart before login session regeneration
+        // --- STEP 1: Check admin_users table (matches by username OR email) ---
+        try {
+            $stmtAdmin = $db->prepare("SELECT * FROM admin_users WHERE username = :u OR email = :e LIMIT 1");
+            $stmtAdmin->execute([':u' => $identity, ':e' => $identity]);
+            $admin = $stmtAdmin->fetch(PDO::FETCH_ASSOC);
+
+            if ($admin && password_verify($password, $admin['password_hash'])) {
+                $accountMatched = true;
+                loginAdmin($admin);
+
+                // Determine redirect target for admin
+                $adminRedirect = $_SESSION['admin_redirect_after_login'] ?? $_GET['redirect'] ?? '';
+                unset($_SESSION['admin_redirect_after_login'], $_SESSION['redirect_after_login']);
+
+                if (!empty($adminRedirect) && strpos($adminRedirect, 'admin') !== false) {
+                    header('Location: ' . $adminRedirect);
+                } else {
+                    header('Location: ../admin/index.php');
+                }
+                exit;
+            }
+        } catch (PDOException $e) {
+            error_log('[login] admin_users query error: ' . $e->getMessage());
+        }
+
+        // --- STEP 2: Check users table (Customer / Storefront User) ---
+        try {
+            $stmtUser = $db->prepare("SELECT * FROM users WHERE email = :e LIMIT 1");
+            $stmtUser->execute([':e' => $identity]);
+            $userRow = $stmtUser->fetch(PDO::FETCH_ASSOC);
+
+            if ($userRow && password_verify($password, $userRow['password_hash'])) {
+                $accountMatched = true;
+
+                // Identify if this user account has admin privileges
+                $userRole = strtolower($userRow['role'] ?? '');
+                $isAdmin = in_array($userRole, ['admin', 'superadmin', 'manager', 'staff'], true);
+
+                if (!$isAdmin) {
+                    // Check if this email exists in admin_users or matches test admin
+                    $stmtAdminCheck = $db->prepare("SELECT * FROM admin_users WHERE email = :e LIMIT 1");
+                    $stmtAdminCheck->execute([':e' => $userRow['email']]);
+                    $matchedAdmin = $stmtAdminCheck->fetch(PDO::FETCH_ASSOC);
+                    if ($matchedAdmin) {
+                        $isAdmin = true;
+                        $adminData = $matchedAdmin;
+                    } elseif ($userRow['email'] === 'admin@gmail.com') {
+                        $isAdmin = true;
+                        $adminData = [
+                            'id' => (int)$userRow['id'],
+                            'username' => 'admin',
+                            'email' => $userRow['email'],
+                            'role' => 'superadmin'
+                        ];
+                    }
+                } else {
+                    $adminData = [
+                        'id' => (int)$userRow['id'],
+                        'username' => $userRow['full_name'] ?? 'Admin',
+                        'email' => $userRow['email'],
+                        'role' => !empty($userRole) ? $userRole : 'superadmin'
+                    ];
+                }
+
+                if ($isAdmin) {
+                    // Account identified as ADMIN -> Redirect to Admin Dashboard
+                    loginAdmin($adminData);
+                    $adminRedirect = $_SESSION['admin_redirect_after_login'] ?? $_GET['redirect'] ?? '';
+                    unset($_SESSION['admin_redirect_after_login'], $_SESSION['redirect_after_login']);
+
+                    if (!empty($adminRedirect) && strpos($adminRedirect, 'admin') !== false) {
+                        header('Location: ' . $adminRedirect);
+                    } else {
+                        header('Location: ../admin/index.php');
+                    }
+                    exit;
+                }
+
+                // Account identified as USER -> Redirect to Homepage (or customer redirect)
                 $guestCart = !empty($_SESSION['cart']) && is_array($_SESSION['cart']) ? $_SESSION['cart'] : [];
 
-                // Login successful
-                loginUser($user->id, $user->email);
+                loginUser($userRow['id'], $userRow['email']);
 
                 // Rehydrate and merge cart into database
                 try {
                     require_once __DIR__ . '/../Cart.php';
                     $cartModel = new Cart($db);
-                    $cartResult = $cartModel->mergeSessionCart((int)$user->id, $guestCart);
+                    $cartResult = $cartModel->mergeSessionCart((int)$userRow['id'], $guestCart);
                     if (!empty($cartResult['notices'])) {
                         $_SESSION['cart_notifications'] = $cartResult['notices'];
                         foreach ($cartResult['notices'] as $notice) {
@@ -63,19 +152,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     error_log('[login] Error merging cart on login: ' . $e->getMessage());
                 }
 
-                // Redirect to intended page or homepage
+                // Redirect to customer destination or Homepage
                 $redirect = getRedirectAfterLogin();
-                if ($redirect) {
+                if (!empty($redirect) && strpos($redirect, 'admin') === false) {
                     header('Location: ' . $redirect);
                 } else {
                     header('Location: ../index.php');
                 }
                 exit;
-            } else {
-                $errors['password'] = 'Invalid email or password';
             }
-        } else {
-            $errors['password'] = 'Invalid email or password';
+        } catch (PDOException $e) {
+            error_log('[login] users query error: ' . $e->getMessage());
+        }
+
+        if (!$accountMatched) {
+            $errors['password'] = 'Invalid email/username or password.';
         }
     }
 }
@@ -111,7 +202,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="login-header">
                 <img src="../assets/images/logo.png" alt="Apex Diurnal Logo" class="logo-mark">
                 <h1 class="login-title">Sign In to Your Account</h1>
-                <p class="login-subtitle">Enter your email and password to access your account</p>
+                <p class="login-subtitle">Enter your email or username to access your account</p>
             </div>
 
             <?php 
@@ -182,18 +273,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <form action="login.php" method="POST" autocomplete="on">
                 <div class="form-group">
-                    <label for="email" class="form-label">Email Address</label>
+                    <label for="email" class="form-label">Email or Username</label>
                     <div class="input-group">
                         <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
-                            <polyline points="22,6 12,13 2,6"></polyline>
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
                         </svg>
                         <input 
-                            type="email" 
+                            type="text" 
                             id="email" 
                             name="email" 
                             class="form-control" 
-                            placeholder="Enter your email address"
+                            placeholder="Enter your email or username"
                             value="<?php echo htmlspecialchars($email); ?>" 
                             required 
                             autofocus

@@ -47,8 +47,8 @@
     const redirect = encodeURIComponent(window.location.pathname + window.location.search);
     if (p.includes('/admin/')) {
       return (p.includes('/admin/orders/') || p.includes('/admin/inventory/') || p.includes('/admin/schedule/') || p.includes('/admin/quotes/'))
-        ? `../login.php?redirect=${redirect}`
-        : `login.php?redirect=${redirect}`;
+        ? `../../auth/login.php?redirect=${redirect}`
+        : `../auth/login.php?redirect=${redirect}`;
     }
     if (p.includes('/account/orders/')) {
       return `../../auth/login.php?redirect=${redirect}`;

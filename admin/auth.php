@@ -52,12 +52,12 @@ function requireAdminLogin($allowed_roles = null, ?string $redirect_url = null):
         $target = $redirect_url ?? $_SERVER['REQUEST_URI'] ?? 'index.php';
         $_SESSION['admin_redirect_after_login'] = $target;
 
-        // Calculate relative path to admin/login.php
+        // Calculate relative path to unified login page at auth/login.php
         $login_path = (strpos($_SERVER['PHP_SELF'], '/admin/orders/') !== false ||
             strpos($_SERVER['PHP_SELF'], '/admin/inventory/') !== false ||
             strpos($_SERVER['PHP_SELF'], '/admin/schedule/') !== false ||
             strpos($_SERVER['PHP_SELF'], '/admin/quotes/') !== false)
-            ? '../login.php' : 'login.php';
+            ? '../../auth/login.php' : '../auth/login.php';
 
         header("Location: $login_path");
         exit;

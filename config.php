@@ -1,9 +1,8 @@
 <?php
 /**
- * Corsame Coffee Shop ☕ Centralized PDO Database Configuration
- * Pattern from: Souri-Dev/webdev1-midterm-discussion (database/config.php)
+ * Apex Diurnal Solar Panels Centralized PDO Database Configuration
  * 
- * Usage: require 'config.php'; $pdo = getConnection();
+ * Usage: require_once 'config.php'; $pdo = getConnection();
  */
 
 function getConnection(): PDO

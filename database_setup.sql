@@ -184,7 +184,8 @@ CREATE TABLE IF NOT EXISTS admin_users (
 
 -- Default superadmin: username=admin, password=admin123
 INSERT IGNORE INTO admin_users (username, password_hash, email, role) VALUES
-('admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin@apexdiurnal.com', 'superadmin');
+('admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin@apexdiurnal.com', 'superadmin'),
+('admin_testing', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin@gmail.com', 'superadmin');
 
 -- -----------------------------------------------------------------------------
 -- 6. PRODUCTS TABLE (Catalog Items & Classification)
