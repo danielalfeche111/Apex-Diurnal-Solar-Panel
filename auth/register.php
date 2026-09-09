@@ -15,6 +15,10 @@ $password = '';
 $confirm_password = '';
 $errors = [];
 
+if (isset($_GET['redirect']) && !empty($_GET['redirect'])) {
+    $_SESSION['redirect_after_login'] = $_GET['redirect'];
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Single centralized validation & sanitization
     $validator = new Validator($_POST);
@@ -123,6 +127,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <p class="login-subtitle">Sign up to get started with Apex Diurnal Solar Panels</p>
             </div>
 
+            <?php 
+            $flashWarnings = SessionManager::getFlash('warning');
+            $flashErrors = SessionManager::getFlash('error');
+            $flashSuccesses = SessionManager::getFlash('success');
+            $flashInfos = SessionManager::getFlash('info');
+            ?>
+
+            <?php if (!empty($flashInfos)): ?>
+                <div class="info-alert" role="alert" style="display:flex; align-items:flex-start; gap:12px; background-color:#eff6ff; border:1px solid #bfdbfe; border-left:4px solid #3b82f6; border-radius:10px; padding:12px 16px; margin-bottom:20px; color:#1e40af; font-size:0.88rem; line-height:1.4;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-top:2px;">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                    </svg>
+                    <div>
+                        <?php foreach ($flashInfos as $msg): ?>
+                            <div><?php echo htmlspecialchars($msg); ?></div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            <?php endif; ?>
+
+            <?php if (!empty($flashWarnings)): ?>
+                <div class="warning-alert" role="alert" style="display:flex; align-items:flex-start; gap:12px; background-color:#fffbeb; border:1px solid #fde68a; border-left:4px solid #f59e0b; border-radius:10px; padding:12px 16px; margin-bottom:20px; color:#92400e; font-size:0.88rem; line-height:1.4;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-top:2px;">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                    <div>
+                        <?php foreach ($flashWarnings as $msg): ?>
+                            <div><?php echo htmlspecialchars($msg); ?></div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            <?php endif; ?>
+
             <?php if (!empty($errors)): ?>
                 <div class="error-alert" role="alert">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -138,7 +179,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
             <?php endif; ?>
 
-            <form action="register.php" method="POST" autocomplete="on">
+            <form action="register.php<?php echo !empty($_GET['redirect']) ? '?redirect=' . urlencode($_GET['redirect']) : ''; ?>" method="POST" autocomplete="on">
                 <div class="form-group">
                     <label for="email" class="form-label">Email Address</label>
                     <div class="input-group">

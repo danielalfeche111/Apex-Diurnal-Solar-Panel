@@ -25,10 +25,18 @@ require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../User.php';
 require_once __DIR__ . '/../Cart.php';
 
-// Guest checkout is fully permitted; authenticated users receive auto-prefilling
-
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+// Require an account to checkout - redirect guests to registration
+if (!isLoggedIn()) {
+    SessionManager::setFlash('info', 'Please create an account or sign in to complete your checkout.');
+    if (isset($_SERVER['REQUEST_URI'])) {
+        $_SESSION['redirect_after_login'] = $_SERVER['REQUEST_URI'];
+    }
+    $docRoot = str_replace('\\', '/', realpath($_SERVER['DOCUMENT_ROOT'] ?? ''));
+    $appDir = str_replace('\\', '/', realpath(__DIR__ . '/..'));
+    $baseUri = $docRoot ? rtrim(str_replace($docRoot, '', $appDir), '/') : '';
+    $redirectTarget = urlencode($_SERVER['REQUEST_URI'] ?? '../cart/checkout.php');
+    header('Location: ' . ($baseUri ? $baseUri : '') . '/auth/register.php?redirect=' . $redirectTarget);
+    exit;
 }
 
 // ---------------------------------------------------------------------

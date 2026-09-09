@@ -28,6 +28,17 @@ if (isLoggedIn()) {
     }
 }
 
+if ($action === 'add' && !isLoggedIn()) {
+    SessionManager::setFlash('info', 'Please create an account or sign in to add products to your cart.');
+    echo json_encode([
+        'success'         => false,
+        'requiresAuth'    => true,
+        'redirect'        => 'auth/register.php',
+        'message'         => 'Please create an account to add products to your cart.'
+    ]);
+    exit;
+}
+
 switch ($action) {
     case 'add':
         if ($productId) {

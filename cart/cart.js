@@ -31,7 +31,7 @@ function isUserAuthenticated() {
   }
   return document.cookie.split(';').some(item => {
     const trimmed = item.trim();
-    return trimmed.startsWith('app_logged_in=1') || trimmed.startsWith('PHPSESSID=');
+    return trimmed.startsWith('app_logged_in=1');
   });
 }
 
@@ -78,6 +78,11 @@ function fetchCart(action, productId, quantity) {
       return r.json();
     })
     .then(data => {
+      if (data && data.requiresAuth) {
+        const redirectUrl = encodeURIComponent(window.location.pathname + window.location.search);
+        window.location.href = getAppBaseUrl() + (data.redirect || 'auth/register.php') + '?redirect=' + redirectUrl;
+        return data;
+      }
       renderCart(data);
       if (Array.isArray(data.notices) && data.notices.length > 0) {
         data.notices.forEach(notice => {
@@ -96,6 +101,11 @@ function fetchCart(action, productId, quantity) {
 }
 
 function addToCart(id, qty) {
+  if (!isUserAuthenticated()) {
+    const redirectUrl = encodeURIComponent(window.location.pathname + window.location.search);
+    window.location.href = getAppBaseUrl() + 'auth/register.php?redirect=' + redirectUrl;
+    return;
+  }
   fetchCart('add', id, qty || 1).then(() => showToast('Added to cart'));
 }
 

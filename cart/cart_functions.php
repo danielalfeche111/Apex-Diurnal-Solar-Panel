@@ -35,6 +35,9 @@ function get_cart_service(): ?Cart {
  * Add a product to the cart (or increase quantity)
  */
 function add_to_cart(string $productId, int $qty = 1): void {
+    if (!isLoggedIn()) {
+        return;
+    }
     if ($qty < 1) {
         $qty = 1;
     }
@@ -48,13 +51,6 @@ function add_to_cart(string $productId, int $qty = 1): void {
         } catch (Exception $e) {
             error_log('[cart_functions] Error adding item to database cart: ' . $e->getMessage());
         }
-    }
-
-    // Guest fallback
-    if (isset($_SESSION['cart'][$productId])) {
-        $_SESSION['cart'][$productId] += $qty;
-    } else {
-        $_SESSION['cart'][$productId] = $qty;
     }
 }
 
