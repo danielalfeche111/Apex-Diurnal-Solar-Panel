@@ -160,6 +160,18 @@
           <span>${isBooking ? 'Book Now' : 'Add to Cart & Checkout'}</span>
         `;
         newActionBtn.onclick = function () {
+          const isAuth = (typeof window.isUserAuthenticated === 'function')
+            ? window.isUserAuthenticated()
+            : Boolean(window.USER_LOGGED_IN);
+
+          if (!isAuth) {
+            closeProductModal();
+            if (typeof window.showAuthRequiredModal === 'function') {
+              window.showAuthRequiredModal('buy');
+            }
+            return;
+          }
+
           if (typeof window.addToCart === 'function') {
             window.addToCart(product.id);
           }

@@ -231,6 +231,19 @@
     }
 
     function openModal(mode) {
+      const isAuth = (typeof window.isUserAuthenticated === 'function')
+        ? window.isUserAuthenticated()
+        : Boolean(window.USER_LOGGED_IN);
+
+      if (!isAuth) {
+        if (typeof window.showAuthRequiredModal === 'function') {
+          window.showAuthRequiredModal(mode === 'rfq' ? 'commercial' : 'consultation');
+        } else {
+          window.location.href = 'auth/login.php';
+        }
+        return;
+      }
+
       setMode(mode || 'consultation');
       overlay.style.display = 'block';
       modal.style.display = 'flex';

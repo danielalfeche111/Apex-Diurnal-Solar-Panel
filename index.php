@@ -119,6 +119,7 @@ function nav_link(string $label, string $href, string $class = '', string $extra
   <link rel="stylesheet" href="cart/cart.css?v=<?php echo filemtime(__DIR__ . '/cart/cart.css'); ?>">
   <link rel="stylesheet" href="services/services.css?v=<?php echo filemtime(__DIR__ . '/services/services.css'); ?>">
   <link rel="stylesheet" href="products/product-modal.css?v=<?php echo filemtime(__DIR__ . '/products/product-modal.css'); ?>">
+  <link rel="stylesheet" href="css/auth-modal.css?v=<?php echo filemtime(__DIR__ . '/css/auth-modal.css'); ?>">
 </head>
 
 <body>
@@ -249,7 +250,7 @@ function nav_link(string $label, string $href, string $class = '', string $extra
                     $upper = strtoupper(trim($label));
                     $onclick = '';
                     if ($upper === 'BUY NOW' || $upper === 'BOOK NOW') {
-                      $onclick = "addToCart('" . htmlspecialchars($product['id'], ENT_QUOTES) . "'); openCart();";
+                      $onclick = "if (typeof isUserAuthenticated === 'function' && isUserAuthenticated()) { addToCart('" . htmlspecialchars($product['id'], ENT_QUOTES) . "'); openCart(); } else { showAuthRequiredModal('buy'); }";
                     } elseif ($upper === 'LEARN MORE') {
                       $onclick = "openProductModal('" . htmlspecialchars($product['id'], ENT_QUOTES) . "');";
                     } elseif ($upper === 'CONTACT SALES' || $upper === 'REQUEST QUOTE') {
@@ -989,6 +990,40 @@ function nav_link(string $label, string $href, string $class = '', string $extra
     </div>
   </div>
 
+  <!-- AUTHENTICATION REQUIRED ERROR HANDLING MODAL -->
+  <div class="auth-modal-overlay" id="auth-modal-overlay" style="display:none;" aria-hidden="true"></div>
+  <div class="auth-modal" id="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title" aria-hidden="true" style="display:none;">
+    <button type="button" class="auth-modal-close" id="auth-modal-close" aria-label="Close dialog">&times;</button>
+    <div class="auth-modal-body">
+      <h3 class="auth-modal-title" id="auth-modal-title">Sign In Required</h3>
+      <p class="auth-modal-desc" id="auth-modal-desc">
+        You need to be signed in to perform this action. Please sign in to your existing account or create a new one to continue.
+      </p>
+      <div class="auth-modal-actions">
+        <a href="auth/login.php" class="auth-btn-primary" id="auth-modal-btn-login">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+            <polyline points="10 17 15 12 10 7"></polyline>
+            <line x1="15" y1="12" x2="3" y2="12"></line>
+          </svg>
+          <span>Sign In to Account</span>
+        </a>
+        <a href="auth/register.php" class="auth-btn-secondary" id="auth-modal-btn-register">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="8.5" cy="7" r="4"></circle>
+            <line x1="20" y1="8" x2="20" y2="14"></line>
+            <line x1="23" y1="11" x2="17" y2="11"></line>
+          </svg>
+          <span>Create an Account</span>
+        </a>
+        <button type="button" class="auth-btn-dismiss" id="auth-modal-btn-dismiss">
+          Continue Browsing
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script>
     // --- Authentication & Session state from PHP ---
     window.USER_LOGGED_IN = <?php echo isLoggedIn() ? 'true' : 'false'; ?>;
@@ -1023,6 +1058,7 @@ function nav_link(string $label, string $href, string $class = '', string $extra
   </script>
 
   <!-- Feature Client Scripts -->
+  <script src="js/auth-modal.js?v=<?php echo filemtime(__DIR__ . '/js/auth-modal.js'); ?>"></script>
   <script src="cart/cart.js?v=<?php echo filemtime(__DIR__ . '/cart/cart.js'); ?>" defer></script>
   <script src="services/services.js?v=<?php echo filemtime(__DIR__ . '/services/services.js'); ?>" defer></script>
   <script src="products/product-modal.js?v=<?php echo filemtime(__DIR__ . '/products/product-modal.js'); ?>" defer></script>

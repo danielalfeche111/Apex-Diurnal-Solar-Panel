@@ -79,8 +79,12 @@ function fetchCart(action, productId, quantity) {
     })
     .then(data => {
       if (data && data.requiresAuth) {
-        const redirectUrl = encodeURIComponent(window.location.pathname + window.location.search);
-        window.location.href = getAppBaseUrl() + (data.redirect || 'auth/register.php') + '?redirect=' + redirectUrl;
+        if (typeof window.showAuthRequiredModal === 'function') {
+          window.showAuthRequiredModal('buy');
+        } else {
+          const redirectUrl = encodeURIComponent(window.location.pathname + window.location.search);
+          window.location.href = getAppBaseUrl() + (data.redirect || 'auth/register.php') + '?redirect=' + redirectUrl;
+        }
         return data;
       }
       renderCart(data);
@@ -102,8 +106,12 @@ function fetchCart(action, productId, quantity) {
 
 function addToCart(id, qty) {
   if (!isUserAuthenticated()) {
-    const redirectUrl = encodeURIComponent(window.location.pathname + window.location.search);
-    window.location.href = getAppBaseUrl() + 'auth/register.php?redirect=' + redirectUrl;
+    if (typeof window.showAuthRequiredModal === 'function') {
+      window.showAuthRequiredModal('buy');
+    } else {
+      const redirectUrl = encodeURIComponent(window.location.pathname + window.location.search);
+      window.location.href = getAppBaseUrl() + 'auth/register.php?redirect=' + redirectUrl;
+    }
     return;
   }
   fetchCart('add', id, qty || 1).then(() => showToast('Added to cart'));

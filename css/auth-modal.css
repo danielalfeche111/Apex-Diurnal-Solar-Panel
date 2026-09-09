@@ -1,0 +1,201 @@
+/* ===================================================
+   AUTHENTICATION REQUIRED ERROR HANDLING MODAL
+   Apex Diurnal Solar Solutions
+   =================================================== */
+
+.auth-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 30, 58, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 2500;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.auth-modal-overlay.active {
+  display: block;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.auth-modal {
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -46%) scale(0.95);
+  width: 480px;
+  max-width: calc(100vw - 32px);
+  background: var(--color-white, #ffffff);
+  border-radius: 20px;
+  box-shadow: 0 25px 65px -12px rgba(18, 36, 68, 0.42), 0 0 0 1px rgba(27, 51, 95, 0.08);
+  z-index: 2600;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              visibility 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.auth-modal.open {
+  display: flex;
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.auth-modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: transparent;
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted, #576579);
+  font-size: 1.5rem;
+  line-height: 1;
+  z-index: 10;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.auth-modal-close:hover {
+  background-color: rgba(27, 51, 95, 0.08);
+  color: var(--color-navy, #1b335f);
+  transform: rotate(90deg);
+}
+
+/* Modal Body */
+.auth-modal-body {
+  padding: 44px 32px 32px 32px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.auth-modal-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--color-navy, #1b335f);
+  margin-bottom: 8px;
+  line-height: 1.3;
+}
+
+.auth-modal-desc {
+  font-size: 0.95rem;
+  color: var(--color-text-muted, #576579);
+  line-height: 1.55;
+  margin-bottom: 24px;
+  max-width: 380px;
+}
+
+/* Actions Container */
+.auth-modal-actions {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.auth-btn-primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 13px 20px;
+  background: var(--color-yellow, #fee000);
+  color: var(--color-navy, #1b335f);
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 0.95rem;
+  border: none;
+  border-radius: var(--radius-sm, 8px);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 14px rgba(254, 224, 0, 0.35);
+}
+
+.auth-btn-primary:hover {
+  background: var(--color-yellow-hover, #e5ca00);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(254, 224, 0, 0.45);
+  color: var(--color-navy-dark, #122444);
+}
+
+.auth-btn-secondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 20px;
+  background: transparent;
+  color: var(--color-navy, #1b335f);
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 0.95rem;
+  border: 2px solid var(--color-navy, #1b335f);
+  border-radius: var(--radius-sm, 8px);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.auth-btn-secondary:hover {
+  background-color: var(--color-navy, #1b335f);
+  color: var(--color-white, #ffffff);
+  transform: translateY(-1px);
+}
+
+.auth-btn-dismiss {
+  background: none;
+  border: none;
+  color: var(--color-text-muted, #576579);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-top: 6px;
+  cursor: pointer;
+  padding: 6px;
+  transition: color 0.2s ease;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.auth-btn-dismiss:hover {
+  color: var(--color-navy, #1b335f);
+}
+
+@media (max-width: 480px) {
+  .auth-modal {
+    width: calc(100vw - 24px);
+    border-radius: 16px;
+  }
+  .auth-modal-body {
+    padding: 20px 16px;
+  }
+  .auth-modal-title {
+    font-size: 1.2rem;
+  }
+  .auth-modal-desc {
+    font-size: 0.9rem;
+  }
+}
