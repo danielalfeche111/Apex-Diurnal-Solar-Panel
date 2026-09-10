@@ -48,11 +48,29 @@ $stmt->execute($params);
 $bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $events = [];
-
 foreach ($bookings as $b) {
-    $slot = strtolower($b['preferred_time_slot']);
-    $timeStart = ($slot === 'afternoon') ? '13:30:00' : '09:00:00';
-    $timeEnd = ($slot === 'afternoon') ? '16:00:00' : '11:30:00';
+    $slot = trim($b['preferred_time_slot'] ?? '');
+    $slotLower = strtolower($slot);
+
+    if (strpos($slot, '8:00') !== false) {
+        $timeStart = '08:00:00';
+        $timeEnd   = '10:00:00';
+    } elseif (strpos($slot, '10:00') !== false) {
+        $timeStart = '10:00:00';
+        $timeEnd   = '12:00:00';
+    } elseif (strpos($slot, '1:00') !== false) {
+        $timeStart = '13:00:00';
+        $timeEnd   = '15:00:00';
+    } elseif (strpos($slot, '3:00') !== false) {
+        $timeStart = '15:00:00';
+        $timeEnd   = '17:00:00';
+    } elseif ($slotLower === 'afternoon') {
+        $timeStart = '13:30:00';
+        $timeEnd   = '16:00:00';
+    } else {
+        $timeStart = '09:00:00';
+        $timeEnd   = '11:30:00';
+    }
 
     $startIso = $b['preferred_date'] . 'T' . $timeStart;
     $endIso = $b['preferred_date'] . 'T' . $timeEnd;

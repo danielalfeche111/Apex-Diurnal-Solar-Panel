@@ -598,25 +598,7 @@ function nav_link(string $label, string $href, string $class = '', string $extra
             </div>
           </div>
 
-          <div class="form-group">
-            <label class="consultation-label">Best Time for Pre-Inspection Call <span
-                class="text-danger">*</span></label>
-            <div class="radio-pill-group">
-              <label class="radio-pill">
-                <input type="radio" name="best_call_time" value="Morning" checked>
-                <span class="pill-badge">Morning (8am - 12pm)</span>
-              </label>
-              <label class="radio-pill">
-                <input type="radio" name="best_call_time" value="Afternoon">
-                <span class="pill-badge">Afternoon (1pm - 5pm)</span>
-              </label>
-              <label class="radio-pill">
-                <input type="radio" name="best_call_time" value="Anytime">
-                <span class="pill-badge">Anytime During Business Hours</span>
-              </label>
-            </div>
-            <div class="consultation-field-error" id="err-best_call_time"></div>
-          </div>
+
 
           <div class="consultation-actions">
             <button type="button" class="btn btn-outline consultation-nav-btn" id="btn-consult-prev-2">
@@ -650,15 +632,20 @@ function nav_link(string $label, string $href, string $class = '', string $extra
             </div>
 
             <div class="form-group">
-              <label for="preferred_time_slot" class="consultation-label">Preferred Time Slot <span
+              <label for="preferred_time_slot" class="consultation-label">Inspection Time <span
                   class="text-danger">*</span></label>
               <select id="preferred_time_slot" name="preferred_time_slot" class="consultation-input consultation-select"
                 required>
-                <option value="">Select Time Slot</option>
-                <option value="Morning">Morning Window (9:00 AM - 12:00 PM)</option>
-                <option value="Afternoon">Afternoon Window (1:00 PM - 4:00 PM)</option>
+                <option value="">Select Inspection Time</option>
+                <option value="8:00 AM - 10:00 AM">8:00 AM - 10:00 AM (Morning)</option>
+                <option value="10:00 AM - 12:00 PM">10:00 AM - 12:00 PM (Morning)</option>
+                <option value="1:00 PM - 3:00 PM">1:00 PM - 3:00 PM (Afternoon)</option>
+                <option value="3:00 PM - 5:00 PM">3:00 PM - 5:00 PM (Afternoon)</option>
               </select>
               <div class="consultation-field-error" id="err-preferred_time_slot"></div>
+              <small id="slot-availability-hint" style="display:block; margin-top:4px; font-size:0.75rem; color:#64748b;">
+                Select a date above to check available inspection slots.
+              </small>
             </div>
           </div>
 

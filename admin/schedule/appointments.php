@@ -40,7 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ':st' => $status,
             ':tech' => !empty($technician) ? $technician : null,
             ':pdate' => !empty($preferredDate) ? $preferredDate : date('Y-m-d'),
-            ':pslot' => !empty($preferredSlot) ? $preferredSlot : 'morning',
+            ':pslot' => !empty($preferredSlot) ? $preferredSlot : '8:00 AM - 10:00 AM',
             ':notes' => $accessNotes,
             ':id' => $bookingId
         ]);
@@ -159,8 +159,15 @@ include __DIR__ . '/../includes/header.php';
             <div class="form-group" style="margin-bottom:0;">
               <label class="form-label" for="preferred_time_slot">Time Window Slot</label>
               <select name="preferred_time_slot" id="preferred_time_slot" class="form-control" required>
-                <option value="morning" <?php echo (strtolower($booking['preferred_time_slot']) === 'morning') ? 'selected' : ''; ?>>Morning (9:00 AM - 12:00 PM)</option>
-                <option value="afternoon" <?php echo (strtolower($booking['preferred_time_slot']) === 'afternoon') ? 'selected' : ''; ?>>Afternoon (1:30 PM - 5:00 PM)</option>
+                <option value="8:00 AM - 10:00 AM" <?php echo ($booking['preferred_time_slot'] === '8:00 AM - 10:00 AM') ? 'selected' : ''; ?>>8:00 AM - 10:00 AM (Morning)</option>
+                <option value="10:00 AM - 12:00 PM" <?php echo ($booking['preferred_time_slot'] === '10:00 AM - 12:00 PM') ? 'selected' : ''; ?>>10:00 AM - 12:00 PM (Morning)</option>
+                <option value="1:00 PM - 3:00 PM" <?php echo ($booking['preferred_time_slot'] === '1:00 PM - 3:00 PM') ? 'selected' : ''; ?>>1:00 PM - 3:00 PM (Afternoon)</option>
+                <option value="3:00 PM - 5:00 PM" <?php echo ($booking['preferred_time_slot'] === '3:00 PM - 5:00 PM') ? 'selected' : ''; ?>>3:00 PM - 5:00 PM (Afternoon)</option>
+                <?php if (in_array(strtolower($booking['preferred_time_slot']), ['morning', 'afternoon'])): ?>
+                  <option value="<?php echo htmlspecialchars($booking['preferred_time_slot']); ?>" selected>
+                    Legacy: <?php echo ucfirst($booking['preferred_time_slot']); ?>
+                  </option>
+                <?php endif; ?>
               </select>
             </div>
           </div>

@@ -227,6 +227,15 @@
       const rSpin = document.getElementById('rfq-spinner');
       if (rSpin) rSpin.style.display = 'none';
 
+      if (typeof updateTimeSlotOptions === 'function') {
+        updateTimeSlotOptions([]);
+      }
+      const sHint = document.getElementById('slot-availability-hint');
+      if (sHint) {
+        sHint.textContent = 'Select a date above to check available inspection slots.';
+        sHint.style.color = '#64748b';
+      }
+
       setStep(1);
     }
 
@@ -373,10 +382,109 @@
         }
       }
       if (!timeSlot || !timeSlot.value) {
-        showFieldError('preferred_time_slot', 'Please select a preferred time slot.');
+        showFieldError('preferred_time_slot', 'Please select an inspection time.');
         valid = false;
       }
       return valid;
+    }
+
+    // =========================================================================
+    // REAL-TIME SLOT AVAILABILITY MANAGEMENT
+    // =========================================================================
+    const dateInput = document.getElementById('preferred_date');
+    const timeSlotSelect = document.getElementById('preferred_time_slot');
+    const slotHint = document.getElementById('slot-availability-hint');
+
+    const standardTimeSlots = [
+      { value: '8:00 AM - 10:00 AM', label: '8:00 AM - 10:00 AM (Morning)' },
+      { value: '10:00 AM - 12:00 PM', label: '10:00 AM - 12:00 PM (Morning)' },
+      { value: '1:00 PM - 3:00 PM', label: '1:00 PM - 3:00 PM (Afternoon)' },
+      { value: '3:00 PM - 5:00 PM', label: '3:00 PM - 5:00 PM (Afternoon)' }
+    ];
+
+    function updateTimeSlotOptions(bookedSlots = []) {
+      if (!timeSlotSelect) return;
+      const currentSelected = timeSlotSelect.value;
+      let isCurrentBooked = false;
+
+      timeSlotSelect.innerHTML = '<option value="">Select Inspection Time</option>';
+
+      standardTimeSlots.forEach(slot => {
+        const opt = document.createElement('option');
+        opt.value = slot.value;
+        const isBooked = bookedSlots.some(b => b.toLowerCase() === slot.value.toLowerCase());
+
+        if (isBooked) {
+          opt.textContent = `${slot.label} — Booked (Unavailable)`;
+          opt.disabled = true;
+          opt.style.color = '#94a3b8';
+          if (currentSelected === slot.value) {
+            isCurrentBooked = true;
+          }
+        } else {
+          opt.textContent = slot.label;
+          if (currentSelected === slot.value) {
+            opt.selected = true;
+          }
+        }
+        timeSlotSelect.appendChild(opt);
+      });
+
+      if (isCurrentBooked) {
+        timeSlotSelect.value = '';
+        showFieldError('preferred_time_slot', 'The previously selected inspection slot is already booked for this date. Please choose another time.');
+      }
+    }
+
+    function checkSlotAvailability() {
+      if (!dateInput || !timeSlotSelect) return;
+      const dateVal = dateInput.value;
+      if (!dateVal) {
+        updateTimeSlotOptions([]);
+        if (slotHint) {
+          slotHint.textContent = 'Select a date above to check available inspection slots.';
+          slotHint.style.color = '#64748b';
+        }
+        return;
+      }
+
+      if (slotHint) {
+        slotHint.textContent = 'Checking slot availability for ' + dateVal + '...';
+        slotHint.style.color = '#0284c7';
+      }
+
+      const checkUrl = window.location.pathname.includes('/services/') ? 'check_availability.php' : 'services/check_availability.php';
+
+      fetch(`${checkUrl}?date=${encodeURIComponent(dateVal)}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            const booked = data.booked_slots || [];
+            updateTimeSlotOptions(booked);
+            if (slotHint) {
+              const availableCount = (data.available_slots || []).length;
+              if (availableCount === 0) {
+                slotHint.textContent = 'All inspection slots are fully booked for this date. Please select another date.';
+                slotHint.style.color = '#dc2626';
+              } else {
+                slotHint.textContent = `${availableCount} of 4 inspection slots available for ${dateVal}.`;
+                slotHint.style.color = '#059669';
+              }
+            }
+          }
+        })
+        .catch(err => {
+          console.warn('Availability check error:', err);
+          if (slotHint) {
+            slotHint.textContent = 'Select a date above to check available inspection slots.';
+            slotHint.style.color = '#64748b';
+          }
+        });
+    }
+
+    if (dateInput) {
+      dateInput.addEventListener('change', checkSlotAvailability);
+      dateInput.addEventListener('input', checkSlotAvailability);
     }
 
     // Validation - RFQ Mode
@@ -476,7 +584,14 @@
     const consultPrev2 = document.getElementById('btn-consult-prev-2');
     if (consultPrev2) consultPrev2.addEventListener('click', () => setStep(1));
     const consultNext2 = document.getElementById('btn-consult-next-2');
-    if (consultNext2) consultNext2.addEventListener('click', () => { if (validateConsultStep2()) setStep(3); });
+    if (consultNext2) consultNext2.addEventListener('click', () => {
+      if (validateConsultStep2()) {
+        setStep(3);
+        if (dateInput && dateInput.value) {
+          checkSlotAvailability();
+        }
+      }
+    });
     const consultPrev3 = document.getElementById('btn-consult-prev-3');
     if (consultPrev3) consultPrev3.addEventListener('click', () => setStep(2));
 

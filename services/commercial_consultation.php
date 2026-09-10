@@ -248,8 +248,23 @@ if ($lead_type === 'rfq') {
 
     $allowed_facilities = ['Manufacturing Plant', 'Commercial Building', 'Warehouse', 'Agricultural', 'School', 'House', 'House / Residential'];
     $allowed_power_supplies = ['Single-Phase Supply', 'Three-Phase Supply'];
-    $allowed_call_times = ['Morning', 'Afternoon', 'Anytime'];
-    $allowed_time_slots = ['Morning', 'Afternoon'];
+    $allowed_call_times = [
+        '8:00 AM - 10:00 AM',
+        '10:00 AM - 12:00 PM',
+        '1:00 PM - 3:00 PM',
+        '3:00 PM - 5:00 PM',
+        'Anytime',
+        'Morning',
+        'Afternoon'
+    ];
+    $allowed_time_slots = [
+        '8:00 AM - 10:00 AM',
+        '10:00 AM - 12:00 PM',
+        '1:00 PM - 3:00 PM',
+        '3:00 PM - 5:00 PM',
+        'Morning',
+        'Afternoon'
+    ];
 
     // Step 1: Facility Specs
     if ($company_name === '') {
@@ -318,8 +333,11 @@ if ($lead_type === 'rfq') {
         $phone_number = $cleanPhone;
     }
 
-    if (!in_array($best_call_time, $allowed_call_times, true)) {
+    if (!empty($best_call_time) && !in_array($best_call_time, $allowed_call_times, true)) {
         $errors['best_call_time'] = 'Please select your preferred time for the pre-inspection call.';
+    }
+    if ($best_call_time === '') {
+        $best_call_time = null;
     }
 
     // Step 3: Scheduling
@@ -340,7 +358,48 @@ if ($lead_type === 'rfq') {
     }
 
     if (!in_array($preferred_time_slot, $allowed_time_slots, true)) {
-        $errors['preferred_time_slot'] = 'Please select a preferred on-site audit time slot.';
+        $errors['preferred_time_slot'] = 'Please select a preferred on-site audit inspection time.';
+    }
+
+    // Double-booking check: Ensure selected date & slot are not already booked
+    if (empty($errors['preferred_date']) && empty($errors['preferred_time_slot'])) {
+        try {
+            $checkDb = getConnection();
+            $stmtCheck = $checkDb->prepare("
+                SELECT preferred_time_slot 
+                FROM service_bookings 
+                WHERE preferred_date = :pdate 
+                  AND status NOT IN ('cancelled')
+            ");
+            $stmtCheck->execute([':pdate' => $preferred_date]);
+            $existingSlots = $stmtCheck->fetchAll(PDO::FETCH_COLUMN);
+
+            $isBooked = false;
+            foreach ($existingSlots as $exSlot) {
+                $exTrimmed = trim($exSlot);
+                if (empty($exTrimmed)) continue;
+                $exLower = strtolower($exTrimmed);
+
+                if (strcasecmp($exTrimmed, $preferred_time_slot) === 0) {
+                    $isBooked = true;
+                    break;
+                }
+                if ($exLower === 'morning' && in_array($preferred_time_slot, ['8:00 AM - 10:00 AM', '10:00 AM - 12:00 PM', 'Morning'], true)) {
+                    $isBooked = true;
+                    break;
+                }
+                if ($exLower === 'afternoon' && in_array($preferred_time_slot, ['1:00 PM - 3:00 PM', '3:00 PM - 5:00 PM', 'Afternoon'], true)) {
+                    $isBooked = true;
+                    break;
+                }
+            }
+
+            if ($isBooked) {
+                $errors['preferred_time_slot'] = 'The selected inspection time is already booked for this date. Please select another time or date.';
+            }
+        } catch (Exception $e) {
+            error_log('Slot availability check error: ' . $e->getMessage());
+        }
     }
 
     $facility_size = is_numeric($facility_size_raw) ? (float)$facility_size_raw : 0.0;
@@ -547,7 +606,7 @@ try {
                     ':email' => $corporate_email,
                     ':phone' => $phone_number,
                     ':pdate' => $preferred_date,
-                    ':pslot' => strtolower($preferred_time_slot ?: 'morning'),
+                    ':pslot' => $preferred_time_slot ?: '8:00 AM - 10:00 AM',
                     ':addr' => $property_address,
                     ':notes' => $access_notes
                 ]);
