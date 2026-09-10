@@ -65,6 +65,39 @@ function updatePaymentHighlight(radio) {
   if (radio && radio.checked) {
     const parent = radio.closest('.payment-option-item');
     if (parent) parent.classList.add('selected');
+
+    const cardBox = document.getElementById('card-details-fields');
+    if (cardBox) {
+      if (radio.value === 'Credit Card') {
+        cardBox.style.display = 'block';
+      } else {
+        cardBox.style.display = 'none';
+      }
+    }
+  }
+}
+
+function updateCardBrandBadge(rawNum) {
+  const icon = document.getElementById('card-brand-icon');
+  const visaBadge = document.getElementById('badge-visa');
+  const mcBadge = document.getElementById('badge-mastercard');
+  const amexBadge = document.getElementById('badge-amex');
+
+  [visaBadge, mcBadge, amexBadge].forEach(function(b) {
+    if (b) b.classList.remove('active');
+  });
+
+  if (/^4/.test(rawNum)) {
+    if (visaBadge) visaBadge.classList.add('active');
+    if (icon) icon.textContent = '💳 Visa';
+  } else if (/^(5[1-5]|2[2-7])/.test(rawNum)) {
+    if (mcBadge) mcBadge.classList.add('active');
+    if (icon) icon.textContent = '💳 MC';
+  } else if (/^3[47]/.test(rawNum)) {
+    if (amexBadge) amexBadge.classList.add('active');
+    if (icon) icon.textContent = '💳 Amex';
+  } else {
+    if (icon) icon.textContent = '💳';
   }
 }
 
@@ -180,6 +213,58 @@ document.addEventListener('DOMContentLoaded', function() {
         else showCheckoutNotif('Please enter a valid 4-digit postal code.');
       }
 
+      // Check standard card details if Credit / Debit Card is selected
+      const payRadio = document.querySelector('input[name="payment_method"]:checked');
+      if (payRadio && payRadio.value === 'Credit Card') {
+        const cardNameEl = document.getElementById('card_name');
+        const cardNumEl  = document.getElementById('card_number');
+        const cardExpEl  = document.getElementById('card_expiry');
+        const cardCvvEl  = document.getElementById('card_cvv');
+
+        if (!cardNameEl || !cardNameEl.value.trim()) {
+          addrValid = false;
+          if (cardNameEl) cardNameEl.classList.add('has-error');
+          showCheckoutNotif('Cardholder Name is required.');
+        } else if (cardNameEl.value.trim().length < 3) {
+          addrValid = false;
+          cardNameEl.classList.add('has-error');
+          showCheckoutNotif('Cardholder Name must be at least 3 characters.');
+        }
+
+        const rawCard = cardNumEl ? cardNumEl.value.replace(/\D/g, '') : '';
+        if (!rawCard || (rawCard.length < 15 || rawCard.length > 16)) {
+          addrValid = false;
+          if (cardNumEl) cardNumEl.classList.add('has-error');
+          showCheckoutNotif('Please enter a valid 15 or 16-digit card number.');
+        }
+
+        const expVal = cardExpEl ? cardExpEl.value.trim() : '';
+        const expMatch = expVal.match(/^(0[1-9]|1[0-2])\/(\d{2})$/);
+        if (!expMatch) {
+          addrValid = false;
+          if (cardExpEl) cardExpEl.classList.add('has-error');
+          showCheckoutNotif('Please enter expiration date in MM/YY format.');
+        } else {
+          const expM = parseInt(expMatch[1], 10);
+          const expY = 2000 + parseInt(expMatch[2], 10);
+          const now = new Date();
+          const curY = now.getFullYear();
+          const curM = now.getMonth() + 1;
+          if (expY < curY || (expY === curY && expM < curM)) {
+            addrValid = false;
+            if (cardExpEl) cardExpEl.classList.add('has-error');
+            showCheckoutNotif('The card expiration date has already passed.');
+          }
+        }
+
+        const cleanCvv = cardCvvEl ? cardCvvEl.value.replace(/\D/g, '') : '';
+        if (!cleanCvv || (cleanCvv.length < 3 || cleanCvv.length > 4)) {
+          addrValid = false;
+          if (cardCvvEl) cardCvvEl.classList.add('has-error');
+          showCheckoutNotif('Please enter a valid 3 or 4-digit CVV / security code.');
+        }
+      }
+
       if (!addrValid) {
         e.preventDefault();
         e.stopPropagation();
@@ -192,6 +277,73 @@ document.addEventListener('DOMContentLoaded', function() {
         return false;
       }
     });
+
+    // Sync initial payment method highlight and card box visibility
+    const initialPayRadio = document.querySelector('input[name="payment_method"]:checked');
+    if (initialPayRadio) {
+      updatePaymentHighlight(initialPayRadio);
+    }
+
+    // Standard card number formatting (4-digit blocks) & brand detection
+    const cardNumInput = document.getElementById('card_number');
+    if (cardNumInput) {
+      cardNumInput.addEventListener('input', function() {
+        const raw = this.value.replace(/\D/g, '').slice(0, 16);
+        let formatted = '';
+        for (let i = 0; i < raw.length; i++) {
+          if (i > 0 && i % 4 === 0) formatted += ' ';
+          formatted += raw[i];
+        }
+        this.value = formatted;
+        updateCardBrandBadge(raw);
+        this.classList.remove('has-error');
+        const errEl = this.parentElement ? this.parentElement.parentElement.querySelector('.field-error-message') : null;
+        if (errEl) errEl.style.display = 'none';
+      });
+      if (cardNumInput.value) {
+        updateCardBrandBadge(cardNumInput.value.replace(/\D/g, ''));
+      }
+    }
+
+    // Expiry date formatting (MM/YY)
+    const cardExpInput = document.getElementById('card_expiry');
+    if (cardExpInput) {
+      cardExpInput.addEventListener('input', function() {
+        let val = this.value.replace(/\D/g, '').slice(0, 4);
+        if (val.length >= 2) {
+          let m = parseInt(val.slice(0, 2), 10);
+          if (m > 12) m = 12;
+          if (m === 0) m = '01';
+          else m = m < 10 ? '0' + m : '' + m;
+          val = m + (val.length > 2 ? '/' + val.slice(2) : '/');
+        }
+        this.value = val;
+        this.classList.remove('has-error');
+        const errEl = this.parentElement ? this.parentElement.querySelector('.field-error-message') : null;
+        if (errEl) errEl.style.display = 'none';
+      });
+    }
+
+    // CVV input numeric only (3-4 digits)
+    const cardCvvInput = document.getElementById('card_cvv');
+    if (cardCvvInput) {
+      cardCvvInput.addEventListener('input', function() {
+        this.value = this.value.replace(/\D/g, '').slice(0, 4);
+        this.classList.remove('has-error');
+        const errEl = this.parentElement ? this.parentElement.querySelector('.field-error-message') : null;
+        if (errEl) errEl.style.display = 'none';
+      });
+    }
+
+    // Cardholder name clear error on input
+    const cardNameInput = document.getElementById('card_name');
+    if (cardNameInput) {
+      cardNameInput.addEventListener('input', function() {
+        this.classList.remove('has-error');
+        const errEl = this.parentElement ? this.parentElement.querySelector('.field-error-message') : null;
+        if (errEl) errEl.style.display = 'none';
+      });
+    }
 
     // Dynamic Province -> City / Municipality dropdown filtering
     const provSelect = document.getElementById('province');
@@ -260,7 +412,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Clear has-error on input/change
-    ['street_address', 'province', 'city', 'postal_code', 'phone'].forEach(function(id) {
+    ['street_address', 'province', 'city', 'postal_code', 'phone', 'card_name', 'card_number', 'card_expiry', 'card_cvv'].forEach(function(id) {
       const el = document.getElementById(id);
       if (el) {
         el.addEventListener('input', function() { this.classList.remove('has-error'); });

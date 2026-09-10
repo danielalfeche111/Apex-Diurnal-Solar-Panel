@@ -71,11 +71,9 @@ $product_details = [
 const TAX_RATE = 0.08;
 
 // Available options for validation
-$allowed_property_types = ['Residential', 'Commercial'];
+$allowed_property_types = ['Residential'];
 $allowed_payment_methods = [
     'Credit Card' => 'Credit / Debit Card (Visa, Mastercard, Amex)',
-    'Bank Transfer' => 'Direct Bank Wire Transfer / ACH',
-    'PayPal' => 'PayPal',
     'Cash on Delivery' => 'Cash on Delivery',
 ];
 // Province -> Cities/Municipalities mapping using standard Philippine locations
@@ -96,8 +94,13 @@ $city           = '';
 $province       = '';
 $postal_code    = '';
 $address        = ''; // composite for confirmation display & backwards compatibility
-$property_type  = '';
-$payment_method = '';
+$property_type  = 'Residential';
+$payment_method = 'Credit Card';
+$card_name      = '';
+$card_number    = '';
+$card_expiry    = '';
+$card_cvv       = '';
+$masked_card    = '';
 $notes          = '';
 $selected_items = []; // associative: [product_name => quantity]
 $errors         = [];
@@ -138,9 +141,13 @@ if ($is_post) {
       'Science City of Muñoz' => 'Muñoz City',
     ];
     if (isset($cityAliasMap[$city])) { $city = $cityAliasMap[$city]; }
-    $property_type  = $clean['property_type'] ?? '';
+    $property_type  = $clean['property_type'] ?? 'Residential';
     $payment_method = $clean['payment_method'] ?? '';
     $notes          = $clean['notes'] ?? '';
+    $card_name      = $clean['card_name'] ?? '';
+    $card_number    = trim((string)($clean['card_number'] ?? ''));
+    $card_expiry    = trim((string)($clean['card_expiry'] ?? ''));
+    $card_cvv       = trim((string)($clean['card_cvv'] ?? ''));
 
     // Re-compose full address for confirmation / display
     $address = trim(implode(', ', array_filter([$street_address, $city, $province])) . ($postal_code !== '' ? ' ' . $postal_code : ''));
@@ -168,7 +175,7 @@ if ($is_post) {
         'city'           => 'Please select a city from the dropdown.',
         'province'       => 'Please select a province from the dropdown.',
         'postal_code'    => 'Postal code is required.',
-        'property_type'  => 'Please select a Property Type (Residential or Commercial).',
+        'property_type'  => 'Please select a Property Type (Residential).',
         'payment_method' => 'Please select a preferred Payment Method.'
     ]);
     $validator->minLength('full_name', 3, 'Full Name must be at least 3 characters.');
@@ -187,6 +194,58 @@ if ($is_post) {
     $validator->pattern('postal_code', '/^\d{4}$/', 'Please enter a valid 4-digit postal code (e.g., 1000).');
     $validator->in('property_type', $allowed_property_types, 'Invalid Property Type selected.');
     $validator->in('payment_method', array_keys($allowed_payment_methods), 'Invalid Payment Method selected.');
+
+    // Validate Standard Card Details if Credit / Debit Card payment option is chosen
+    if ($payment_method === 'Credit Card') {
+        if (empty($card_name)) {
+            $validator->addError('card_name', 'Cardholder Name is required.');
+        } elseif (mb_strlen($card_name) < 3) {
+            $validator->addError('card_name', 'Cardholder Name must be at least 3 characters.');
+        } elseif (!preg_match("/^[a-zA-Z\s\.\'\-]+$/", $card_name)) {
+            $validator->addError('card_name', 'Cardholder Name contains invalid characters.');
+        }
+
+        $clean_card = preg_replace('/\D/', '', $card_number);
+        if (empty($clean_card)) {
+            $validator->addError('card_number', 'Card Number is required.');
+        } elseif (strlen($clean_card) < 15 || strlen($clean_card) > 16) {
+            $validator->addError('card_number', 'Please enter a valid 15 or 16-digit card number.');
+        }
+
+        if (empty($card_expiry)) {
+            $validator->addError('card_expiry', 'Card expiration date is required.');
+        } elseif (!preg_match('/^(0[1-9]|1[0-2])\/([0-9]{2})$/', $card_expiry, $matches)) {
+            $validator->addError('card_expiry', 'Please enter a valid expiration date in MM/YY format.');
+        } else {
+            $expMonth = (int)$matches[1];
+            $expYear  = 2000 + (int)$matches[2];
+            $currentYear = (int)date('Y');
+            $currentMonth = (int)date('n');
+            if ($expYear < $currentYear || ($expYear === $currentYear && $expMonth < $currentMonth)) {
+                $validator->addError('card_expiry', 'The card expiration date has already passed.');
+            }
+        }
+
+        if (empty($card_cvv)) {
+            $validator->addError('card_cvv', 'CVV / security code is required.');
+        } elseif (!preg_match('/^\d{3,4}$/', $card_cvv)) {
+            $validator->addError('card_cvv', 'CVV must be 3 or 4 digits.');
+        }
+
+        if (!empty($clean_card) && strlen($clean_card) >= 4) {
+            $firstChar = substr($clean_card, 0, 1);
+            $brand = 'Card';
+            if ($firstChar === '4') {
+                $brand = 'Visa';
+            } elseif ($firstChar === '5') {
+                $brand = 'Mastercard';
+            } elseif ($firstChar === '3') {
+                $brand = 'Amex';
+            }
+            $last4 = substr($clean_card, -4);
+            $masked_card = $brand . ' ending in ' . $last4;
+        }
+    }
 
     if (empty($selected_items)) {
         $validator->addError('products', 'You cannot checkout without an order! Please select at least one product or service to complete checkout.');
@@ -225,6 +284,10 @@ if ($is_post) {
                         :addr, :notes
                     )
                 ");
+                $order_payment_str = ($payment_method === 'Credit Card' && !empty($masked_card))
+                    ? 'Credit Card (' . $masked_card . ')'
+                    : $payment_method;
+
                 $stmtOrd->execute([
                     ':ord_num' => $order_id,
                     ':uid' => $user_id ? (int)$user_id : null,
@@ -232,7 +295,7 @@ if ($is_post) {
                     ':email' => $email,
                     ':phone' => $phone,
                     ':prop' => $property_type,
-                    ':pmethod' => $payment_method,
+                    ':pmethod' => $order_payment_str,
                     ':subtotal' => $subtotal,
                     ':tax' => $tax_amount,
                     ':total' => $grand_total,
@@ -308,22 +371,7 @@ if ($is_post) {
                         $stmtClear->execute([':uid' => $user_id]);
                     }
 
-                    // Save or update profile if requested and user is logged in
-                    if (!empty($_POST['save_to_profile'])) {
-                        $currentUserModel = new User($db);
-                        if ($currentUserModel->findById($user_id)) {
-                            $currentUserModel->updateProfile([
-                                'full_name'           => $full_name,
-                                'phone'               => $phone,
-                                'street_address'      => $street_address,
-                                'city'                => $city,
-                                'province'            => $province,
-                                'postal_code'         => $postal_code,
-                                'is_default_shipping' => 1,
-                                'is_default_billing'  => 1
-                            ]);
-                        }
-                    }
+
                 }
             }
         } catch (Exception $e) {
@@ -521,7 +569,14 @@ function safe(string $str): string {
                 </li>
                 <li class="conf-details-item">
                   <span class="conf-details-label">Payment Method Selected</span>
-                  <span class="conf-details-value"><?php echo safe($payment_method); ?></span>
+                  <span class="conf-details-value">
+                    <?php echo safe($payment_method); ?>
+                    <?php if (!empty($masked_card)): ?>
+                      <span class="conf-card-sub" style="display:block; font-size:0.84rem; color:var(--color-text-muted); margin-top:2px;">
+                        Paid via <?php echo safe($masked_card); ?>
+                      </span>
+                    <?php endif; ?>
+                  </span>
                 </li>
                 <li class="conf-details-item">
                   <span class="conf-details-label">Order Placed On</span>
@@ -712,8 +767,9 @@ function safe(string $str): string {
               <div class="card-body">
                 
                 <?php if (!empty($is_prefilled)): ?>
-                  <div class="checkout-prefill-badge" style="display: flex; align-items: center; gap: 8px; background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; padding: 10px 14px; border-radius: 8px; font-size: 0.86rem; font-weight: 600; margin-bottom: 1.25rem;">
+                  <div class="checkout-prefill-badge" style="display: flex; align-items: center; justify-content: space-between; gap: 8px; background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; padding: 10px 14px; border-radius: 8px; font-size: 0.86rem; font-weight: 500; margin-bottom: 1.25rem;">
                     <span>Delivery details auto-filled from your saved profile.</span>
+                    <a href="../account/settings.php#profile-details" target="_blank" style="color: #047857; font-weight: 600; text-decoration: underline; white-space: nowrap; font-size: 0.82rem;">Manage in Settings &rarr;</a>
                   </div>
                 <?php endif; ?>
 
@@ -889,53 +945,50 @@ function safe(string $str): string {
                 </div>
 
                 <?php if (isLoggedIn()): ?>
-                  <div class="form-group" style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px dashed rgba(27,51,95,0.15);">
-                    <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; font-size: 0.92rem; color: var(--color-navy); font-weight: 600;">
-                      <input type="checkbox" name="save_to_profile" value="1" checked style="width: 1.2rem; height: 1.2rem; margin-top: 2px; accent-color: var(--color-navy); cursor: pointer;">
-                      <span>Save / update these address details to my default delivery profile</span>
-                    </label>
-                    <p style="margin: 4px 0 0 28px; font-size: 0.8rem; color: #64748b;">Future orders will automatically use this shipping information for fast 1-click checkout.</p>
+                  <div style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px dashed rgba(27,51,95,0.15); font-size: 0.82rem; color: #64748b; display: flex; align-items: center; gap: 8px;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; color:#64748b;">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <line x1="12" y1="16" x2="12" y2="12"></line>
+                      <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                    </svg>
+                    <span>To update your default shipping address, please configure your details in <a href="../account/settings.php#profile-details" target="_blank" style="color: var(--color-navy); font-weight: 600; text-decoration: underline;">Account Settings</a>.</span>
                   </div>
                 <?php endif; ?>
 
               </div>
             </div>
 
-            <!-- Property Type Card (Residential vs Commercial) -->
+            <!-- Property Type Card (Residential Only) -->
             <div class="card-panel">
               <div class="card-header">
                 <h2 class="card-header-title">2. Property Type</h2>
-                <span class="card-step-badge">Required</span>
+                <span class="card-step-badge">Residential</span>
               </div>
               <div class="card-body">
-                <div class="form-group">
+                <div class="form-group" style="margin-bottom:0;">
                   <label class="form-label">
-                    Select Your Property Category <span class="required-mark">*</span>
+                    Property Category <span class="required-mark">*</span>
                   </label>
-                  <div class="radio-card-grid">
-                    <label class="radio-card-label">
+                  <div class="property-single-wrap">
+                    <label class="radio-card-label single-choice">
                       <input 
                         type="radio" 
                         name="property_type" 
                         value="Residential" 
-                        <?php echo ($property_type === 'Residential' || $property_type === '') ? 'checked' : ''; ?>
+                        checked
                       >
-                      <div class="radio-card-content">
-                        <div class="radio-card-title">Residential</div>
-                        <div class="radio-card-desc">Single-family, townhouse, or duplex rooftop setup</div>
-                      </div>
-                    </label>
-
-                    <label class="radio-card-label">
-                      <input 
-                        type="radio" 
-                        name="property_type" 
-                        value="Commercial" 
-                        <?php echo ($property_type === 'Commercial') ? 'checked' : ''; ?>
-                      >
-                      <div class="radio-card-content">
-                        <div class="radio-card-title">Commercial</div>
-                        <div class="radio-card-desc">Office building, warehouse, or enterprise solar grid</div>
+                      <div class="radio-card-content is-selected">
+                        <div class="radio-card-header-flex">
+                          <div class="radio-card-title-row">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="radio-card-svg">
+                              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                              <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                            </svg>
+                            <span class="radio-card-title">Residential</span>
+                          </div>
+                          <span class="badge-tag-selected">Default Plan</span>
+                        </div>
+                        <div class="radio-card-desc">Single-family, townhouse, or duplex rooftop setup (Apex Diurnal certified consumer array)</div>
                       </div>
                     </label>
                   </div>
@@ -963,7 +1016,7 @@ function safe(string $str): string {
                     <?php foreach ($allowed_payment_methods as $pay_key => $pay_label): 
                       $is_pay_selected = ($payment_method === $pay_key) || ($payment_method === '' && $pay_key === 'Credit Card');
                     ?>
-                      <label class="payment-option-item <?php echo $is_pay_selected ? 'selected' : ''; ?>">
+                      <label class="payment-option-item <?php echo $is_pay_selected ? 'selected' : ''; ?>" data-method="<?php echo safe($pay_key); ?>">
                         <input 
                           type="radio" 
                           name="payment_method" 
@@ -980,6 +1033,130 @@ function safe(string $str): string {
                       <?php echo safe($errors['payment_method']); ?>
                     </div>
                   <?php endif; ?>
+                </div>
+
+                <!-- Dynamic Standard Card Details Form -->
+                <?php 
+                  $is_card_active = ($payment_method === 'Credit Card' || $payment_method === '');
+                ?>
+                <div id="card-details-fields" class="card-details-box" style="<?php echo $is_card_active ? 'display: block;' : 'display: none;'; ?>">
+                  <div class="card-details-header">
+                    <div class="card-details-header-title">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                        <line x1="1" y1="10" x2="23" y2="10"></line>
+                      </svg>
+                      <span>Card Details</span>
+                    </div>
+                    <div class="card-brands-badges">
+                      <span class="card-badge-pill" id="badge-visa">VISA</span>
+                      <span class="card-badge-pill" id="badge-mastercard">MC</span>
+                      <span class="card-badge-pill" id="badge-amex">AMEX</span>
+                    </div>
+                  </div>
+
+                  <div class="card-inputs-grid">
+                    <!-- Cardholder Name -->
+                    <div class="form-group">
+                      <label for="card_name" class="form-label">
+                        Cardholder Name <span class="required-mark">*</span>
+                      </label>
+                      <input 
+                        type="text" 
+                        id="card_name" 
+                        name="card_name" 
+                        class="form-control <?php echo isset($errors['card_name']) ? 'has-error' : ''; ?>" 
+                        placeholder="e.g. Eleanor Vance" 
+                        value="<?php echo safe($card_name); ?>"
+                        autocomplete="cc-name"
+                      >
+                      <?php if (isset($errors['card_name'])): ?>
+                        <div class="field-error-message">
+                          <?php echo safe($errors['card_name']); ?>
+                        </div>
+                      <?php endif; ?>
+                    </div>
+
+                    <!-- Card Number -->
+                    <div class="form-group">
+                      <label for="card_number" class="form-label">
+                        Card Number <span class="required-mark">*</span>
+                      </label>
+                      <div class="card-number-wrapper">
+                        <input 
+                          type="text" 
+                          id="card_number" 
+                          name="card_number" 
+                          class="form-control <?php echo isset($errors['card_number']) ? 'has-error' : ''; ?>" 
+                          placeholder="0000 0000 0000 0000" 
+                          value="<?php echo safe($card_number); ?>"
+                          maxlength="19"
+                          inputmode="numeric"
+                          autocomplete="cc-number"
+                        >
+                        <span class="card-brand-icon" id="card-brand-icon" title="Card Type">💳</span>
+                      </div>
+                      <?php if (isset($errors['card_number'])): ?>
+                        <div class="field-error-message">
+                          <?php echo safe($errors['card_number']); ?>
+                        </div>
+                      <?php endif; ?>
+                    </div>
+
+                    <!-- Expiration & CVV in 2-column row -->
+                    <div class="form-row">
+                      <div class="form-group">
+                        <label for="card_expiry" class="form-label">
+                          Expiration Date <span class="required-mark">*</span>
+                        </label>
+                        <input 
+                          type="text" 
+                          id="card_expiry" 
+                          name="card_expiry" 
+                          class="form-control <?php echo isset($errors['card_expiry']) ? 'has-error' : ''; ?>" 
+                          placeholder="MM/YY" 
+                          value="<?php echo safe($card_expiry); ?>"
+                          maxlength="5"
+                          inputmode="numeric"
+                          autocomplete="cc-exp"
+                        >
+                        <?php if (isset($errors['card_expiry'])): ?>
+                          <div class="field-error-message">
+                            <?php echo safe($errors['card_expiry']); ?>
+                          </div>
+                        <?php endif; ?>
+                      </div>
+
+                      <div class="form-group">
+                        <label for="card_cvv" class="form-label">
+                          Security Code (CVV) <span class="required-mark">*</span>
+                        </label>
+                        <input 
+                          type="password" 
+                          id="card_cvv" 
+                          name="card_cvv" 
+                          class="form-control <?php echo isset($errors['card_cvv']) ? 'has-error' : ''; ?>" 
+                          placeholder="123" 
+                          maxlength="4" 
+                          inputmode="numeric"
+                          autocomplete="cc-csc"
+                        >
+                        <?php if (isset($errors['card_cvv'])): ?>
+                          <div class="field-error-message">
+                            <?php echo safe($errors['card_cvv']); ?>
+                          </div>
+                        <?php endif; ?>
+                      </div>
+                    </div>
+
+                    <div class="card-security-note">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                      </svg>
+                      <span>Standard 256-Bit SSL Encrypted. Security code (CVV) is never stored.</span>
+                    </div>
+                  </div>
                 </div>
 
                 <!-- Optional Special Notes -->
