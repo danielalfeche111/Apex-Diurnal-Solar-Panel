@@ -17,9 +17,21 @@ $search = trim($_GET['search'] ?? '');
 $where = [];
 $params = [];
 
-if ($status_filter !== 'all' && in_array($status_filter, ['new', 'reviewed', 'quoted', 'accepted', 'rejected', 'expired'])) {
-    $where[] = "status = :st";
-    $params[':st'] = $status_filter;
+if ($status_filter !== 'all') {
+    if ($status_filter === 'new') {
+        $where[] = "status IN ('new', 'pending')";
+    } elseif ($status_filter === 'confirmed') {
+        $where[] = "status IN ('confirmed', 'accepted')";
+    } elseif ($status_filter === 'in_progress') {
+        $where[] = "status = 'in_progress'";
+    } elseif ($status_filter === 'completed') {
+        $where[] = "status = 'completed'";
+    } elseif ($status_filter === 'cancelled') {
+        $where[] = "status IN ('cancelled', 'rejected', 'expired')";
+    } elseif (in_array($status_filter, ['reviewed', 'quoted', 'accepted', 'rejected', 'expired', 'client_confirmed'], true)) {
+        $where[] = "status = :st";
+        $params[':st'] = $status_filter;
+    }
 }
 
 if (!empty($search)) {
@@ -40,9 +52,11 @@ $quotes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // KPIs
 $kpi_total = (int)$db->query("SELECT COUNT(*) FROM quote_requests")->fetchColumn();
-$kpi_new = (int)$db->query("SELECT COUNT(*) FROM quote_requests WHERE status = 'new'")->fetchColumn();
+$kpi_new = (int)$db->query("SELECT COUNT(*) FROM quote_requests WHERE status IN ('new', 'pending')")->fetchColumn();
 $kpi_confirmed = (int)$db->query("SELECT COUNT(*) FROM quote_requests WHERE status IN ('confirmed', 'accepted')")->fetchColumn();
 $kpi_in_progress = (int)$db->query("SELECT COUNT(*) FROM quote_requests WHERE status = 'in_progress'")->fetchColumn();
+$kpi_completed = (int)$db->query("SELECT COUNT(*) FROM quote_requests WHERE status = 'completed'")->fetchColumn();
+$kpi_cancelled = (int)$db->query("SELECT COUNT(*) FROM quote_requests WHERE status IN ('cancelled', 'rejected', 'expired')")->fetchColumn();
 
 $msg = $_GET['msg'] ?? '';
 $err = $_GET['err'] ?? '';
@@ -118,10 +132,10 @@ include __DIR__ . '/../includes/header.php';
       In Progress (<?php echo $kpi_in_progress; ?>)
     </a>
     <a href="index.php?status=completed<?php echo !empty($search) ? '&search=' . urlencode($search) : ''; ?>" class="filter-pill <?php echo ($status_filter === 'completed') ? 'active' : ''; ?>">
-      Completed
+      Completed (<?php echo $kpi_completed; ?>)
     </a>
     <a href="index.php?status=cancelled<?php echo !empty($search) ? '&search=' . urlencode($search) : ''; ?>" class="filter-pill <?php echo ($status_filter === 'cancelled') ? 'active' : ''; ?>">
-      Cancelled
+      Cancelled (<?php echo $kpi_cancelled; ?>)
     </a>
   </div>
 

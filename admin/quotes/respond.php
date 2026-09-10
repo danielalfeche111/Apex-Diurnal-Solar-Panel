@@ -23,8 +23,8 @@ $installationHead = trim($_POST['installation_head'] ?? '');
 $installationDate = trim($_POST['installation_date'] ?? '');
 $adminNotes = trim($_POST['admin_notes'] ?? '');
 
-// If the admin assigned an installation head, ensure status is confirmed (unless explicitly cancelled)
-if (!empty($installationHead) && $status !== 'cancelled') {
+$allowedStatuses = ['confirmed', 'new', 'in_progress', 'completed', 'cancelled'];
+if (!in_array($status, $allowedStatuses, true)) {
     $status = 'confirmed';
 }
 
@@ -147,11 +147,22 @@ try {
     ]);
     $existingOrder = $checkOrder->fetch(PDO::FETCH_ASSOC);
 
-    if ($status === 'confirmed') {
+    if (in_array($status, ['confirmed', 'in_progress', 'completed'], true)) {
         $orderTotal = (float)($quote['quoted_amount'] ?? $quote['estimated_installation_cost'] ?? 0.00);
         $orderSubtotal = round($orderTotal / 1.12, 2);
         $orderTax = $orderTotal - $orderSubtotal;
-        $orderNotes = "Confirmed Commercial Grid Solar Installation\nRFQ: {$quote['quote_number']}\nFacility: {$quote['facility_size']} sqm\nAssigned Head: " . (!empty($installationHead) ? $installationHead : 'Unassigned') . "\nScheduled Date: " . (!empty($installationDate) ? $installationDate : 'TBD') . "\n" . $adminNotes;
+
+        $orderStatus = 'confirmed';
+        $statusDesc = 'confirmed by admin & head assigned';
+        if ($status === 'in_progress') {
+            $orderStatus = 'processing';
+            $statusDesc = 'marked installation in progress';
+        } elseif ($status === 'completed') {
+            $orderStatus = 'delivered';
+            $statusDesc = 'marked installation completed';
+        }
+
+        $orderNotes = ucfirst(str_replace('_', ' ', $status)) . " Commercial Grid Solar Installation\nRFQ: {$quote['quote_number']}\nFacility: {$quote['facility_size']} sqm\nAssigned Head: " . (!empty($installationHead) ? $installationHead : 'Unassigned') . "\nScheduled Date: " . (!empty($installationDate) ? $installationDate : 'TBD') . "\n" . $adminNotes;
 
         if ($existingOrder) {
             $origNotes = $existingOrder['notes'] ?? '';
@@ -162,7 +173,7 @@ try {
 
             $updOrder = $db->prepare("
                 UPDATE orders 
-                SET status = 'confirmed',
+                SET status = :ord_status,
                     user_id = COALESCE(:uid, user_id),
                     installation_head = :head,
                     installation_date = :idate,
@@ -171,6 +182,7 @@ try {
                 WHERE id = :id
             ");
             $updOrder->execute([
+                ':ord_status' => $orderStatus,
                 ':uid' => $orderUserId,
                 ':head' => !empty($installationHead) ? $installationHead : null,
                 ':idate' => !empty($installationDate) ? $installationDate : null,
@@ -178,10 +190,11 @@ try {
                 ':id' => $existingOrder['id']
             ]);
 
-            $histStmt = $db->prepare("INSERT INTO order_status_history (order_id, status, notes) VALUES (:oid, 'confirmed', :notes)");
+            $histStmt = $db->prepare("INSERT INTO order_status_history (order_id, status, notes) VALUES (:oid, :st, :notes)");
             $histStmt->execute([
                 ':oid' => $existingOrder['id'],
-                ':notes' => 'Commercial grid installation confirmed by admin & head assigned: ' . (!empty($installationHead) ? $installationHead : 'Unassigned')
+                ':st' => $orderStatus,
+                ':notes' => 'Commercial grid ' . $statusDesc . ': ' . (!empty($installationHead) ? $installationHead : 'Unassigned')
             ]);
         } else {
             $insOrder = $db->prepare("
@@ -191,7 +204,7 @@ try {
                     shipping_address, notes, installation_head, installation_date
                 ) VALUES (
                     :ord_num, :uid, :name, :email, :phone,
-                    'Commercial', 'Commercial Installation Contract', 'confirmed', :subtotal, :tax, :total,
+                    'Commercial', 'Commercial Installation Contract', :ord_status, :subtotal, :tax, :total,
                     :addr, :notes, :head, :idate
                 )
             ");
@@ -201,6 +214,7 @@ try {
                 ':name' => $quote['company_name'] . ' (' . $quote['contact_person'] . ')',
                 ':email' => $quote['email'],
                 ':phone' => $quote['phone'],
+                ':ord_status' => $orderStatus,
                 ':subtotal' => $orderSubtotal,
                 ':tax' => $orderTax,
                 ':total' => $orderTotal,
@@ -223,10 +237,11 @@ try {
                 ':tprice' => $orderSubtotal
             ]);
 
-            $histStmt = $db->prepare("INSERT INTO order_status_history (order_id, status, notes) VALUES (:oid, 'confirmed', :notes)");
+            $histStmt = $db->prepare("INSERT INTO order_status_history (order_id, status, notes) VALUES (:oid, :st, :notes)");
             $histStmt->execute([
                 ':oid' => $newOrderId,
-                ':notes' => 'Commercial grid installation confirmed by admin & head assigned: ' . (!empty($installationHead) ? $installationHead : 'Unassigned')
+                ':st' => $orderStatus,
+                ':notes' => 'Commercial grid ' . $statusDesc . ': ' . (!empty($installationHead) ? $installationHead : 'Unassigned')
             ]);
         }
     } elseif ($existingOrder && $status === 'cancelled') {
@@ -237,9 +252,15 @@ try {
     $db->commit();
 
     $headMsg = !empty($installationHead) ? " and assigned to $installationHead" : "";
-    $msgText = ($status === 'confirmed')
-        ? "Commercial installation request successfully confirmed$headMsg."
-        : "Commercial installation request updated to " . ucfirst($status) . "$headMsg.";
+    if ($status === 'in_progress') {
+        $msgText = "Installation status successfully updated to In Progress$headMsg.";
+    } elseif ($status === 'completed') {
+        $msgText = "Installation status successfully updated to Completed$headMsg.";
+    } elseif ($status === 'confirmed') {
+        $msgText = "Commercial installation request successfully confirmed$headMsg.";
+    } else {
+        $msgText = "Commercial installation request updated to " . ucfirst(str_replace('_', ' ', $status)) . "$headMsg.";
+    }
 
     header("Location: view.php?id=$quoteId&msg=" . urlencode($msgText));
     exit;

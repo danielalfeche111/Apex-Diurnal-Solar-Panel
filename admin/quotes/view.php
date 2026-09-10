@@ -37,7 +37,7 @@ $statusLabel = 'Pending Review';
 $chkOrder = $db->prepare("SELECT id, order_number, status, installation_head, installation_date FROM orders WHERE order_number = :ordNum OR notes LIKE :qnum LIMIT 1");
 $chkOrder->execute([':ordNum' => 'APD-INST-' . $quote['quote_number'], ':qnum' => '%' . $quote['quote_number'] . '%']);
 $linkedOrder = $chkOrder->fetch(PDO::FETCH_ASSOC);
-if ($linkedOrder && $linkedOrder['status'] === 'client_confirmed' && $status !== 'confirmed') {
+if ($linkedOrder && $linkedOrder['status'] === 'client_confirmed' && in_array($status, ['new', 'pending'], true)) {
     $status = 'client_confirmed';
 }
 
@@ -261,7 +261,7 @@ include __DIR__ . '/../includes/header.php';
           </div>
 
           <div style="text-align: right; border-top:1px solid var(--border-color); padding-top:1.25rem;">
-            <button type="submit" class="btn btn-primary">Confirm Installation & Save Assignment</button>
+            <button type="submit" class="btn btn-primary">Save Installation Status & Assignment</button>
           </div>
         </form>
       </div>
