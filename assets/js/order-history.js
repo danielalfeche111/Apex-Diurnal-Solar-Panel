@@ -169,7 +169,16 @@ function initOrdersList() {
                 </td>
                 <td>${order.item_count} ${order.item_count === 1 ? 'item' : 'items'}</td>
                 <td class="order-price">${formattedPrice}</td>
-                <td style="text-align: right;">
+                <td style="text-align: right; white-space: nowrap;">
+                    <a href="../../cart/receipt.php?id=${order.id}" class="btn-view-receipt-link" style="color:var(--color-navy); font-size:0.86rem; font-weight:700; text-decoration:none; margin-right:12px; display:inline-flex; align-items:center; gap:4px;" title="View Receipt">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                        </svg>
+                        Receipt
+                    </a>
                     <a href="view.php?id=${order.id}" class="btn-view-order" aria-label="View Order ${escapeHtml(order.order_number)}">
                         View Order &rarr;
                     </a>

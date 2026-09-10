@@ -280,6 +280,7 @@ CREATE TABLE IF NOT EXISTS quote_requests (
     estimated_installation_cost DECIMAL(12,2) NULL,
     estimated_annual_savings DECIMAL(12,2) NULL,
     estimated_payback_period DECIMAL(4,1) NULL,
+    applicable_discounts LONGTEXT DEFAULT NULL,
     installation_address TEXT,
     access_notes TEXT,
     installation_head VARCHAR(255) NULL,

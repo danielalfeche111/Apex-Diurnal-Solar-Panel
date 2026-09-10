@@ -75,7 +75,7 @@ function getCurrentUserId(): ?int {
  * @return string|null
  */
 function getCurrentUserEmail(): ?string {
-    return isLoggedIn() ? $_SESSION['email'] : null;
+    return isLoggedIn() ? ($_SESSION['email'] ?? null) : null;
 }
 
 /**
