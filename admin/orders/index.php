@@ -24,8 +24,12 @@ if ($status_filter !== 'all' && in_array($status_filter, ['pending', 'processing
 }
 
 if (!empty($search)) {
-    $where_clauses[] = "(o.order_number LIKE :srch OR o.customer_name LIKE :srch OR o.customer_email LIKE :srch OR o.shipping_address LIKE :srch)";
-    $params[':srch'] = '%' . $search . '%';
+    $where_clauses[] = "(o.order_number LIKE :srch1 OR o.customer_name LIKE :srch2 OR o.customer_email LIKE :srch3 OR o.shipping_address LIKE :srch4)";
+    $term = '%' . $search . '%';
+    $params[':srch1'] = $term;
+    $params[':srch2'] = $term;
+    $params[':srch3'] = $term;
+    $params[':srch4'] = $term;
 }
 
 $where_sql = !empty($where_clauses) ? 'WHERE ' . implode(' AND ', $where_clauses) : '';

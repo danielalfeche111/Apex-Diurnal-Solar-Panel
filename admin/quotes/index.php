@@ -23,8 +23,12 @@ if ($status_filter !== 'all' && in_array($status_filter, ['new', 'reviewed', 'qu
 }
 
 if (!empty($search)) {
-    $where[] = "(quote_number LIKE :srch OR company_name LIKE :srch OR contact_person LIKE :srch OR email LIKE :srch)";
-    $params[':srch'] = '%' . $search . '%';
+    $where[] = "(quote_number LIKE :srch1 OR company_name LIKE :srch2 OR contact_person LIKE :srch3 OR email LIKE :srch4)";
+    $term = '%' . $search . '%';
+    $params[':srch1'] = $term;
+    $params[':srch2'] = $term;
+    $params[':srch3'] = $term;
+    $params[':srch4'] = $term;
 }
 
 $where_sql = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';

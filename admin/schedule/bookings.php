@@ -29,8 +29,12 @@ if ($service_filter !== 'all' && in_array($service_filter, ['consultation', 'ins
 }
 
 if (!empty($search)) {
-    $where[] = "(booking_reference LIKE :srch OR customer_name LIKE :srch OR customer_email LIKE :srch OR assigned_technician LIKE :srch)";
-    $params[':srch'] = '%' . $search . '%';
+    $where[] = "(booking_reference LIKE :srch1 OR customer_name LIKE :srch2 OR customer_email LIKE :srch3 OR assigned_technician LIKE :srch4)";
+    $term = '%' . $search . '%';
+    $params[':srch1'] = $term;
+    $params[':srch2'] = $term;
+    $params[':srch3'] = $term;
+    $params[':srch4'] = $term;
 }
 
 $where_sql = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
