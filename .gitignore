@@ -37,3 +37,7 @@ temp/
 # Dependency Directories
 node_modules/
 vendor/
+
+# Symfony cache, isolated database snapshots, local backups and test output
+/var/
+/.phpunit.cache/

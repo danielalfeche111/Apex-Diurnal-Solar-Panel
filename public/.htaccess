@@ -1,0 +1,10 @@
+DirectoryIndex index.php
+Options -Indexes -MultiViews
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    # Existing assets are served directly; every application URL uses Symfony.
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteRule ^ - [L]
+    RewriteRule ^ index.php [QSA,L]
+</IfModule>

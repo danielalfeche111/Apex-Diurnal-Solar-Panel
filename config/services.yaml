@@ -1,0 +1,15 @@
+parameters:
+
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        bind:
+            $projectDir: '%kernel.project_dir%'
+            $databaseUrl: '%env(DATABASE_URL)%'
+
+    App\:
+        resource: '../src/'
+        exclude:
+            - '../src/Kernel.php'
+            - '../src/Entity/'

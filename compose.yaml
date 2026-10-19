@@ -1,0 +1,64 @@
+services:
+    database:
+        image: mysql:8.0
+        restart: unless-stopped
+        command: ['--log-bin-trust-function-creators=1']
+        environment:
+            MYSQL_DATABASE: solar_db
+            MYSQL_USER: solar
+            MYSQL_PASSWORD: ${DB_PASSWORD:-solar_local}
+            MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-solar_local_root}
+        volumes:
+            - mysql_data:/var/lib/mysql
+        healthcheck:
+            test: ['CMD-SHELL', 'mysqladmin ping -h localhost -u root -p"$$MYSQL_ROOT_PASSWORD" --silent']
+            interval: 5s
+            timeout: 3s
+            retries: 30
+
+    app:
+        build: docker/php
+        restart: unless-stopped
+        depends_on:
+            database:
+                condition: service_healthy
+        environment:
+            APP_ENV: dev
+            APP_DEBUG: '1'
+            APP_SECRET: ${APP_SECRET:-local-development-change-me}
+            DATABASE_URL: mysql://solar:${DB_PASSWORD:-solar_local}@database:3306/solar_db?charset=utf8mb4
+        ports:
+            - '127.0.0.1:8000:8000'
+        volumes:
+            - .:/app
+            - symfony_cache:/app/var/cache
+        command: ['sh', '-ec', 'composer install --no-interaction && php bin/console cache:clear --no-warmup && php -S 0.0.0.0:8000 -t public public/router.php']
+
+    import:
+        profiles: ['import']
+        image: mysql:8.0
+        depends_on:
+            database:
+                condition: service_healthy
+        environment:
+            MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-solar_local_root}
+        volumes:
+            - ./var/backups/solar_db-portable.sql:/import/backup.sql:ro
+            - ./docker/import-db.sh:/import-db.sh:ro
+        entrypoint: ['sh', '/import-db.sh']
+
+    phpmyadmin:
+        image: phpmyadmin:5.2.3
+        restart: unless-stopped
+        depends_on:
+            database:
+                condition: service_healthy
+        environment:
+            PMA_HOST: database
+            PMA_PORT: '3306'
+        ports:
+            - '127.0.0.1:8081:80'
+
+volumes:
+    mysql_data:
+    symfony_cache:

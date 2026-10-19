@@ -1,0 +1,225 @@
+ .editorconfig                                      |   17 [32m+[m
+ .env.example                                       |    7 [32m+[m
+ .gitignore                                         |    4 [32m+[m
+ Cart.php                                           |  416 [31m---[m
+ README.md                                          |   52 [32m+[m
+ User.php                                           |  205 [31m-[m
+ account/index.php                                  |    6 [31m-[m
+ account/orders/action.php                          |  104 [31m-[m
+ admin/auth.php                                     |  138 [31m-[m
+ admin/inventory/edit.php                           |   44 [31m-[m
+ admin/inventory/sync.php                           |  282 [31m--[m
+ admin/login.php                                    |   23 [31m-[m
+ admin/logout.php                                   |   10 [31m-[m
+ admin/orders/api.php                               |   82 [31m-[m
+ admin/orders/process.php                           |   97 [31m-[m
+ admin/quotes/convert.php                           |  135 [31m-[m
+ admin/quotes/respond.php                           |  274 [31m--[m
+ admin/schedule/calendar.php                        |  122 [31m-[m
+ api/cart.php                                       |  211 [31m--[m
+ api/profile.php                                    |  164 [31m-[m
+ api/user/orders/list.php                           |  155 [31m-[m
+ api/user/orders/view.php                           |  186 [31m-[m
+ assets/.gitkeep                                    |    1 [32m+[m
+ auth.php                                           |  116 [31m-[m
+ auth/change_password.php                           |   12 [31m-[m
+ auth/index.php                                     |    6 [31m-[m
+ auth/logout.php                                    |   13 [31m-[m
+ bin/console                                        |   10 [32m+[m
+ cart/cart_action.php                               |   91 [31m-[m
+ cart/cart_functions.php                            |  172 [31m-[m
+ cart/index.php                                     |    6 [31m-[m
+ compose.yaml                                       |   64 [32m+[m
+ composer.json                                      |   28 [32m+[m
+ composer.lock                                      | 3950 [32m++++++++++++++++++++[m
+ config.php                                         |   43 [31m-[m
+ config/bootstrap.php                               |   30 [32m+[m
+ config/bundles.php                                 |    7 [32m+[m
+ config/data/locations.json                         | 1916 [32m++++++++++[m
+ config/data/product_db_baseline.json               |    6 [32m+[m
+ config/data/products.json                          |  102 [32m+[m
+ config/original_urls.php                           |   47 [32m+[m
+ config/packages/cache.yaml                         |    4 [32m+[m
+ config/packages/doctrine.yaml                      |   14 [32m+[m
+ config/packages/doctrine_migrations.yaml           |    4 [32m+[m
+ config/packages/framework.yaml                     |   12 [32m+[m
+ config/preload.php                                 |    5 [32m+[m
+ config/preservation_manifest.json                  |  117 [32m+[m
+ config/reference.php                               | 1065 [32m++++++[m
+ config/routes.yaml                                 |    3 [32m+[m
+ config/routes/.gitkeep                             |    1 [32m+[m
+ config/services.yaml                               |   15 [32m+[m
+ database/README.md                                 |   37 [32m+[m
+ database/schema.sql                                |  250 [32m++[m
+ database/triggers.sql                              |   26 [32m+[m
+ database_setup.sql                                 |  422 [31m---[m
+ docker/import-db.sh                                |   31 [32m+[m
+ docker/php/Dockerfile                              |   10 [32m+[m
+ migrations/Version20261019000000.php               |   60 [32m+[m
+ migrations/Version20261019000100.php               |   44 [32m+[m
+ migrations/Version20261019000200.php               |   47 [32m+[m
+ migrations/Version20261019000300.php               |   43 [32m+[m
+ philippine_locations.php                           |  124 [31m-[m
+ product_data.php                                   |   87 [31m-[m
+ public/.htaccess                                   |   10 [32m+[m
+ {account => public/account}/account.css            |    0
+ {account => public/account}/account.js             |    0
+ {admin => public/admin}/assets/css/admin.css       |    0
+ {admin => public/admin}/assets/js/admin.js         |    0
+ public/admin/inventory/catalog.js                  |   35 [32m+[m
+ {admin => public/admin}/inventory/inventory.css    |    0
+ {admin => public/admin}/inventory/inventory.js     |    0
+ {admin => public/admin}/orders/orders.css          |    0
+ {admin => public/admin}/orders/orders.js           |    0
+ {admin => public/admin}/quotes/quotes.css          |    0
+ {admin => public/admin}/quotes/quotes.js           |    0
+ {admin => public/admin}/schedule/schedule.css      |    0
+ {admin => public/admin}/schedule/schedule.js       |    0
+ {assets => public/assets}/css/order-history.css    |    0
+ {assets => public/assets}/images/FOOTER.jpg        |  Bin
+ {assets => public/assets}/images/LOGO.jpg          |  Bin
+ .../assets}/images/PROF INSTALLATION.png           |  Bin
+ .../assets}/images/advance power inverter.png      |  Bin
+ .../assets}/images/commercial grids.png            |  Bin
+ {assets => public/assets}/images/craftsmanship.png |  Bin
+ {assets => public/assets}/images/custom design.png |  Bin
+ {assets => public/assets}/images/custom.png        |  Bin
+ .../assets}/images/feature-maintenance.jpg         |  Bin
+ {assets => public/assets}/images/hero.jpg          |  Bin
+ .../assets}/images/homebackground.png              |  Bin
+ .../assets}/images/landing page background.jpg     |  Bin
+ {assets => public/assets}/images/logo-clean.png    |  Bin
+ {assets => public/assets}/images/logo.png          |  Bin
+ .../assets}/images/longterm maintenance.png        |  Bin
+ {assets => public/assets}/images/maintenance.png   |  Bin
+ .../assets}/images/product-booking.png             |  Bin
+ .../assets}/images/product-commercial.jpg          |  Bin
+ .../assets}/images/product-inverter.jpg            |  Bin
+ .../assets}/images/product-residential.jpg         |  Bin
+ .../assets}/images/professional installation.png   |  Bin
+ .../rare advancement technology component.png      |  Bin
+ .../assets}/images/residential arrays.png          |  Bin
+ {assets => public/assets}/images/settings.png      |  Bin
+ .../assets}/images/tech-advancement.jpg            |  Bin
+ {assets => public/assets}/js/order-history.js      |    0
+ {auth => public/auth}/auth.css                     |    0
+ {auth => public/auth}/auth.js                      |    0
+ {cart => public/cart}/cart.css                     |    0
+ {cart => public/cart}/cart.js                      |    0
+ {cart => public/cart}/checkout.css                 |    0
+ {cart => public/cart}/checkout.js                  |    0
+ {cart => public/cart}/receipt.css                  |    0
+ {css => public/css}/auth-modal.css                 |    0
+ public/index.php                                   |   24 [32m+[m
+ {js => public/js}/auth-modal.js                    |    0
+ {js => public/js}/main.js                          |    0
+ {js => public/js}/session-timer.js                 |    0
+ {products => public/products}/product-modal.css    |    0
+ {products => public/products}/product-modal.js     |    0
+ public/router.php                                  |   11 [32m+[m
+ {services => public/services}/services.css         |    0
+ {services => public/services}/services.js          |    0
+ styles.css => public/styles.css                    |    0
+ sanitization.php                                   |   70 [31m-[m
+ services/check_availability.php                    |  100 [31m-[m
+ services/commercial_consultation.php               |  635 [31m----[m
+ services/index.php                                 |    6 [31m-[m
+ session.php                                        |  340 [31m--[m
+ src/Command/DatabaseBackupCommand.php              |   35 [32m+[m
+ src/Command/DatabaseCheckCommand.php               |   40 [32m+[m
+ src/Command/DatabaseInstallCommand.php             |   40 [32m+[m
+ src/Command/DatabaseRestoreCommand.php             |   35 [32m+[m
+ src/Controller/AdminActionController.php           |  192 [32m+[m
+ src/Controller/AdminController.php                 |  280 [32m++[m
+ src/Controller/AdminQuoteController.php            |   66 [32m+[m
+ src/Controller/CommercialServiceController.php     |   59 [32m+[m
+ src/Controller/CustomerAccountController.php       |  258 [32m++[m
+ src/Controller/CustomerAuthController.php          |  192 [32m+[m
+ src/Controller/CustomerCartController.php          |  280 [32m++[m
+ src/Controller/HomeController.php                  |   97 [32m+[m
+ src/Controller/SessionController.php               |   36 [32m+[m
+ src/Data/PhilippineLocations.php                   |   67 [32m+[m
+ src/Data/ProductCatalog.php                        |   80 [32m+[m
+ src/Database/BackupManager.php                     |  144 [32m+[m
+ src/Database/DatabaseConnection.php                |   90 [32m+[m
+ src/Database/SchemaManager.php                     |  210 [32m++[m
+ src/Database/SqlScript.php                         |   82 [32m+[m
+ src/Entity/AdminUser.php                           |  123 [32m+[m
+ src/Entity/Cart.php                                |   93 [32m+[m
+ src/Entity/CartItem.php                            |  125 [32m+[m
+ src/Entity/CommercialLead.php                      |  425 [32m+++[m
+ src/Entity/Inventory.php                           |  137 [32m+[m
+ src/Entity/InventoryTransaction.php                |  139 [32m+[m
+ src/Entity/Order.php                               |  305 [32m++[m
+ src/Entity/OrderItem.php                           |  118 [32m+[m
+ src/Entity/OrderStatusHistory.php                  |  109 [32m+[m
+ src/Entity/Product.php                             |  140 [32m+[m
+ src/Entity/QuoteRequest.php                        |  445 [32m+++[m
+ src/Entity/ServiceBooking.php                      |  263 [32m++[m
+ src/Entity/User.php                                |  212 [32m++[m
+ src/Entity/UserCart.php                            |   94 [32m+[m
+ src/EventSubscriber/SessionLifecycleSubscriber.php |   64 [32m+[m
+ src/Kernel.php                                     |   11 [32m+[m
+ src/Repository/AdminUserRepository.php             |   18 [32m+[m
+ src/Repository/CartItemRepository.php              |   18 [32m+[m
+ src/Repository/CartRepository.php                  |   18 [32m+[m
+ src/Repository/CommercialLeadRepository.php        |   18 [32m+[m
+ src/Repository/InventoryRepository.php             |   18 [32m+[m
+ src/Repository/InventoryTransactionRepository.php  |   18 [32m+[m
+ src/Repository/OrderItemRepository.php             |   18 [32m+[m
+ src/Repository/OrderRepository.php                 |   18 [32m+[m
+ src/Repository/OrderStatusHistoryRepository.php    |   18 [32m+[m
+ src/Repository/ProductRepository.php               |   18 [32m+[m
+ src/Repository/QuoteRequestRepository.php          |   18 [32m+[m
+ src/Repository/ServiceBookingRepository.php        |   18 [32m+[m
+ src/Repository/UserCartRepository.php              |   18 [32m+[m
+ src/Repository/UserRepository.php                  |   18 [32m+[m
+ src/Service/AdminAuth.php                          |   74 [32m+[m
+ src/Service/AdminInventory.php                     |  156 [32m+[m
+ src/Service/AdminOrder.php                         |   47 [32m+[m
+ src/Service/AdminProduct.php                       |  126 [32m+[m
+ src/Service/AdminQuote.php                         |  146 [32m+[m
+ src/Service/Customer/CheckoutOrder.php             |   84 [32m+[m
+ src/Service/Customer/CommercialLeads.php           |  202 [32m+[m
+ src/Service/Customer/CustomerAccount.php           |   92 [32m+[m
+ src/Service/Customer/CustomerCart.php              |  205 [32m+[m
+ src/Service/Customer/CustomerOrders.php            |  136 [32m+[m
+ src/Service/Customer/CustomerSession.php           |  103 [32m+[m
+ src/Service/Customer/Locations.php                 |   34 [32m+[m
+ src/Service/Customer/ProductCatalog.php            |   39 [32m+[m
+ src/Service/Customer/ProfileValidation.php         |   59 [32m+[m
+ src/View/PhpTemplateRenderer.php                   |   45 [32m+[m
+ src/View/ViewContext.php                           |  106 [32m+[m
+ {account => templates/account}/orders/index.php    |  163 [32m+[m[31m-[m
+ {account => templates/account}/orders/view.php     |  183 [32m+[m[31m-[m
+ {account => templates/account}/settings.php        |  165 [32m+[m[31m-[m
+ {admin => templates/admin}/includes/footer.php     |    7 [32m+[m[31m-[m
+ {admin => templates/admin}/includes/header.php     |    9 [32m+[m[31m-[m
+ {admin => templates/admin}/includes/sidebar.php    |   14 [32m+[m[31m-[m
+ {admin => templates/admin}/index.php               |   63 [32m+[m[31m-[m
+ {admin => templates/admin}/inventory/alerts.php    |   35 [32m+[m[31m-[m
+ {admin => templates/admin}/inventory/index.php     |   87 [32m+[m[31m-[m
+ {admin => templates/admin}/orders/index.php        |   67 [32m+[m[31m-[m
+ {admin => templates/admin}/orders/view.php         |   62 [32m+[m[31m-[m
+ {admin => templates/admin}/quotes/index.php        |   68 [32m+[m[31m-[m
+ {admin => templates/admin}/quotes/view.php         |   82 [32m+[m[31m-[m
+ .../admin}/schedule/appointments.php               |   87 [32m+[m[31m-[m
+ {admin => templates/admin}/schedule/bookings.php   |   51 [32m+[m[31m-[m
+ {admin => templates/admin}/schedule/index.php      |   37 [32m+[m[31m-[m
+ {auth => templates/auth}/login.php                 |  183 [32m+[m[31m-[m
+ {auth => templates/auth}/register.php              |  105 [32m+[m[31m-[m
+ {cart => templates/cart}/checkout.php              |  585 [32m+[m[31m--[m
+ {cart => templates/cart}/receipt.php               |   87 [32m+[m[31m-[m
+ index.php => templates/home.php                    |  162 [32m+[m[31m-[m
+ search.php => templates/search.php                 |   20 [31m-[m
+ tests/README.md                                    |   22 [32m+[m
+ tests/admin_inventory.php                          |   59 [32m+[m
+ tests/admin_views.php                              |   95 [32m+[m
+ tests/database/schema_regression.php               |   87 [32m+[m
+ tests/database/verify_backup.php                   |   54 [32m+[m
+ tests/http_regression.php                          |  504 [32m+++[m
+ tests/preservation.php                             |   91 [32m+[m
+ tests/run.php                                      |    8 [32m+[m
+ translations/.gitkeep                              |    1 [32m+[m
+ validation.php                                     |  239 [31m--[m
+ 224 files changed, 16230 insertions(+), 7250 deletions(-)

@@ -1,0 +1,10 @@
+#!/usr/bin/env php
+<?php
+
+use App\Kernel;
+use Symfony\Bundle\FrameworkBundle\Console\Application;
+
+require dirname(__DIR__).'/config/bootstrap.php';
+
+$kernel = new Kernel($_SERVER['APP_ENV'] ?? 'dev', filter_var($_SERVER['APP_DEBUG'] ?? '1', FILTER_VALIDATE_BOOL));
+exit((new Application($kernel))->run());

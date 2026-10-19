@@ -1,0 +1,4 @@
+framework:
+    cache:
+        # The app cache uses the filesystem by default.
+        # Configure a different adapter here if the deployment needs one.
