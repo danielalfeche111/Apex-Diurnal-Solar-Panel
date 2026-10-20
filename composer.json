@@ -24,5 +24,8 @@
     "scripts": {
         "cache:clear": "@php bin/console cache:clear",
         "test": "@php tests/run.php"
+    },
+    "require-dev": {
+        "symfony/web-profiler-bundle": "7.4.*"
     }
 }
