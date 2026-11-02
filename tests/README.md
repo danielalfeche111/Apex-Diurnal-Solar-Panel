@@ -1,17 +1,18 @@
 # Migration regression checks
 
-With the Docker installation running, run the asset, markup, and native-route checks in the app container:
+With standalone PHP available, run the asset, markup, and native-route checks from PowerShell:
 
 ```powershell
-docker compose exec app php tests/run.php --static-only
-docker compose exec app php bin/console lint:container
+$php = (Resolve-Path .\var\runtime\php-8.3\php.exe).Path
+& $php tests/run.php --static-only
+& $php bin/console lint:container
 ```
 
 The full HTTP regression suite was run against a separate disposable MySQL database before the Docker switch. To repeat it, provide a disposable loopback MySQL instance and run the suite with any PHP 8.2+ CLI that has `curl` and `pdo_mysql` installed:
 
 ```powershell
 $env:TEST_DATABASE_URL = "mysql://test_user:<password>@127.0.0.1:3309/migration_test?charset=utf8mb4"
-php tests\run.php
+& $php tests\run.php
 Remove-Item Env:TEST_DATABASE_URL
 ```
 

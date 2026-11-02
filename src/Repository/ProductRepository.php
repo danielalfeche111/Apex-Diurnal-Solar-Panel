@@ -15,4 +15,16 @@ class ProductRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, Product::class);
     }
+
+    public function findOneByNameExcept(string $name, string $id): ?Product
+    {
+        return $this->createQueryBuilder('p')
+            ->andWhere('p.name = :name')
+            ->andWhere('p.id != :id')
+            ->setParameter('name', $name)
+            ->setParameter('id', $id)
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
 }

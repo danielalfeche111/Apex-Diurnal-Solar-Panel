@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Entity\Product;
+use App\Form\ProductType;
 use App\Service\AdminAuth;
 use App\Service\AdminInventory;
 use App\Service\AdminOrder;
@@ -12,6 +14,7 @@ use Doctrine\DBAL\Connection;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\Routing\Attribute\Route;
 
 final class AdminActionController
@@ -22,6 +25,7 @@ final class AdminActionController
         private readonly AdminInventory $inventory,
         private readonly AdminOrder $orders,
         private readonly AdminProduct $products,
+        private readonly FormFactoryInterface $forms,
     ) {
     }
 
@@ -36,7 +40,7 @@ final class AdminActionController
         try {
             $mode = (string) ($input['mode'] ?? '');
             $message = match ($mode) {
-                'create', 'update' => $this->products->save($input, $this->auth->user($request->getSession())['id']),
+                'create', 'update' => $this->saveProduct($request, $input),
                 'archive' => $this->products->setActive((string) ($input['product_id'] ?? ''), false),
                 'restore' => $this->products->setActive((string) ($input['product_id'] ?? ''), true),
                 default => throw new \InvalidArgumentException('Unknown product action.'),
@@ -45,6 +49,21 @@ final class AdminActionController
         } catch (\Throwable $error) {
             return $this->redirect('index.php', 'err', $error->getMessage());
         }
+    }
+
+    private function saveProduct(Request $request, array $input): string
+    {
+        if (!array_key_exists('type', $input)) {
+            $request->request->set('type', 'physical');
+        }
+        $product = (new Product())->setId('')->setName('');
+        $form = $this->forms->createNamed('', ProductType::class, $product);
+        $form->handleRequest($request);
+        if (!$form->isSubmitted() || !$form->isValid()) {
+            throw new \InvalidArgumentException('Invalid product form submission.');
+        }
+
+        return $this->products->save($form->getData(), $input, $this->auth->user($request->getSession())['id']);
     }
 
     private function redirect(string $path, string $key = '', string $message = ''): Response

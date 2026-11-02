@@ -4,24 +4,30 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Entity\Product;
+use App\Repository\ProductRepository;
 use Doctrine\DBAL\Connection;
 
 /** Catalog writes keep products, stock, and the stock audit trail in one transaction. */
 final class AdminProduct
 {
-    public function __construct(private readonly Connection $database, private readonly string $projectDir)
+    public function __construct(
+        private readonly Connection $database,
+        private readonly ProductRepository $products,
+        private readonly string $projectDir,
+    )
     {
     }
 
-    public function save(array $input, ?int $adminId): string
+    public function save(Product $formProduct, array $input, ?int $adminId): string
     {
-        $id = trim((string) ($input['product_id'] ?? ''));
+        $id = trim($formProduct->getId());
         $creating = ($input['mode'] ?? '') === 'create';
-        $name = trim((string) ($input['name'] ?? ''));
-        $type = trim((string) ($input['type'] ?? 'physical'));
-        $priceInput = trim((string) ($input['base_price'] ?? ''));
-        $description = trim((string) ($input['description'] ?? ''));
-        $image = trim((string) ($input['image'] ?? '')) ?: 'assets/images/logo-clean.png';
+        $name = trim($formProduct->getName());
+        $type = trim($formProduct->getType());
+        $priceInput = trim($formProduct->getBasePrice());
+        $description = trim((string) $formProduct->getDescription());
+        $image = trim((string) $formProduct->getImage()) ?: 'assets/images/logo-clean.png';
         if (!preg_match('/^[a-z0-9][a-z0-9-]{1,49}$/', $id)) {
             throw new \InvalidArgumentException('Product ID must be 2 to 50 lowercase letters, numbers, or hyphens.');
         }
@@ -35,20 +41,19 @@ final class AdminProduct
             || !is_file($this->projectDir.'/public/'.$image)) {
             throw new \InvalidArgumentException('Choose an existing image under assets/images.');
         }
-        $existing = $this->database->fetchAssociative('SELECT id, type FROM products WHERE id = :id', ['id' => $id]);
-        if ($creating === (bool) $existing) {
+        $existing = $this->products->find($id);
+        if ($creating === ($existing !== null)) {
             throw new \InvalidArgumentException($creating ? 'Product ID already exists.' : 'Product not found.');
         }
         if (!$creating) {
-            $type = (string) $existing['type'];
+            $type = $existing->getType();
         } elseif (!in_array($type, ['physical', 'service', 'custom'], true)) {
             throw new \InvalidArgumentException('Invalid product type.');
         }
         if ($type === 'custom' && (float) $priceInput !== 0.0) {
             throw new \InvalidArgumentException('Custom quote offerings must have a zero catalog price.');
         }
-        $other = $this->database->fetchOne('SELECT id FROM products WHERE name = :name AND id <> :id LIMIT 1', ['name' => $name, 'id' => $id]);
-        if ($other !== false) {
+        if ($this->products->findOneByNameExcept($name, $id) !== null) {
             throw new \InvalidArgumentException('Another product already uses this name.');
         }
         $stock = $minimum = $maximum = $reorder = 0;
