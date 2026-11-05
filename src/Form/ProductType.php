@@ -30,6 +30,8 @@ final class ProductType extends AbstractType
         $resolver->setDefaults([
             'data_class' => Product::class,
             'allow_extra_fields' => true,
+            // This editor already validates its existing admin CSRF token.
+            'csrf_protection' => false,
         ]);
     }
 }

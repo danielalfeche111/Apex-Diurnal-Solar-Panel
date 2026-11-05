@@ -4,14 +4,21 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Entity\User;
+use App\Form\RegistrationFormType;
+use App\Security\LoginAuthenticator;
 use App\Service\Customer\CustomerAccount;
 use App\Service\Customer\CustomerCart;
 use App\Service\Customer\CustomerSession;
 use App\View\PhpTemplateRenderer;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bundle\SecurityBundle\Security;
+use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 final class CustomerAuthController
 {
@@ -20,6 +27,10 @@ final class CustomerAuthController
         private readonly CustomerCart $cart,
         private readonly CustomerSession $identity,
         private readonly PhpTemplateRenderer $templates,
+        private readonly FormFactoryInterface $forms,
+        private readonly UserPasswordHasherInterface $passwords,
+        private readonly EntityManagerInterface $entities,
+        private readonly Security $security,
     ) {
     }
 
@@ -140,16 +151,28 @@ final class CustomerAuthController
             }
             if ($errors === []) {
                 try {
-                    if ($this->accounts->findByEmail($email) !== null) {
-                        $errors['email'] = 'Email already registered. Please sign in or use another email.';
-                    } else {
-                        $guestCart = $this->cart->sessionCart();
-                        $id = $this->accounts->create($email, $password);
-                        $response = new RedirectResponse($this->identity->consumeDestination());
-                        $this->identity->loginCustomer($id, $email, $response, $request);
-                        $merged = $this->cart->merge($id, $guestCart);
-                        $this->saveCartNotices($merged['notices']);
-                        return $response;
+                    $user = new User();
+                    $form = $this->forms->create(RegistrationFormType::class, $user);
+                    $form->submit(['email' => $email, 'plainPassword' => $password]);
+                    if (!$form->isValid()) {
+                        foreach ($form->getErrors(true) as $error) {
+                            $field = $error->getOrigin()?->getName();
+                            $key = $field === 'plainPassword' ? 'password' : $field;
+                            if (is_string($key) && !isset($errors[$key])) {
+                                $errors[$key] = $error->getMessage();
+                            }
+                        }
+                    }
+                    if ($errors === []) {
+                        if ($this->accounts->findByEmail($email) !== null) {
+                            $errors['email'] = 'Email already registered. Please sign in or use another email.';
+                        } else {
+                            $user->setPasswordHash($this->passwords->hashPassword($user, $password));
+                            $this->entities->persist($user);
+                            $this->entities->flush();
+                            return $this->security->login($user, LoginAuthenticator::class, 'main')
+                                ?? throw new \LogicException('Registration login did not return a response.');
+                        }
                     }
                 } catch (\Throwable) {
                     $errors['general'] = 'Failed to create your account. Please try again.';
