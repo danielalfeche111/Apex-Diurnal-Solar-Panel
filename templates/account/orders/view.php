@@ -184,7 +184,7 @@
                                 <form action="action.php" method="POST" style="margin:0;">
                                     <input type="hidden" name="order_id" value="<?php echo (int)$order['id']; ?>">
                                     <input type="hidden" name="action" value="cancel">
-                                    <button type="submit" class="btn-cancel-action" onclick="return confirm('Are you sure you want to cancel this confirmed request?');" style="background:#fff; color:#dc2626; border:1px solid #fca5a5; padding:8px 16px; border-radius:6px; font-weight:600; font-size:0.85rem; cursor:pointer;">
+                                    <button type="submit" class="btn-cancel-action" onclick="return window.apexConfirmForm(event, { title: 'Cancel Installation Request', message: 'Are you sure you want to cancel this confirmed request?', confirmText: 'Cancel Request' });" style="background:#fff; color:#dc2626; border:1px solid #fca5a5; padding:8px 16px; border-radius:6px; font-weight:600; font-size:0.85rem; cursor:pointer;">
                                         &#10005; Cancel Request
                                     </button>
                                 </form>
@@ -212,7 +212,7 @@
                                     <form action="action.php" method="POST" style="margin:0;">
                                         <input type="hidden" name="order_id" value="<?php echo (int)$order['id']; ?>">
                                         <input type="hidden" name="action" value="cancel">
-                                        <button type="submit" class="btn-cancel-action" onclick="return confirm('Are you sure you want to cancel this installation request?');" style="background:#fff; color:#dc2626; border:1px solid #fca5a5; padding:10px 18px; border-radius:6px; font-weight:700; font-size:0.92rem; cursor:pointer;">
+                                        <button type="submit" class="btn-cancel-action" onclick="return window.apexConfirmForm(event, { title: 'Cancel Installation Request', message: 'Are you sure you want to cancel this installation request?', confirmText: 'Cancel Request' });" style="background:#fff; color:#dc2626; border:1px solid #fca5a5; padding:10px 18px; border-radius:6px; font-weight:700; font-size:0.92rem; cursor:pointer;">
                                             &#10005; Cancel Request
                                         </button>
                                     </form>

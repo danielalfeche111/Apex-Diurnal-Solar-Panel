@@ -193,7 +193,7 @@
               </button>
 
               <?php if (!$isCurrentUser): ?>
-                <form method="POST" action="action.php" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete <?php echo htmlspecialchars(addslashes((string) $member['username']), ENT_QUOTES, 'UTF-8'); ?>? Any active project assignments for this person will be unassigned.');">
+                <form method="POST" action="action.php" style="display:inline;" onsubmit="return window.apexConfirmForm(event, { title: 'Delete Personnel', message: 'Are you sure you want to delete <?php echo htmlspecialchars(addslashes((string) $member['username']), ENT_QUOTES, 'UTF-8'); ?>? Any active project assignments for this person will be unassigned.', confirmText: 'Delete Personnel' });">
                   <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
                   <input type="hidden" name="mode" value="delete">
                   <input type="hidden" name="staff_id" value="<?php echo (int) $member['id']; ?>">

@@ -355,7 +355,17 @@ document.addEventListener('DOMContentLoaded', function () {
       if (cartClear.classList.contains('disabled') || cartClear.getAttribute('aria-disabled') === 'true') {
         return;
       }
-      if (confirm('Clear your cart?')) {
+      if (typeof window.showApexConfirm === 'function') {
+        window.showApexConfirm({
+          title: 'Clear Shopping Cart',
+          message: 'Are you sure you want to remove all items from your shopping cart?',
+          confirmText: 'Clear Cart',
+          cancelText: 'Cancel',
+          onConfirm: function () {
+            fetchCart('clear').then(() => showToast('Cart cleared'));
+          }
+        });
+      } else {
         fetchCart('clear').then(() => showToast('Cart cleared'));
       }
     });

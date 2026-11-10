@@ -19,7 +19,7 @@
     <a href="index.php" class="btn btn-secondary btn-sm">&larr; Back to Queue</a>
     
     <?php if ($status !== 'accepted' && $status !== 'confirmed'): ?>
-      <form method="POST" action="convert.php" style="display:inline;" onsubmit="return confirm('Are you sure you want to convert this accepted quote into a confirmed commercial purchase order?');">
+      <form method="POST" action="convert.php" style="display:inline;" onsubmit="return window.apexConfirmForm(event, { title: 'Convert Quote to Order', message: 'Are you sure you want to convert this accepted quote into a confirmed commercial purchase order?', confirmText: 'Convert to Order' });">
         <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
         <input type="hidden" name="quote_id" value="<?php echo $quote['id']; ?>">
         <button type="submit" class="btn btn-primary btn-sm">

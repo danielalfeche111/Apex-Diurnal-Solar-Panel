@@ -40,6 +40,10 @@ final class PhpTemplateRenderer
             throw $error;
         }
 
+        if (is_string($html) && !str_contains($html, '/assets/js/confirm-modal.js') && stripos($html, '</body>') !== false) {
+            $html = preg_replace('~</body>~i', '<script src="/assets/js/confirm-modal.js"></script></body>', $html, 1) ?? $html;
+        }
+
         return new Response($html, $status, ['Content-Type' => 'text/html; charset=UTF-8']);
     }
 }

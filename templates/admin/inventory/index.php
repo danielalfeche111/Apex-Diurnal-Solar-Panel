@@ -197,7 +197,7 @@
             <?php else: ?>
               <span class="badge" style="background: #f1f5f9; color: #64748b; font-size: 0.66rem; font-weight: 600;">Service</span>
             <?php endif; ?>
-            <form method="POST" action="product.php" style="display:inline" onsubmit="return confirm('<?php echo (bool) $item['is_active'] ? 'Archive this product from the storefront?' : 'Restore this product to the storefront?'; ?>')">
+            <form method="POST" action="product.php" style="display:inline" onsubmit="return window.apexConfirmForm(event, { title: '<?php echo (bool) $item['is_active'] ? 'Archive Product' : 'Restore Product'; ?>', message: '<?php echo (bool) $item['is_active'] ? 'Archive this product from the storefront?' : 'Restore this product to the storefront?'; ?>', confirmText: '<?php echo (bool) $item['is_active'] ? 'Archive Product' : 'Restore Product'; ?>' })">
               <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8'); ?>">
               <input type="hidden" name="product_id" value="<?php echo htmlspecialchars($item['product_id'], ENT_QUOTES, 'UTF-8'); ?>">
               <input type="hidden" name="mode" value="<?php echo (bool) $item['is_active'] ? 'archive' : 'restore'; ?>">
