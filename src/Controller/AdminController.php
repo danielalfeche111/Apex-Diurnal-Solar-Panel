@@ -26,6 +26,11 @@ final class AdminController
 
     private function view(Request $request, string $template, array $variables, string $title, string $nav, string $head = '', string $scripts = ''): Response
     {
+        $extraHead = $head;
+        if ($this->auth->isStaff($request->getSession())) {
+            $extraHead .= '<style>.sidebar-nav .nav-section-title:first-of-type, .sidebar-nav > a.nav-item[href$="index.php"]:not([href*="orders"]):not([href*="inventory"]):not([href*="schedule"]):not([href*="quotes"]) { display: none !important; }</style>';
+        }
+
         return $this->renderer->render('admin/'.$template, $variables + [
             'page_title' => $title,
             'active_nav' => $nav,
@@ -33,7 +38,7 @@ final class AdminController
             'admin' => $this->auth->user($request->getSession()),
             'badge_counts' => $this->auth->badgeCounts(),
             'csrf_token' => $this->auth->token($request->getSession()),
-            'extra_head' => $head,
+            'extra_head' => $extraHead,
             'extra_scripts' => $scripts,
             'msg' => (string) $request->query->get('msg', ''),
             'err' => (string) $request->query->get('err', ''),
@@ -51,6 +56,13 @@ final class AdminController
     public function dashboard(Request $request): Response
     {
         if ($blocked = $this->auth->guard($request)) return $blocked;
+        if ($this->auth->isStaff($request->getSession())) {
+            $path = $request->getPathInfo();
+            if (str_ends_with($path, 'index.php')) {
+                return new Response('Access Denied: You do not have permission to view the Admin Dashboard.', 403);
+            }
+            return $this->redirect('/admin/orders/index.php');
+        }
         $metrics = [
             'total_revenue' => (float) $this->database->fetchOne("SELECT SUM(total_amount) FROM orders WHERE status NOT IN ('cancelled', 'refunded')"),
             'pending_orders' => (int) $this->database->fetchOne("SELECT COUNT(*) FROM orders WHERE status = 'pending'"),
@@ -68,7 +80,12 @@ final class AdminController
     #[Route('/admin/login.php', name: 'admin_login')]
     public function login(Request $request): Response
     {
-        if ($this->auth->user($request->getSession())) return $this->redirect('/admin/index.php');
+        if ($this->auth->user($request->getSession())) {
+            if ($this->auth->isStaff($request->getSession())) {
+                return $this->redirect('/admin/orders/index.php');
+            }
+            return $this->redirect('/admin/index.php');
+        }
         $redirect = (string) $request->query->get('redirect', $request->getSession()->get('admin_redirect_after_login', '/admin/index.php'));
         $request->getSession()->set('admin_redirect_after_login', $redirect);
         return $this->redirect('/auth/login.php?redirect='.rawurlencode($redirect));

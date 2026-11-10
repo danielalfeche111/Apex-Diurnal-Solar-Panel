@@ -29,6 +29,18 @@ final class AdminAuth
         ];
     }
 
+    public function isAdmin(SessionInterface $session): bool
+    {
+        $admin = $this->user($session);
+        return $admin !== null && in_array(strtolower($admin['role']), ['superadmin', 'admin', 'manager'], true);
+    }
+
+    public function isStaff(SessionInterface $session): bool
+    {
+        $admin = $this->user($session);
+        return $admin !== null && strtolower($admin['role']) === 'staff';
+    }
+
     public function guard(Request $request, bool $json = false, ?array $roles = null): ?Response
     {
         $session = $request->getSession();
@@ -40,8 +52,18 @@ final class AdminAuth
             $session->set('admin_redirect_after_login', $request->getRequestUri());
             return new Response('', 302, ['Location' => '/auth/login.php']);
         }
-        if ($roles !== null && $admin['role'] !== 'superadmin' && !in_array($admin['role'], $roles, true)) {
-            return new Response('Access Denied: You do not have permission to view this section.', 403);
+        if ($roles !== null) {
+            $normalizedRole = strtolower($admin['role']);
+            $allowedRoles = array_map('strtolower', $roles);
+            if (!in_array('superadmin', $allowedRoles, true)) {
+                $allowedRoles[] = 'superadmin';
+            }
+            if (!in_array($normalizedRole, $allowedRoles, true)) {
+                if ($json) {
+                    return new Response(json_encode(['success' => false, 'message' => 'Access Denied: You do not have permission to view this section.'], JSON_THROW_ON_ERROR), 403, ['Content-Type' => 'application/json; charset=UTF-8']);
+                }
+                return new Response('Access Denied: You do not have permission to view this section.', 403);
+            }
         }
         return null;
     }

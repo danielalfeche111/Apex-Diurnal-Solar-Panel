@@ -46,7 +46,8 @@ final class CustomerAuthController
     public function login(Request $request): Response
     {
         if ($this->identity->adminId() !== null) {
-            return new RedirectResponse('../admin/index.php');
+            $role = strtolower((string)$this->identity->session()->get('admin_role', 'staff'));
+            return new RedirectResponse($role === 'staff' ? '../admin/orders/index.php' : '../admin/index.php');
         }
         if ($this->identity->userId() !== null) {
             return new RedirectResponse('../index.php');
@@ -78,8 +79,13 @@ final class CustomerAuthController
                     $admin = $this->accounts->findAdmin($email);
                     if ($admin !== null && password_verify($password, $admin['password_hash'])) {
                         $this->identity->loginAdmin($admin);
-                        $destination = $this->identity->consumeDestination('../admin/index.php', true);
-                        return new RedirectResponse(str_contains($destination, 'admin') ? $destination : '../admin/index.php');
+                        $role = strtolower((string)($admin['role'] ?? 'staff'));
+                        $defaultDest = $role === 'staff' ? '../admin/orders/index.php' : '../admin/index.php';
+                        $destination = $this->identity->consumeDestination($defaultDest, true);
+                        if ($role === 'staff' && str_ends_with($destination, 'index.php') && !str_contains($destination, 'orders') && !str_contains($destination, 'inventory') && !str_contains($destination, 'quotes') && !str_contains($destination, 'schedule')) {
+                            $destination = '../admin/orders/index.php';
+                        }
+                        return new RedirectResponse(str_contains($destination, 'admin') ? $destination : $defaultDest);
                     }
                     $user = $this->accounts->findByEmail($email);
                     if ($user !== null && password_verify($password, $user['password_hash'])) {
@@ -93,8 +99,13 @@ final class CustomerAuthController
                                 'role' => $role ?: 'superadmin',
                             ];
                             $this->identity->loginAdmin($adminData);
-                            $destination = $this->identity->consumeDestination('../admin/index.php', true);
-                            return new RedirectResponse(str_contains($destination, 'admin') ? $destination : '../admin/index.php');
+                            $role = strtolower((string)($adminData['role'] ?? 'staff'));
+                            $defaultDest = $role === 'staff' ? '../admin/orders/index.php' : '../admin/index.php';
+                            $destination = $this->identity->consumeDestination($defaultDest, true);
+                            if ($role === 'staff' && str_ends_with($destination, 'index.php') && !str_contains($destination, 'orders') && !str_contains($destination, 'inventory') && !str_contains($destination, 'quotes') && !str_contains($destination, 'schedule')) {
+                                $destination = '../admin/orders/index.php';
+                            }
+                            return new RedirectResponse(str_contains($destination, 'admin') ? $destination : $defaultDest);
                         }
                         $guestCart = $this->cart->sessionCart();
                         $destination = $this->identity->consumeDestination();

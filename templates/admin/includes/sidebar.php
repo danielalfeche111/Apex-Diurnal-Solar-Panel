@@ -28,6 +28,7 @@ $logo_path = $site_root . 'assets/images/logo.png?v=' . $logo_v;
   </div>
 
   <nav class="sidebar-nav">
+    <?php if (($adminUser['role'] ?? '') !== 'staff'): ?>
     <div class="nav-section-title">Overview</div>
     <a href="<?php echo $admin_base; ?>index.php" class="nav-item <?php echo ($current_nav === 'dashboard') ? 'active' : ''; ?>">
       <div class="nav-item-content">
@@ -40,6 +41,7 @@ $logo_path = $site_root . 'assets/images/logo.png?v=' . $logo_v;
         <span>Dashboard</span>
       </div>
     </a>
+    <?php endif; ?>
 
     <div class="nav-section-title">Operations</div>
     <a href="<?php echo $admin_base; ?>orders/index.php" class="nav-item <?php echo ($current_nav === 'orders') ? 'active' : ''; ?>">
