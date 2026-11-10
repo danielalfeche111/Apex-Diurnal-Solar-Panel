@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Service\AdminAuth;
 use App\Service\AdminInventory;
+use App\Service\AdminStaff;
 use App\View\PhpTemplateRenderer;
 use App\View\ViewContext;
 use Doctrine\DBAL\Connection;
@@ -15,18 +16,24 @@ use Symfony\Component\Routing\Attribute\Route;
 
 final class AdminController
 {
+    private readonly AdminStaff $staffs;
+
     public function __construct(
         private readonly Connection $database,
         private readonly AdminAuth $auth,
         private readonly AdminInventory $inventory,
         private readonly PhpTemplateRenderer $renderer,
         private readonly ViewContext $viewContext,
+        ?AdminStaff $staffs = null,
     ) {
+        $this->staffs = $staffs ?? new AdminStaff($this->database);
     }
 
     private function view(Request $request, string $template, array $variables, string $title, string $nav, string $head = '', string $scripts = ''): Response
     {
+        $adminBase = str_contains($template, '/') ? '../' : './';
         $extraHead = $head;
+        $extraScripts = $scripts.$this->buildEngineerDatalistScripts($adminBase);
         if ($this->auth->isStaff($request->getSession())) {
             $extraHead .= '<style>.sidebar-nav .nav-section-title:first-of-type, .sidebar-nav > a.nav-item[href$="index.php"]:not([href*="orders"]):not([href*="inventory"]):not([href*="schedule"]):not([href*="quotes"]) { display: none !important; }</style>';
         }
@@ -34,15 +41,26 @@ final class AdminController
         return $this->renderer->render('admin/'.$template, $variables + [
             'page_title' => $title,
             'active_nav' => $nav,
-            'admin_base' => str_contains($template, '/') ? '../' : './',
+            'admin_base' => $adminBase,
             'admin' => $this->auth->user($request->getSession()),
             'badge_counts' => $this->auth->badgeCounts(),
             'csrf_token' => $this->auth->token($request->getSession()),
             'extra_head' => $extraHead,
-            'extra_scripts' => $scripts,
+            'extra_scripts' => $extraScripts,
             'msg' => (string) $request->query->get('msg', ''),
             'err' => (string) $request->query->get('err', ''),
         ]);
+    }
+
+    private function buildEngineerDatalistScripts(string $adminBase): string
+    {
+        $engineers = $this->staffs->engineerNames();
+        $json = json_encode($engineers, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+        $jsVersion = $this->viewContext->assetExists('admin/assets/js/engineer-manager.js')
+            ? $this->viewContext->assetMtime('admin/assets/js/engineer-manager.js')
+            : 1;
+
+        return '<script>window.APEX_STAFF_ENGINEERS = '.$json.';</script><script src="'.$adminBase.'assets/js/engineer-manager.js?v='.$jsVersion.'" defer></script>';
     }
 
     private function redirect(string $url): Response
@@ -69,7 +87,7 @@ final class AdminController
             'low_stock_items' => (int) $this->database->fetchOne('SELECT COUNT(*) FROM inventory WHERE current_stock <= reorder_point'),
             'pending_bookings' => (int) $this->database->fetchOne("SELECT COUNT(*) FROM service_bookings WHERE status = 'pending'"),
             'new_quotes' => (int) $this->database->fetchOne("SELECT COUNT(*) FROM quote_requests WHERE status = 'new'"),
-            'recent_orders' => $this->database->fetchAllAssociative('SELECT o.id, o.order_number, o.customer_name, o.total_amount, o.status, o.created_at, COUNT(oi.id) AS item_count FROM orders o LEFT JOIN order_items oi ON o.id = oi.order_id GROUP BY o.id ORDER BY o.created_at DESC LIMIT 6'),
+            'recent_orders' => $this->database->fetchAllAssociative('SELECT o.id, o.order_number, o.customer_name, o.property_type, o.installation_head, o.total_amount, o.status, o.created_at, COUNT(oi.id) AS item_count FROM orders o LEFT JOIN order_items oi ON o.id = oi.order_id GROUP BY o.id ORDER BY o.created_at DESC LIMIT 6'),
             'upcoming_bookings' => $this->database->fetchAllAssociative("SELECT * FROM service_bookings WHERE preferred_date >= CURDATE() AND status != 'cancelled' ORDER BY preferred_date ASC, preferred_time_slot ASC LIMIT 5"),
             'recent_quotes' => $this->database->fetchAllAssociative("SELECT * FROM quote_requests ORDER BY (status = 'new') DESC, created_at DESC LIMIT 5"),
             'inventory_health' => $this->database->fetchAllAssociative('SELECT p.name, p.image, i.sku, i.current_stock, i.min_stock_level, i.max_stock_level, i.reorder_point FROM inventory i JOIN products p ON i.product_id = p.id ORDER BY (i.current_stock <= i.reorder_point) DESC, i.current_stock ASC'),
@@ -293,5 +311,22 @@ final class AdminController
             'badgeClass' => $badge, 'statusLabel' => $label,
             'discounts' => is_array(json_decode((string) ($quote['applicable_discounts'] ?? ''), true)) ? json_decode((string) $quote['applicable_discounts'], true) : [],
         ], 'Quote '.$quote['quote_number'], 'quotes', '<link rel="stylesheet" href="quotes.css">', '<script src="quotes.js" defer></script>');
+    }
+
+    #[Route('/admin/staffs', name: 'admin_staffs_directory')]
+    #[Route('/admin/staffs/', name: 'admin_staffs_slash')]
+    #[Route('/admin/staffs/index.php', name: 'admin_staffs')]
+    public function staffs(Request $request): Response
+    {
+        if ($blocked = $this->auth->guard($request, false, ['admin', 'superadmin', 'manager'])) return $blocked;
+        $role = trim((string) $request->query->get('role', 'all'));
+        $search = trim((string) $request->query->get('search', ''));
+        $metrics = $this->staffs->metrics();
+
+        return $this->view($request, 'staffs/index', $metrics + [
+            'role_filter' => $role,
+            'search' => $search,
+            'staffs' => $this->staffs->all($role, $search),
+        ], 'Staffs & Engineers Management', 'staffs');
     }
 }

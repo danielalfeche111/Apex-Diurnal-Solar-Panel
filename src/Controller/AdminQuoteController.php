@@ -47,6 +47,9 @@ final class AdminQuoteController
         if ($blocked = $this->auth->guard($request)) return $blocked;
         if (!$request->isMethod('POST')) return $this->redirect('index.php');
         if (!$this->auth->verify($request->getSession(), $request->request->get('csrf_token'))) return $this->redirect('index.php', 'err', 'Security token expired.');
+        if ($request->request->has('engineer_action')) {
+            return $this->handleEngineerAction($request);
+        }
         $id = (int) $request->request->get('quote_id', 0);
         if ($id <= 0) return $this->redirect('index.php', 'err', 'Invalid quote reference.');
         try {
@@ -62,5 +65,51 @@ final class AdminQuoteController
         } catch (\Throwable $error) {
             return $this->redirect('view.php?id='.$id, 'err', $error->getMessage());
         }
+    }
+
+    private function handleEngineerAction(Request $request): Response
+    {
+        if ($blocked = $this->auth->guard($request, false, ['admin', 'superadmin', 'manager'])) {
+            return $blocked;
+        }
+        $targetType = trim((string) $request->request->get('target_type', 'quote'));
+        $targetId = (int) $request->request->get('target_id', $request->request->get('quote_id', 0));
+        $action = trim((string) $request->request->get('engineer_action', 'update'));
+        $engineer = trim((string) $request->request->get('installation_head', ''));
+        $returnTo = $this->sanitizeRedirect((string) $request->request->get('redirect_to', ''), $targetType, $targetId);
+
+        try {
+            $result = $this->quotes->manageEngineer(
+                $targetType,
+                $targetId,
+                $action,
+                $engineer,
+                $this->auth->user($request->getSession())['id'] ?? null,
+            );
+            return $this->redirect($returnTo, 'msg', $result['message']);
+        } catch (\Throwable $error) {
+            return $this->redirect($returnTo, 'err', $error->getMessage());
+        }
+    }
+
+    private function sanitizeRedirect(string $redirectTo, string $targetType, int $targetId): string
+    {
+        $redirectTo = trim($redirectTo);
+        if ($redirectTo !== '' && str_starts_with($redirectTo, '/admin/') && !str_contains($redirectTo, '//')) {
+            $parts = parse_url($redirectTo);
+            $path = $parts['path'] ?? '/admin/index.php';
+            $query = [];
+            if (!empty($parts['query'])) {
+                parse_str($parts['query'], $query);
+                unset($query['msg'], $query['err']);
+            }
+            return $path.($query !== [] ? '?'.http_build_query($query) : '');
+        }
+
+        return match ($targetType) {
+            'booking' => '/admin/schedule/bookings.php',
+            'order' => $targetId > 0 ? '/admin/orders/view.php?id='.$targetId : '/admin/orders/index.php',
+            default => $targetId > 0 ? 'view.php?id='.$targetId : 'index.php',
+        };
     }
 }

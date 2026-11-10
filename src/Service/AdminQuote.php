@@ -143,4 +143,196 @@ final class AdminQuote
             return ['message' => $message, 'quote' => $quote];
         });
     }
+
+    /**
+     * Add, update, or delete (remove) the assigned engineer for a specific project (quote, booking, or order)
+     * and synchronize all linked records across quote_requests, service_bookings, and orders.
+     */
+    public function manageEngineer(string $targetType, int $targetId, string $action, string $engineer, ?int $adminId): array
+    {
+        $targetType = strtolower(trim($targetType));
+        $action = strtolower(trim($action));
+        $engineer = trim($engineer);
+
+        if ($targetId <= 0) {
+            throw new \InvalidArgumentException('Invalid project reference ID.');
+        }
+        if (!in_array($targetType, ['quote', 'booking', 'order'], true)) {
+            throw new \InvalidArgumentException('Unsupported project type.');
+        }
+        if (!in_array($action, ['add', 'update', 'delete'], true)) {
+            throw new \InvalidArgumentException('Unsupported engineer action.');
+        }
+        if ($action !== 'delete' && $engineer === '') {
+            throw new \InvalidArgumentException('Please enter or select an assigned engineer.');
+        }
+
+        $headValue = $action === 'delete' ? null : $engineer;
+
+        return $this->database->transactional(function () use ($targetType, $targetId, $action, $headValue, $adminId): array {
+            if ($targetType === 'quote') {
+                $quote = $this->database->fetchAssociative('SELECT * FROM quote_requests WHERE id = :id FOR UPDATE', ['id' => $targetId]);
+                if (!$quote) {
+                    throw new \RuntimeException("Quote request #$targetId was not found.");
+                }
+
+                $this->database->executeStatement(
+                    'UPDATE quote_requests SET installation_head = :head, quoted_by = COALESCE(:admin, quoted_by), quoted_at = COALESCE(quoted_at, NOW()), updated_at = CURRENT_TIMESTAMP WHERE id = :id',
+                    ['head' => $headValue, 'admin' => $adminId, 'id' => $targetId]
+                );
+
+                $reference = 'INSTALL-'.$quote['quote_number'];
+                $existingBooking = $this->database->fetchAssociative('SELECT id FROM service_bookings WHERE booking_reference = :ref', ['ref' => $reference]);
+                if ($existingBooking) {
+                    $this->database->executeStatement(
+                        'UPDATE service_bookings SET assigned_technician = :head WHERE id = :id',
+                        ['head' => $headValue, 'id' => $existingBooking['id']]
+                    );
+                } elseif ($headValue !== null) {
+                    $bookingDate = !empty($quote['installation_date']) ? $quote['installation_date'] : date('Y-m-d');
+                    $bookingStatus = match ($quote['status']) {
+                        'confirmed', 'in_progress' => 'confirmed',
+                        'completed' => 'completed',
+                        'cancelled' => 'cancelled',
+                        default => 'pending',
+                    };
+                    $bookingNotes = "Commercial Grid Solar Installation\nCompany: {$quote['company_name']}\nFacility: {$quote['facility_size']} sqm\n".($quote['admin_notes'] ?? '');
+                    $this->database->insert('service_bookings', [
+                        'booking_reference' => $reference,
+                        'customer_name' => $quote['company_name'].' ('.$quote['contact_person'].')',
+                        'customer_email' => $quote['email'],
+                        'customer_phone' => $quote['phone'],
+                        'service_type' => 'installation',
+                        'preferred_date' => $bookingDate,
+                        'preferred_time_slot' => 'morning',
+                        'status' => $bookingStatus,
+                        'address' => $quote['installation_address'] ?: 'Project site address',
+                        'access_notes' => $bookingNotes,
+                        'assigned_technician' => $headValue,
+                    ]);
+                }
+
+                $orderReference = 'APD-INST-'.$quote['quote_number'];
+                $existingOrder = $this->database->fetchAssociative(
+                    'SELECT id, status FROM orders WHERE order_number = :ref OR notes LIKE :text LIMIT 1',
+                    ['ref' => $orderReference, 'text' => '%'.$quote['quote_number'].'%']
+                );
+                if ($existingOrder) {
+                    $this->database->executeStatement(
+                        'UPDATE orders SET installation_head = :head, updated_at = CURRENT_TIMESTAMP WHERE id = :id',
+                        ['head' => $headValue, 'id' => $existingOrder['id']]
+                    );
+                    $this->database->insert('order_status_history', [
+                        'order_id' => (int) $existingOrder['id'],
+                        'status' => $existingOrder['status'],
+                        'changed_by' => $adminId,
+                        'notes' => $headValue !== null
+                            ? 'Assigned project engineer '.($action === 'add' ? 'added' : 'updated').': '.$headValue
+                            : 'Assigned project engineer removed by admin',
+                    ]);
+                }
+
+                $ref = $quote['quote_number'];
+                $message = match ($action) {
+                    'add' => "Assigned engineer $headValue added to project $ref.",
+                    'update' => "Assigned engineer for project $ref updated to $headValue.",
+                    'delete' => "Assigned engineer removed from project $ref.",
+                };
+
+                return ['message' => $message, 'reference' => $ref, 'engineer' => $headValue];
+            }
+
+            if ($targetType === 'booking') {
+                $booking = $this->database->fetchAssociative('SELECT * FROM service_bookings WHERE id = :id FOR UPDATE', ['id' => $targetId]);
+                if (!$booking) {
+                    throw new \RuntimeException("Service booking #$targetId was not found.");
+                }
+
+                $this->database->executeStatement(
+                    'UPDATE service_bookings SET assigned_technician = :tech WHERE id = :id',
+                    ['tech' => $headValue, 'id' => $targetId]
+                );
+
+                if (!empty($booking['order_id'])) {
+                    $this->database->executeStatement(
+                        'UPDATE orders SET installation_head = :head, updated_at = CURRENT_TIMESTAMP WHERE id = :id',
+                        ['head' => $headValue, 'id' => $booking['order_id']]
+                    );
+                }
+
+                $bookingRef = (string) $booking['booking_reference'];
+                if (str_starts_with($bookingRef, 'INSTALL-')) {
+                    $quoteNumber = substr($bookingRef, 8);
+                    $this->database->executeStatement(
+                        'UPDATE quote_requests SET installation_head = :head, updated_at = CURRENT_TIMESTAMP WHERE quote_number = :qnum',
+                        ['head' => $headValue, 'qnum' => $quoteNumber]
+                    );
+                    $this->database->executeStatement(
+                        'UPDATE orders SET installation_head = :head, updated_at = CURRENT_TIMESTAMP WHERE order_number = :onum OR notes LIKE :qtext',
+                        ['head' => $headValue, 'onum' => 'APD-INST-'.$quoteNumber, 'qtext' => '%'.$quoteNumber.'%']
+                    );
+                }
+
+                $ref = $booking['booking_reference'];
+                $message = match ($action) {
+                    'add' => "Assigned engineer $headValue added to appointment $ref.",
+                    'update' => "Assigned engineer for appointment $ref updated to $headValue.",
+                    'delete' => "Assigned engineer removed from appointment $ref.",
+                };
+
+                return ['message' => $message, 'reference' => $ref, 'engineer' => $headValue];
+            }
+
+            $order = $this->database->fetchAssociative('SELECT * FROM orders WHERE id = :id FOR UPDATE', ['id' => $targetId]);
+            if (!$order) {
+                throw new \RuntimeException("Order #$targetId was not found.");
+            }
+
+            $this->database->executeStatement(
+                'UPDATE orders SET installation_head = :head, updated_at = CURRENT_TIMESTAMP WHERE id = :id',
+                ['head' => $headValue, 'id' => $targetId]
+            );
+
+            $this->database->executeStatement(
+                'UPDATE service_bookings SET assigned_technician = :head WHERE order_id = :id',
+                ['head' => $headValue, 'id' => $targetId]
+            );
+
+            $quoteNumber = null;
+            if (str_starts_with((string) $order['order_number'], 'APD-INST-')) {
+                $quoteNumber = substr((string) $order['order_number'], 9);
+            } elseif (preg_match('/(RFQ-[A-Z0-9-]+)/', (string) ($order['notes'] ?? ''), $matches)) {
+                $quoteNumber = $matches[1];
+            }
+
+            if ($quoteNumber !== null && $quoteNumber !== '') {
+                $this->database->executeStatement(
+                    'UPDATE quote_requests SET installation_head = :head, updated_at = CURRENT_TIMESTAMP WHERE quote_number = :qnum',
+                    ['head' => $headValue, 'qnum' => $quoteNumber]
+                );
+                $this->database->executeStatement(
+                    'UPDATE service_bookings SET assigned_technician = :head WHERE booking_reference = :bref',
+                    ['head' => $headValue, 'bref' => 'INSTALL-'.$quoteNumber]
+                );
+            }
+
+            $this->database->insert('order_status_history', [
+                'order_id' => $targetId,
+                'status' => $order['status'],
+                'changed_by' => $adminId,
+                'notes' => $headValue !== null
+                    ? 'Assigned project engineer '.($action === 'add' ? 'added' : 'updated').': '.$headValue
+                    : 'Assigned project engineer removed by admin',
+            ]);
+
+            $ref = $order['order_number'];
+            $message = match ($action) {
+                'add' => "Assigned engineer $headValue added to order $ref.",
+                'update' => "Assigned engineer for order $ref updated to $headValue.",
+                'delete' => "Assigned engineer removed from order $ref.",
+            };
+
+            return ['message' => $message, 'reference' => $ref, 'engineer' => $headValue];
+        });
+    }
 }

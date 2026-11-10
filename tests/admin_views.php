@@ -24,6 +24,7 @@ $renderer = new PhpTemplateRenderer(new ViewContext($stack, $root), $root);
 $templates = [
     'index', 'inventory/index', 'inventory/alerts', 'orders/index', 'orders/view',
     'quotes/index', 'quotes/view', 'schedule/index', 'schedule/bookings', 'schedule/appointments',
+    'staffs/index',
 ];
 
 foreach ($templates as $template) {
@@ -54,7 +55,8 @@ REGEX, $source, $matches, PREG_SET_ORDER);
         'kpi_revenue' => 0, 'kpi_total' => 0, 'kpi_new' => 0,
         'kpi_confirmed' => 0, 'kpi_in_progress' => 0,
         'kpi_completed' => 0, 'kpi_cancelled' => 0,
-        'status_filter' => 'all', 'service_filter' => 'all', 'search' => '',
+        'status_filter' => 'all', 'service_filter' => 'all', 'role_filter' => 'all', 'search' => '',
+        'staffs' => [], 'kpi_staff' => 0, 'kpi_admins' => 0, 'kpi_assigned_projects' => 0,
         'totalPhysicalUnits' => 0, 'lowStockCount' => 0,
         'outOfStockCount' => 0, 'physicalItemCount' => 0,
         'status' => 'pending', 'badgeClass' => 'badge-pending',
@@ -63,9 +65,9 @@ REGEX, $source, $matches, PREG_SET_ORDER);
         'stockCheck' => ['can_fulfill' => true, 'shortages' => [], 'items' => []],
     ]);
     preg_match_all(<<<'REGEX'
-~\$(ord|q|b|item|a|t|inv|ub)\[['"]([A-Za-z_]+)['"]\]~
+~\$(ord|q|b|item|a|t|inv|ub|st)\[['"]([A-Za-z_]+)['"]\]~
 REGEX, $source, $rowMatches, PREG_SET_ORDER);
-    $rows = ['ord' => [], 'q' => [], 'b' => [], 'item' => [], 'a' => [], 't' => [], 'inv' => [], 'ub' => []];
+    $rows = ['ord' => [], 'q' => [], 'b' => [], 'item' => [], 'a' => [], 't' => [], 'inv' => [], 'ub' => [], 'st' => []];
     foreach ($rowMatches as $match) {
         $rows[$match[1]][$match[2]] = '0';
     }
@@ -76,6 +78,9 @@ REGEX, $source, $rowMatches, PREG_SET_ORDER);
             'booking_reference' => 'BOOK-1', 'current_stock' => 5,
             'reorder_point' => 10, 'max_stock_level' => 100,
             'preferred_date' => '2026-11-01', 'created_at' => '2026-10-19 12:00:00',
+            'username' => 'Engr. Mark Santos (Lead Solar Engineer)',
+            'email' => 'mark@apexdiurnal.com', 'role' => 'staff',
+            'assigned_quotes' => 2, 'assigned_schedules' => 1,
         ]);
     }
     unset($row);
@@ -84,6 +89,7 @@ REGEX, $source, $rowMatches, PREG_SET_ORDER);
         'upcoming_bookings' => [$rows['ub']], 'inventory_health' => [$rows['inv']],
         'items' => [$rows['item']], 'alerts' => [$rows['a']], 'transactions' => [$rows['t']],
         'orders' => [$rows['ord']], 'quotes' => [$rows['q']], 'bookings' => [$rows['b']],
+        'staffs' => [$rows['st']],
     ]);
     foreach (['empty' => $variables, 'populated' => $populated] as $scenario => $data) {
         $html = $renderer->render('admin/'.$template, $data)->getContent();

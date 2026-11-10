@@ -99,7 +99,8 @@ $logo_path = $site_root . 'assets/images/logo.png?v=' . $logo_v;
       <?php if (!empty($counts['new_quotes'])): ?>
         <span class="nav-badge"><?php echo $counts['new_quotes']; ?></span>
       <?php endif; ?>
-    </a>
+    </a><?php if (($adminUser['role'] ?? '') !== 'staff'): echo "\n    " . '<a href="' . $admin_base . 'staffs/index.php" class="nav-item ' . ($current_nav === 'staffs' ? 'active' : '') . '"><div class="nav-item-content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg><span>Staffs</span></div></a>'; endif; ?>
+
   </nav>
 
   <div class="sidebar-footer">

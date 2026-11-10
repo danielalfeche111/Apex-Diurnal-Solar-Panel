@@ -10,6 +10,7 @@ use App\Service\AdminAuth;
 use App\Service\AdminInventory;
 use App\Service\AdminOrder;
 use App\Service\AdminProduct;
+use App\Service\AdminStaff;
 use Doctrine\DBAL\Connection;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -19,6 +20,8 @@ use Symfony\Component\Routing\Attribute\Route;
 
 final class AdminActionController
 {
+    private readonly AdminStaff $staffs;
+
     public function __construct(
         private readonly Connection $database,
         private readonly AdminAuth $auth,
@@ -26,7 +29,9 @@ final class AdminActionController
         private readonly AdminOrder $orders,
         private readonly AdminProduct $products,
         private readonly FormFactoryInterface $forms,
+        ?AdminStaff $staffs = null,
     ) {
+        $this->staffs = $staffs ?? new AdminStaff($this->database);
     }
 
     #[Route('/admin/inventory/product.php', name: 'admin_inventory_product', methods: ['POST'])]
@@ -142,19 +147,62 @@ final class AdminActionController
         if ($id <= 0) return $this->redirect('index.php', 'err', 'Invalid booking reference.');
         $status = trim((string) $request->request->get('status', 'pending'));
         if (!in_array($status, ['pending', 'confirmed', 'completed', 'cancelled'], true)) return $this->redirect('appointments.php?id='.$id, 'err', 'Invalid status.');
+        $tech = trim((string) $request->request->get('assigned_technician', '')) ?: null;
         try {
+            $booking = $this->database->fetchAssociative('SELECT * FROM service_bookings WHERE id = :id', ['id' => $id]);
             $this->database->executeStatement('UPDATE service_bookings SET status = :status, assigned_technician = :tech, preferred_date = :date, preferred_time_slot = :slot, access_notes = :notes WHERE id = :id', [
                 'status' => $status,
-                'tech' => trim((string) $request->request->get('assigned_technician', '')) ?: null,
-                'date' => trim((string) $request->request->get('preferred_date', '')) ?: date('Y-m-d'),
-                'slot' => trim((string) $request->request->get('preferred_time_slot', '')) ?: '8:00 AM - 10:00 AM',
+                'tech' => $tech,
+                'date' => trim((string) $request->request->get('preferred_date', '')) ?: ($booking['preferred_date'] ?? date('Y-m-d')),
+                'slot' => trim((string) $request->request->get('preferred_time_slot', '')) ?: ($booking['preferred_time_slot'] ?? '8:00 AM - 10:00 AM'),
                 'notes' => trim((string) $request->request->get('access_notes', '')),
                 'id' => $id,
             ]);
+            if ($booking) {
+                if (!empty($booking['order_id'])) {
+                    $this->database->executeStatement('UPDATE orders SET installation_head = :tech, updated_at = CURRENT_TIMESTAMP WHERE id = :oid', ['tech' => $tech, 'oid' => $booking['order_id']]);
+                }
+                $ref = (string) ($booking['booking_reference'] ?? '');
+                if (str_starts_with($ref, 'INSTALL-')) {
+                    $qNum = substr($ref, 8);
+                    $this->database->executeStatement('UPDATE quote_requests SET installation_head = :tech, updated_at = CURRENT_TIMESTAMP WHERE quote_number = :qnum', ['tech' => $tech, 'qnum' => $qNum]);
+                    $this->database->executeStatement('UPDATE orders SET installation_head = :tech, updated_at = CURRENT_TIMESTAMP WHERE order_number = :onum OR notes LIKE :qtext', ['tech' => $tech, 'onum' => 'APD-INST-'.$qNum, 'qtext' => '%'.$qNum.'%']);
+                }
+            }
             $path = $request->request->get('redirect_source', 'detail') === 'index' ? 'index.php' : 'appointments.php?id='.$id;
             return $this->redirect($path, 'msg', 'Appointment updated successfully.');
         } catch (\Throwable $error) {
             return $this->redirect('appointments.php?id='.$id, 'err', $error->getMessage());
+        }
+    }
+
+    #[Route('/admin/staffs/action.php', name: 'admin_staffs_action', methods: ['GET', 'POST'])]
+    public function staffAction(Request $request): Response
+    {
+        if ($blocked = $this->auth->guard($request, false, ['admin', 'superadmin', 'manager'])) return $blocked;
+        if (!$request->isMethod('POST')) return $this->redirect('index.php');
+        if (!$this->auth->verify($request->getSession(), $request->request->get('csrf_token'))) {
+            return $this->redirect('index.php', 'err', 'Security token expired. Please try again.');
+        }
+
+        $mode = strtolower(trim((string) ($request->request->get('mode') ?: $request->request->get('action', ''))));
+        $staffId = (int) $request->request->get('staff_id', 0);
+        $username = trim((string) $request->request->get('username', ''));
+        $email = trim((string) $request->request->get('email', ''));
+        $role = trim((string) $request->request->get('role', 'staff'));
+        $password = (string) $request->request->get('password', '');
+        $currentAdminId = (int) ($this->auth->user($request->getSession())['id'] ?? 0);
+
+        try {
+            $result = match ($mode) {
+                'create' => $this->staffs->create($username, $email, $role, $password),
+                'update' => $this->staffs->update($staffId, $username, $email, $role, $password),
+                'delete' => $this->staffs->delete($staffId, $currentAdminId),
+                default => throw new \InvalidArgumentException('Unsupported staff action.'),
+            };
+            return $this->redirect('index.php', 'msg', $result['message']);
+        } catch (\Throwable $error) {
+            return $this->redirect('index.php', 'err', $error->getMessage());
         }
     }
 
