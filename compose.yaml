@@ -1,4 +1,23 @@
 services:
+    app:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: website-app-1
+        restart: unless-stopped
+        ports:
+            - '8000:80'
+        environment:
+            APP_ENV: dev
+            APP_DEBUG: '1'
+            APP_SECRET: ${APP_SECRET:-ae228b24e58c4849819c2b9e859a2c6f5ff51990de664ae8ac19dd286751c5ef}
+            DATABASE_URL: mysql://solar:${DB_PASSWORD:-914a790dfde349a0bfe09fa683553d75}@database:3306/solar_db?charset=utf8mb4
+        volumes:
+            - ./:/var/www/html
+        depends_on:
+            database:
+                condition: service_healthy
+
     database:
         image: mysql:8.0
         restart: unless-stopped

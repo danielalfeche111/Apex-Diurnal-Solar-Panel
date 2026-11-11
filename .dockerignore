@@ -1,0 +1,9 @@
+.git
+.env.local
+.env.*.local
+var/mysql8_3307/
+var/cache/
+var/log/
+var/backups/
+node_modules/
+
