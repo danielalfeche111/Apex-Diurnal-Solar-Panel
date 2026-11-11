@@ -347,5 +347,62 @@
 
     return false;
   };
+
+  /**
+   * Confirmation prompt when a Customer/User, Admin, or Staff member logs out.
+   */
+  window.apexConfirmLogout = function (event, logoutUrl) {
+    if (event && typeof event.preventDefault === 'function') {
+      event.preventDefault();
+    }
+    if (event && typeof event.stopPropagation === 'function') {
+      event.stopPropagation();
+    }
+
+    var dropdownMenu = document.getElementById('user-dropdown-menu');
+    if (dropdownMenu) {
+      dropdownMenu.classList.remove('show');
+    }
+
+    var isAdminArea = (window.location.pathname || '').indexOf('/admin') !== -1 || Boolean(window.APEX_CURRENT_ADMIN);
+    var isStaffRole = window.APEX_CURRENT_ADMIN && window.APEX_CURRENT_ADMIN.role === 'staff';
+
+    var title = 'Confirm Account Logout';
+    var message = 'Are you sure you want to log out of your account?';
+
+    if (isAdminArea) {
+      if (isStaffRole) {
+        title = 'Confirm Staff Logout';
+        message = 'Are you sure you want to log out of your Staff account?';
+      } else {
+        title = 'Confirm Admin Logout';
+        message = 'Are you sure you want to log out of your Admin account?';
+      }
+    }
+
+    window.showApexConfirm({
+      title: title,
+      message: message,
+      confirmText: 'Yes, Log Out',
+      cancelText: 'Cancel',
+      variant: 'danger',
+      onConfirm: function () {
+        if (logoutUrl) {
+          window.location.href = logoutUrl;
+        }
+      }
+    });
+
+    return false;
+  };
+
+  document.addEventListener('click', function (event) {
+    var link = event.target && event.target.closest ? event.target.closest('a[href*="logout.php"]') : null;
+    if (!link) return;
+    var href = link.getAttribute('href');
+    if (!href) return;
+    window.apexConfirmLogout(event, link.href || href);
+  }, true);
 })();
+
 

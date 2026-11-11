@@ -103,6 +103,13 @@ $createdRecords = (int) ($prof['created_records'] ?? 0);
             <?php echo ($quoteAssignments + $bookingAssignments); ?> Active
           </span>
         </div>
+
+        <div style="margin-top:1.25rem; padding-top:1rem; border-top:1px solid var(--border-color); display:flex; justify-content:flex-end;">
+          <a href="../logout.php" class="btn btn-danger btn-sm">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+            <span>Log Out of Account</span>
+          </a>
+        </div>
       </div>
     </div>
   </div>

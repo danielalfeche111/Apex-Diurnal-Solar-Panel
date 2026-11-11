@@ -41,7 +41,10 @@ final class PhpTemplateRenderer
         }
 
         if (is_string($html) && !str_contains($html, '/assets/js/confirm-modal.js') && stripos($html, '</body>') !== false) {
-            $html = preg_replace('~</body>~i', '<script src="/assets/js/confirm-modal.js"></script></body>', $html, 1) ?? $html;
+            $version = $this->context->assetExists('assets/js/confirm-modal.js')
+                ? $this->context->assetMtime('assets/js/confirm-modal.js')
+                : 1;
+            $html = preg_replace('~</body>~i', '<script src="/assets/js/confirm-modal.js?v='.$version.'"></script></body>', $html, 1) ?? $html;
         }
 
         return new Response($html, $status, ['Content-Type' => 'text/html; charset=UTF-8']);
