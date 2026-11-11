@@ -88,3 +88,22 @@
 .fc-day-today {
   background: var(--navy-subtle) !important;
 }
+
+@media (max-width: 640px) {
+  .fc .fc-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.65rem;
+  }
+  .fc .fc-toolbar-chunk {
+    justify-content: center;
+  }
+  .fc-toolbar-title {
+    font-size: 1.05rem !important;
+    text-align: center;
+  }
+  .fc-button-primary {
+    font-size: 0.72rem !important;
+    padding: 0.35rem 0.6rem !important;
+  }
+}

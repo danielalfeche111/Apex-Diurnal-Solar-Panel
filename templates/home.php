@@ -94,9 +94,115 @@
             Log In
           </a>
         <?php endif; ?>
+
+        <!-- Mobile Burger Menu Toggle Button -->
+        <button type="button" class="icon-btn mobile-burger-btn" id="mobile-burger-toggle" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="mobile-burger-menu">
+          <svg class="burger-open-icon" viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none">
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+          <svg class="burger-close-icon" viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none" style="display:none;">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
       </div>
 
     </div>
+
+    <!-- MOBILE BURGER DROPDOWN MENU -->
+    <div class="mobile-burger-menu" id="mobile-burger-menu" aria-hidden="true">
+      <div class="mobile-menu-inner">
+        <div class="mobile-menu-header">
+          <span class="mobile-menu-title">Apex Diurnal Navigation</span>
+          <span class="mobile-menu-subtitle">Explore Solar Solutions</span>
+        </div>
+        <nav class="mobile-menu-nav" aria-label="Mobile Navigation">
+          <ul class="mobile-menu-list">
+            <li>
+              <a href="#home" class="mobile-menu-link active" data-nav="home">
+                <div class="menu-link-icon">
+                  <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                </div>
+                <div class="menu-link-text">
+                  <span class="link-label">Home</span>
+                  <span class="link-desc">Welcome & Clean Energy Future</span>
+                </div>
+                <svg class="link-arrow" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </a>
+            </li>
+            <li>
+              <a href="#products" class="mobile-menu-link" data-nav="products">
+                <div class="menu-link-icon">
+                  <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"></circle><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                </div>
+                <div class="menu-link-text">
+                  <span class="link-label">Products</span>
+                  <span class="link-desc">Solar Arrays, Inverters & Storage</span>
+                </div>
+                <svg class="link-arrow" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </a>
+            </li>
+            <li>
+              <a href="#services" class="mobile-menu-link" data-nav="services">
+                <div class="menu-link-icon">
+                  <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
+                </div>
+                <div class="menu-link-text">
+                  <span class="link-label">Services</span>
+                  <span class="link-desc">Custom Design, Install & Care</span>
+                </div>
+                <svg class="link-arrow" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </a>
+            </li>
+            <li>
+              <a href="#about" class="mobile-menu-link" data-nav="about">
+                <div class="menu-link-icon">
+                  <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                </div>
+                <div class="menu-link-text">
+                  <span class="link-label">About Us</span>
+                  <span class="link-desc">Rare Technology & Innovation</span>
+                </div>
+                <svg class="link-arrow" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </a>
+            </li>
+            <li>
+              <a href="#craftsmanship" class="mobile-menu-link" data-nav="craftsmanship">
+                <div class="menu-link-icon">
+                  <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+                </div>
+                <div class="menu-link-text">
+                  <span class="link-label">Craftsmanship</span>
+                  <span class="link-desc">Masterful Engineering & Quality</span>
+                </div>
+                <svg class="link-arrow" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </a>
+            </li>
+            <li>
+              <a href="#contact" class="mobile-menu-link" data-nav="contact">
+                <div class="menu-link-icon">
+                  <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                </div>
+                <div class="menu-link-text">
+                  <span class="link-label">Contact</span>
+                  <span class="link-desc">Locations, Support & Corporate</span>
+                </div>
+                <svg class="link-arrow" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </a>
+            </li>
+          </ul>
+        </nav>
+        <div class="mobile-menu-cta">
+          <button type="button" class="btn btn-primary mobile-menu-consult-btn" id="mobile-menu-consult-trigger">
+            Book a Consultation
+          </button>
+        </div>
+      </div>
+    </div>
+    <!-- Mobile Menu Backdrop Overlay -->
+    <div class="mobile-menu-backdrop" id="mobile-menu-backdrop"></div>
   </header>
 
   <main>
@@ -225,7 +331,7 @@
     </section>
 
     <!-- MASTERFUL CRAFTSMANSHIP & EXPERT INSTALLATION SECTION -->
-    <section class="craftsmanship-section">
+    <section class="craftsmanship-section" id="craftsmanship">
       <div class="container">
         <div class="craftsmanship-grid">
           <div class="craftsmanship-image-wrap">

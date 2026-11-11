@@ -81,15 +81,15 @@ assert(str_contains((string) $dashboardStaffDirect->getContent(), 'Access Denied
 $staffGeneralReq = Request::create('/admin/');
 $staffGeneralReq->setSession($staffSession);
 $dashboardStaffGeneral = $controller->dashboard($staffGeneralReq);
-assert($dashboardStaffGeneral->getStatusCode() === 302, 'Staff visiting /admin/ should redirect to staff workspace');
-assert($dashboardStaffGeneral->headers->get('Location') === '/admin/orders/index.php', 'Redirect target must be orders workspace');
+assert($dashboardStaffGeneral->getStatusCode() === 302, 'Staff visiting /admin/ should redirect to staff schedule workspace');
+assert($dashboardStaffGeneral->headers->get('Location') === '/admin/schedule/index.php', 'Redirect target must be schedule workspace');
 
 // 5. Test Staff login redirect
 $loginStaffReq = Request::create('/admin/login.php');
 $loginStaffReq->setSession($staffSession);
 $loginStaffResp = $controller->login($loginStaffReq);
 assert($loginStaffResp->getStatusCode() === 302, 'Already logged-in staff at login.php should redirect');
-assert($loginStaffResp->headers->get('Location') === '/admin/orders/index.php', 'Redirect target must be orders workspace');
+assert($loginStaffResp->headers->get('Location') === '/admin/schedule/index.php', 'Redirect target must be schedule workspace');
 
 // 6. Test Admin login redirect
 $loginAdminReq = Request::create('/admin/login.php');
@@ -214,7 +214,7 @@ assert($createStaffResp->getStatusCode() === 302, 'Admin create staff should red
 $newStaffId = (int) $db->fetchOne('SELECT id FROM admin_users WHERE email = :email', ['email' => $testEmail]);
 assert($newStaffId > 0, 'Created staff member must exist in admin_users');
 
-// Admin Update Staff/Engineer
+// Admin Update Staff/Engineer + Reset Password
 $updateStaffReq = Request::create('/admin/staffs/action.php', 'POST', [
     'csrf_token' => $adminCsrf,
     'mode' => 'update',
@@ -222,7 +222,7 @@ $updateStaffReq = Request::create('/admin/staffs/action.php', 'POST', [
     'username' => 'Engr. Test CRUD Updated (Senior Grid Specialist)',
     'email' => $testEmail,
     'role' => 'staff',
-    'password' => '',
+    'password' => 'ResetPass456!',
 ]);
 $updateStaffReq->setSession($adminSession);
 $updateStaffResp = $actionController->staffAction($updateStaffReq);
@@ -231,6 +231,211 @@ assert(
     $db->fetchOne('SELECT username FROM admin_users WHERE id = :id', ['id' => $newStaffId]) === 'Engr. Test CRUD Updated (Senior Grid Specialist)',
     'Staff username must be updated in admin_users'
 );
+$resetHash = (string) $db->fetchOne('SELECT password_hash FROM admin_users WHERE id = :id', ['id' => $newStaffId]);
+assert(password_verify('ResetPass456!', $resetHash), 'Admin password reset must update password_hash');
+
+// 9. Test Profile View & Staff-Only Own Password Change (#4)
+$staffSession->set('admin_id', $newStaffId);
+$staffSession->set('admin_username', 'Engr. Test CRUD Updated (Senior Grid Specialist)');
+$staffSession->set('admin_email', $testEmail);
+$staffSession->set('admin_role', 'staff');
+
+$staffProfileReq = Request::create('/admin/profile/index.php');
+$staffProfileReq->setSession($staffSession);
+$stack->push($staffProfileReq);
+$staffProfileResp = $controller->profile($staffProfileReq);
+assert($staffProfileResp->getStatusCode() === 200, 'Staff must be able to view own profile');
+assert(str_contains((string) $staffProfileResp->getContent(), 'Change Own Password'), 'Staff profile must display Change Own Password form');
+
+$adminProfileReq = Request::create('/admin/profile/index.php');
+$adminProfileReq->setSession($adminSession);
+$stack->push($adminProfileReq);
+$adminProfileResp = $controller->profile($adminProfileReq);
+assert($adminProfileResp->getStatusCode() === 200, 'Admin must be able to view own profile');
+assert(!str_contains((string) $adminProfileResp->getContent(), 'id="staff-change-password-form"'), 'Admin profile must not display staff self-service password form');
+
+// Admin blocked from POST /admin/profile/action.php
+$adminChangePassReq = Request::create('/admin/profile/action.php', 'POST', [
+    'csrf_token' => $adminCsrf,
+    'current_password' => 'ResetPass456!',
+    'new_password' => 'AdminShouldFail123',
+    'confirm_password' => 'AdminShouldFail123',
+]);
+$adminChangePassReq->setSession($adminSession);
+$adminChangePassResp = $actionController->profileAction($adminChangePassReq);
+assert($adminChangePassResp->getStatusCode() === 403, 'Admin must be blocked (403) from changing password via staff-only profile action');
+
+// Staff succeeds in changing own password via POST /admin/profile/action.php
+$staffCsrf = $auth->token($staffSession);
+$staffChangePassReq = Request::create('/admin/profile/action.php', 'POST', [
+    'csrf_token' => $staffCsrf,
+    'current_password' => 'ResetPass456!',
+    'new_password' => 'StaffNewOwnPass789!',
+    'confirm_password' => 'StaffNewOwnPass789!',
+]);
+$staffChangePassReq->setSession($staffSession);
+$staffChangePassResp = $actionController->profileAction($staffChangePassReq);
+assert($staffChangePassResp->getStatusCode() === 302, 'Staff change own password should redirect');
+assert(str_contains((string) $staffChangePassResp->headers->get('Location'), 'msg='), 'Staff change own password should succeed');
+$newOwnHash = (string) $db->fetchOne('SELECT password_hash FROM admin_users WHERE id = :id', ['id' => $newStaffId]);
+assert(password_verify('StaffNewOwnPass789!', $newOwnHash), 'Staff own password change must persist hashed password');
+
+// 10. Test Staff Orders Blocked (#4) & Inventory Read-Only (#5)
+$staffOrdersReq = Request::create('/admin/orders/index.php');
+$staffOrdersReq->setSession($staffSession);
+$staffOrdersResp = $controller->orders($staffOrdersReq);
+assert($staffOrdersResp->getStatusCode() === 403, 'Staff must be blocked (403) from /admin/orders/index.php');
+
+$staffOrderProcReq = Request::create('/admin/orders/process.php', 'POST', ['csrf_token' => $staffCsrf, 'order_id' => 1, 'status' => 'confirmed']);
+$staffOrderProcReq->setSession($staffSession);
+$staffOrderProcResp = $actionController->orderProcess($staffOrderProcReq);
+assert($staffOrderProcResp->getStatusCode() === 403, 'Staff must be blocked (403) from accepting/processing orders');
+
+$staffQuoteConvertReq = Request::create('/admin/quotes/convert.php', 'POST', ['csrf_token' => $staffCsrf, 'quote_id' => 1]);
+$staffQuoteConvertReq->setSession($staffSession);
+$staffQuoteConvertResp = $quoteController->convert($staffQuoteConvertReq);
+assert($staffQuoteConvertResp->getStatusCode() === 403, 'Staff must be blocked (403) from converting quotes into orders');
+
+// Staff can view inventory, but is blocked from editing or adding products
+$staffInvViewReq = Request::create('/admin/inventory/index.php');
+$staffInvViewReq->setSession($staffSession);
+$stack->push($staffInvViewReq);
+$staffInvViewResp = $controller->inventory($staffInvViewReq);
+assert($staffInvViewResp->getStatusCode() === 200, 'Staff must be able to view inventory');
+
+$staffInvProdReq = Request::create('/admin/inventory/product.php', 'POST', [
+    'csrf_token' => $staffCsrf,
+    'mode' => 'create',
+    'product_id' => 'staff-blocked-prod',
+    'name' => 'Blocked Product',
+]);
+$staffInvProdReq->setSession($staffSession);
+$staffInvProdResp = $actionController->product($staffInvProdReq);
+assert($staffInvProdResp->getStatusCode() === 403, 'Staff must be blocked (403) from adding/editing/deleting inventory products');
+
+$staffInvEditReq = Request::create('/admin/inventory/edit.php', 'POST', [
+    'csrf_token' => $staffCsrf,
+    'product_id' => 'residential-starter',
+    'transaction_type' => 'restock',
+    'quantity' => 5,
+]);
+$staffInvEditReq->setSession($staffSession);
+$staffInvEditResp = $actionController->inventoryEdit($staffInvEditReq);
+assert($staffInvEditResp->getStatusCode() === 403, 'Staff must be blocked (403) from adjusting inventory stock');
+
+// 11. Test Staff Assigned Task Visibility & Full CRUD + Mark Done (#1, #2, #3)
+$staffName = 'Engr. Test CRUD Updated (Senior Grid Specialist)';
+$otherStaffName = 'Engr. Other Staff (Test Only)';
+$db->executeStatement('DELETE FROM service_bookings WHERE assigned_technician IN (:s1, :s2)', ['s1' => $staffName, 's2' => $otherStaffName]);
+
+// Insert a task assigned to OTHER staff
+$db->insert('service_bookings', [
+    'booking_reference' => 'SRV-OTHER-999',
+    'customer_name' => 'Other Staff Client',
+    'customer_email' => 'other@example.com',
+    'customer_phone' => '09170000001',
+    'service_type' => 'maintenance',
+    'preferred_date' => date('Y-m-d'),
+    'preferred_time_slot' => '8:00 AM - 10:00 AM',
+    'status' => 'confirmed',
+    'address' => 'Other Staff Site Address',
+    'access_notes' => 'Do not touch',
+    'assigned_technician' => $otherStaffName,
+]);
+$otherBookingId = (int) $db->lastInsertId();
+
+// Staff creates their own assigned task (mode=create)
+$staffCreateTaskReq = Request::create('/admin/schedule/appointments.php', 'POST', [
+    'csrf_token' => $staffCsrf,
+    'mode' => 'create',
+    'customer_name' => 'My Assigned Client',
+    'customer_email' => 'myclient@example.com',
+    'customer_phone' => '09171234567',
+    'service_type' => 'installation',
+    'preferred_date' => date('Y-m-d'),
+    'preferred_time_slot' => '10:00 AM - 12:00 PM',
+    'status' => 'confirmed',
+    'address' => '123 Solar Street, Makati',
+    'access_notes' => 'Initial task notes',
+]);
+$staffCreateTaskReq->setSession($staffSession);
+$staffCreateTaskResp = $actionController->appointmentUpdate($staffCreateTaskReq);
+assert($staffCreateTaskResp->getStatusCode() === 302, 'Staff create assigned task should redirect');
+assert(str_contains((string) $staffCreateTaskResp->headers->get('Location'), 'msg='), 'Staff create assigned task should succeed');
+
+$ownBookingId = (int) $db->fetchOne('SELECT id FROM service_bookings WHERE assigned_technician = :tech ORDER BY id DESC LIMIT 1', ['tech' => $staffName]);
+assert($ownBookingId > 0, 'Staff created task must be assigned to the staff member');
+
+// Staff views bookings list -> sees own task, does NOT see other staff task
+$staffBookingsReq = Request::create('/admin/schedule/bookings.php');
+$staffBookingsReq->setSession($staffSession);
+$stack->push($staffBookingsReq);
+$staffBookingsResp = $controller->bookings($staffBookingsReq);
+assert($staffBookingsResp->getStatusCode() === 200, 'Staff bookings view must return 200');
+assert(str_contains((string) $staffBookingsResp->getContent(), 'My Assigned Client'), 'Staff must see their own assigned task');
+assert(!str_contains((string) $staffBookingsResp->getContent(), 'Other Staff Client'), 'Staff must NOT see tasks assigned to other staff');
+
+// Staff updates their own assigned task (mode=update)
+$staffUpdateTaskReq = Request::create('/admin/schedule/appointments.php', 'POST', [
+    'csrf_token' => $staffCsrf,
+    'mode' => 'update',
+    'booking_id' => $ownBookingId,
+    'status' => 'confirmed',
+    'preferred_date' => date('Y-m-d'),
+    'preferred_time_slot' => '1:00 PM - 3:00 PM',
+    'access_notes' => 'Updated site notes by assigned staff',
+    'customer_name' => 'My Assigned Client Updated',
+    'address' => '123 Solar Street, Makati',
+]);
+$staffUpdateTaskReq->setSession($staffSession);
+$staffUpdateTaskResp = $actionController->appointmentUpdate($staffUpdateTaskReq);
+assert($staffUpdateTaskResp->getStatusCode() === 302, 'Staff update own assigned task should redirect');
+assert(
+    $db->fetchOne('SELECT access_notes FROM service_bookings WHERE id = :id', ['id' => $ownBookingId]) === 'Updated site notes by assigned staff',
+    'Staff update must persist access_notes'
+);
+
+// Staff marks their assigned task as Done (mode=complete)
+$staffCompleteTaskReq = Request::create('/admin/schedule/appointments.php', 'POST', [
+    'csrf_token' => $staffCsrf,
+    'mode' => 'complete',
+    'booking_id' => $ownBookingId,
+    'redirect_source' => 'bookings',
+]);
+$staffCompleteTaskReq->setSession($staffSession);
+$staffCompleteTaskResp = $actionController->appointmentUpdate($staffCompleteTaskReq);
+assert($staffCompleteTaskResp->getStatusCode() === 302, 'Staff mark task done should redirect');
+assert(
+    $db->fetchOne('SELECT status FROM service_bookings WHERE id = :id', ['id' => $ownBookingId]) === 'completed',
+    'Staff must be able to mark their assigned task as completed'
+);
+
+// Staff tries to edit or delete OTHER staff's task -> BLOCKED (403)
+$staffHackOtherReq = Request::create('/admin/schedule/appointments.php', 'POST', [
+    'csrf_token' => $staffCsrf,
+    'mode' => 'complete',
+    'booking_id' => $otherBookingId,
+]);
+$staffHackOtherReq->setSession($staffSession);
+$staffHackOtherResp = $actionController->appointmentUpdate($staffHackOtherReq);
+assert($staffHackOtherResp->getStatusCode() === 403, 'Staff must be blocked (403) from modifying another staff member\'s task');
+
+// Staff deletes their own assigned task (mode=delete) -> ALLOWED
+$staffDeleteTaskReq = Request::create('/admin/schedule/appointments.php', 'POST', [
+    'csrf_token' => $staffCsrf,
+    'mode' => 'delete',
+    'booking_id' => $ownBookingId,
+]);
+$staffDeleteTaskReq->setSession($staffSession);
+$staffDeleteTaskResp = $actionController->appointmentUpdate($staffDeleteTaskReq);
+assert($staffDeleteTaskResp->getStatusCode() === 302, 'Staff delete own assigned task should redirect');
+assert(
+    (int) $db->fetchOne('SELECT COUNT(*) FROM service_bookings WHERE id = :id', ['id' => $ownBookingId]) === 0,
+    'Staff own assigned task must be deleted'
+);
+
+// Clean up other staff test booking
+$db->executeStatement('DELETE FROM service_bookings WHERE id = :id', ['id' => $otherBookingId]);
 
 // Admin Delete Staff/Engineer
 $deleteStaffReq = Request::create('/admin/staffs/action.php', 'POST', [

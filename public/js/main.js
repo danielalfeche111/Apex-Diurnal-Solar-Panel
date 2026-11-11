@@ -220,4 +220,124 @@ document.addEventListener('DOMContentLoaded', function () {
   } catch (e) {
     console.error('Error setting up search:', e);
   }
+
+  // --- Mobile Burger Menu Dropdown ---
+  try {
+    const burgerToggle = document.getElementById('mobile-burger-toggle');
+    const burgerMenu = document.getElementById('mobile-burger-menu');
+    const menuBackdrop = document.getElementById('mobile-menu-backdrop');
+    const burgerOpenIcon = burgerToggle ? burgerToggle.querySelector('.burger-open-icon') : null;
+    const burgerCloseIcon = burgerToggle ? burgerToggle.querySelector('.burger-close-icon') : null;
+    const mobileLinks = document.querySelectorAll('.mobile-menu-link');
+    const mobileConsultBtn = document.getElementById('mobile-menu-consult-trigger');
+    const siteHeader = document.getElementById('site-header');
+
+    function openMobileMenu() {
+      if (!burgerMenu) return;
+      burgerMenu.classList.add('is-open');
+      burgerMenu.setAttribute('aria-hidden', 'false');
+      if (burgerToggle) {
+        burgerToggle.classList.add('is-active');
+        burgerToggle.setAttribute('aria-expanded', 'true');
+        if (burgerOpenIcon) burgerOpenIcon.style.display = 'none';
+        if (burgerCloseIcon) burgerCloseIcon.style.display = 'block';
+      }
+      if (menuBackdrop) menuBackdrop.classList.add('is-open');
+    }
+
+    function closeMobileMenu() {
+      if (!burgerMenu) return;
+      burgerMenu.classList.remove('is-open');
+      burgerMenu.setAttribute('aria-hidden', 'true');
+      if (burgerToggle) {
+        burgerToggle.classList.remove('is-active');
+        burgerToggle.setAttribute('aria-expanded', 'false');
+        if (burgerOpenIcon) burgerOpenIcon.style.display = 'block';
+        if (burgerCloseIcon) burgerCloseIcon.style.display = 'none';
+      }
+      if (menuBackdrop) menuBackdrop.classList.remove('is-open');
+    }
+
+    if (burgerToggle && burgerMenu) {
+      burgerToggle.addEventListener('click', function (e) {
+        e.stopPropagation();
+        if (burgerMenu.classList.contains('is-open')) {
+          closeMobileMenu();
+        } else {
+          openMobileMenu();
+        }
+      });
+    }
+
+    if (menuBackdrop) {
+      menuBackdrop.addEventListener('click', function () {
+        closeMobileMenu();
+      });
+    }
+
+    // Handle smooth scrolling and redirection for all mobile menu links
+    mobileLinks.forEach(function (link) {
+      link.addEventListener('click', function (e) {
+        const href = link.getAttribute('href');
+        closeMobileMenu();
+
+        // Update active class
+        mobileLinks.forEach(function (l) { l.classList.remove('active'); });
+        link.classList.add('active');
+
+        if (href && href.startsWith('#')) {
+          e.preventDefault();
+          const target = document.querySelector(href);
+          if (target) {
+            const headerHeight = siteHeader ? siteHeader.offsetHeight : 64;
+            const targetPos = target.getBoundingClientRect().top + window.pageYOffset - headerHeight;
+            window.scrollTo({
+              top: targetPos,
+              behavior: 'smooth'
+            });
+            try {
+              history.pushState(null, '', href);
+            } catch (err) {}
+          }
+        }
+      });
+    });
+
+    // Handle consultation button in mobile menu
+    if (mobileConsultBtn) {
+      mobileConsultBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        closeMobileMenu();
+        const consultTrigger = document.getElementById('consultation-trigger');
+        if (consultTrigger) {
+          consultTrigger.click();
+        } else {
+          const servicesSection = document.getElementById('services');
+          if (servicesSection) {
+            const headerHeight = siteHeader ? siteHeader.offsetHeight : 64;
+            window.scrollTo({
+              top: servicesSection.getBoundingClientRect().top + window.pageYOffset - headerHeight,
+              behavior: 'smooth'
+            });
+          }
+        }
+      });
+    }
+
+    // Close on escape key
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && burgerMenu && burgerMenu.classList.contains('is-open')) {
+        closeMobileMenu();
+      }
+    });
+
+    // Close on resize to desktop
+    window.addEventListener('resize', function () {
+      if (window.innerWidth > 768 && burgerMenu && burgerMenu.classList.contains('is-open')) {
+        closeMobileMenu();
+      }
+    });
+  } catch (e) {
+    console.error('Error setting up mobile burger menu:', e);
+  }
 });

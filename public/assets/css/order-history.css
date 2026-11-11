@@ -833,6 +833,11 @@
     .orders-table td:nth-child(4) {
         display: none; /* Hide Items count on narrow screens */
     }
+
+    .orders-table-card {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
 }
 
 .return-home-link {

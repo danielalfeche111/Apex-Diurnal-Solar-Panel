@@ -144,6 +144,23 @@ final class AdminQuote
         });
     }
 
+    public function findById(int $id): ?array
+    {
+        $row = $this->database->fetchAssociative('SELECT * FROM quote_requests WHERE id = :id', ['id' => $id]);
+        return $row ?: null;
+    }
+
+    public function delete(int $id): array
+    {
+        $quote = $this->findById($id);
+        if (!$quote) {
+            throw new \RuntimeException("Quote request #$id was not found.");
+        }
+        $quoteNum = (string) ($quote['quote_number'] ?? '#'.$id);
+        $this->database->executeStatement('DELETE FROM quote_requests WHERE id = :id', ['id' => $id]);
+        return ['message' => "Assigned quote {$quoteNum} deleted successfully.", 'quote' => $quote];
+    }
+
     /**
      * Add, update, or delete (remove) the assigned engineer for a specific project (quote, booking, or order)
      * and synchronize all linked records across quote_requests, service_bookings, and orders.

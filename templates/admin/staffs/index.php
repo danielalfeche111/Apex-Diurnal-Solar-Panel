@@ -252,13 +252,28 @@
             required>
         </div>
 
-        <div class="form-group" style="margin-bottom:0;">
+        <div class="form-group">
           <label class="form-label" for="staff-role">Designation / Role <span style="color:#b91c1c;">*</span></label>
           <select name="role" id="staff-role" class="form-control" required>
             <option value="staff">Staff / Field Engineer (Assignable to Projects &amp; Operations)</option>
             <option value="manager">Manager (Operations Lead)</option>
             <option value="superadmin">Superadmin (Administrator)</option>
           </select>
+        </div>
+
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label" for="staff-password" id="staff-password-label">Account Password</label>
+          <input
+            type="password"
+            name="password"
+            id="staff-password"
+            class="form-control"
+            minlength="6"
+            autocomplete="new-password"
+            placeholder="Enter password (min. 6 characters)">
+          <small id="staff-password-hint" style="color:var(--text-muted); font-size:0.73rem; margin-top:0.25rem; display:block;">
+            Set initial login password (leave blank to use default <code>staff123</code>).
+          </small>
         </div>
       </div>
       <div class="modal-footer">

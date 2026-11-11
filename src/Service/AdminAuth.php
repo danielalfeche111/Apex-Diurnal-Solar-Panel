@@ -41,6 +41,12 @@ final class AdminAuth
         return $admin !== null && strtolower($admin['role']) === 'staff';
     }
 
+    public function staffUsername(SessionInterface $session): string
+    {
+        $admin = $this->user($session);
+        return trim((string) ($admin['username'] ?? ''));
+    }
+
     public function guard(Request $request, bool $json = false, ?array $roles = null): ?Response
     {
         $session = $request->getSession();
@@ -84,8 +90,18 @@ final class AdminAuth
         return is_string($expected) && is_string($token) && $token !== '' && hash_equals($expected, $token);
     }
 
-    public function badgeCounts(): array
+    public function badgeCounts(?SessionInterface $session = null): array
     {
+        if ($session !== null && $this->isStaff($session)) {
+            $username = trim((string) ($this->user($session)['username'] ?? ''));
+            return [
+                'pending_orders' => 0,
+                'low_stock' => (int) $this->database->fetchOne('SELECT COUNT(*) FROM inventory WHERE current_stock <= reorder_point'),
+                'pending_bookings' => (int) $this->database->fetchOne("SELECT COUNT(*) FROM service_bookings WHERE assigned_technician = :tech AND status IN ('pending', 'confirmed')", ['tech' => $username]),
+                'new_quotes' => (int) $this->database->fetchOne("SELECT COUNT(*) FROM quote_requests WHERE installation_head = :head AND status IN ('new', 'pending', 'confirmed', 'in_progress')", ['head' => $username]),
+            ];
+        }
+
         return [
             'pending_orders' => (int) $this->database->fetchOne("SELECT COUNT(*) FROM orders WHERE status = 'pending'"),
             'low_stock' => (int) $this->database->fetchOne('SELECT COUNT(*) FROM inventory WHERE current_stock <= reorder_point'),

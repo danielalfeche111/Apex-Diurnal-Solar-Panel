@@ -33,18 +33,40 @@ final class AdminController
     {
         $adminBase = str_contains($template, '/') ? '../' : './';
         $extraHead = $head;
-        $extraScripts = $scripts.$this->buildEngineerDatalistScripts($adminBase);
+        $currentUser = $this->auth->user($request->getSession());
+        $csrfToken = $this->auth->token($request->getSession());
+        $extraScripts = $scripts.$this->buildEngineerDatalistScripts($adminBase, $currentUser, $csrfToken);
         if ($this->auth->isStaff($request->getSession())) {
-            $extraHead .= '<style>.sidebar-nav .nav-section-title:first-of-type, .sidebar-nav > a.nav-item[href$="index.php"]:not([href*="orders"]):not([href*="inventory"]):not([href*="schedule"]):not([href*="quotes"]) { display: none !important; }</style>';
+            $extraHead .= '<style>'
+                .'.sidebar-nav .nav-section-title:first-of-type, '
+                .'.sidebar-nav > a.nav-item[href$="index.php"]:not([href*="inventory"]):not([href*="schedule"]):not([href*="quotes"]):not([href*="profile"]), '
+                .'.sidebar-nav > a.nav-item[href*="orders"] { display: none !important; }'
+                .'</style>';
+            if ($template === 'inventory/index') {
+                $extraHead .= '<style>'
+                    .'button[onclick*="openCatalogEditor"], '
+                    .'button[onclick*="openStockModal"], '
+                    .'form[action="product.php"], '
+                    .'#catalog-modal, #stock-modal, '
+                    .'table.admin-table th:last-child, '
+                    .'table.admin-table td:last-child { display: none !important; }'
+                    .'</style>';
+            }
+            if ($template === 'quotes/view') {
+                $extraHead .= '<style>form[action="convert.php"] { display: none !important; }</style>';
+            }
+            if ($template === 'schedule/appointments') {
+                $extraHead .= '<style>a[href*="orders/view.php"] { display: none !important; }</style>';
+            }
         }
 
         return $this->renderer->render('admin/'.$template, $variables + [
             'page_title' => $title,
             'active_nav' => $nav,
             'admin_base' => $adminBase,
-            'admin' => $this->auth->user($request->getSession()),
-            'badge_counts' => $this->auth->badgeCounts(),
-            'csrf_token' => $this->auth->token($request->getSession()),
+            'admin' => $currentUser,
+            'badge_counts' => $this->auth->badgeCounts($request->getSession()),
+            'csrf_token' => $csrfToken,
             'extra_head' => $extraHead,
             'extra_scripts' => $extraScripts,
             'msg' => (string) $request->query->get('msg', ''),
@@ -52,15 +74,21 @@ final class AdminController
         ]);
     }
 
-    private function buildEngineerDatalistScripts(string $adminBase): string
+    private function buildEngineerDatalistScripts(string $adminBase, ?array $currentUser = null, string $csrfToken = ''): string
     {
         $engineers = $this->staffs->engineerNames();
         $json = json_encode($engineers, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+        $userJson = json_encode([
+            'id' => (int) ($currentUser['id'] ?? 0),
+            'username' => (string) ($currentUser['username'] ?? ''),
+            'role' => strtolower((string) ($currentUser['role'] ?? 'staff')),
+            'csrfToken' => $csrfToken,
+        ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
         $jsVersion = $this->viewContext->assetExists('admin/assets/js/engineer-manager.js')
             ? $this->viewContext->assetMtime('admin/assets/js/engineer-manager.js')
             : 1;
 
-        return '<script>window.APEX_STAFF_ENGINEERS = '.$json.';</script><script src="'.$adminBase.'assets/js/engineer-manager.js?v='.$jsVersion.'" defer></script>';
+        return '<script>window.APEX_STAFF_ENGINEERS = '.$json.'; window.APEX_CURRENT_ADMIN = '.$userJson.';</script><script src="'.$adminBase.'assets/js/engineer-manager.js?v='.$jsVersion.'" defer></script>';
     }
 
     private function redirect(string $url): Response
@@ -79,7 +107,7 @@ final class AdminController
             if (str_ends_with($path, 'index.php')) {
                 return new Response('Access Denied: You do not have permission to view the Admin Dashboard.', 403);
             }
-            return $this->redirect('/admin/orders/index.php');
+            return $this->redirect('/admin/schedule/index.php');
         }
         $metrics = [
             'total_revenue' => (float) $this->database->fetchOne("SELECT SUM(total_amount) FROM orders WHERE status NOT IN ('cancelled', 'refunded')"),
@@ -100,7 +128,7 @@ final class AdminController
     {
         if ($this->auth->user($request->getSession())) {
             if ($this->auth->isStaff($request->getSession())) {
-                return $this->redirect('/admin/orders/index.php');
+                return $this->redirect('/admin/schedule/index.php');
             }
             return $this->redirect('/admin/index.php');
         }
@@ -125,7 +153,7 @@ final class AdminController
     #[Route('/admin/orders/index.php', name: 'admin_orders')]
     public function orders(Request $request): Response
     {
-        if ($blocked = $this->auth->guard($request)) return $blocked;
+        if ($blocked = $this->auth->guard($request, false, ['admin', 'superadmin', 'manager'])) return $blocked;
         $status = trim((string) $request->query->get('status', 'all'));
         $search = trim((string) $request->query->get('search', ''));
         $where = []; $parameters = [];
@@ -154,7 +182,7 @@ final class AdminController
     #[Route('/admin/orders/view.php', name: 'admin_order_view')]
     public function orderView(Request $request): Response
     {
-        if ($blocked = $this->auth->guard($request)) return $blocked;
+        if ($blocked = $this->auth->guard($request, false, ['admin', 'superadmin', 'manager'])) return $blocked;
         $id = (int) $request->query->get('id', 0);
         $order = $this->database->fetchAssociative('SELECT * FROM orders WHERE id = :id', ['id' => $id]);
         if (!$order) return $this->redirect('index.php?err='.rawurlencode('Order not found.'));
@@ -208,6 +236,16 @@ final class AdminController
     public function schedule(Request $request): Response
     {
         if ($blocked = $this->auth->guard($request)) return $blocked;
+        $session = $request->getSession();
+        if ($this->auth->isStaff($session)) {
+            $tech = trim((string) ($this->auth->user($session)['username'] ?? ''));
+            return $this->view($request, 'schedule/index', [
+                'kpi_total' => (int) $this->database->fetchOne('SELECT COUNT(*) FROM service_bookings WHERE assigned_technician = :tech', ['tech' => $tech]),
+                'kpi_pending' => (int) $this->database->fetchOne("SELECT COUNT(*) FROM service_bookings WHERE assigned_technician = :tech AND status = 'pending'", ['tech' => $tech]),
+                'kpi_confirmed' => (int) $this->database->fetchOne("SELECT COUNT(*) FROM service_bookings WHERE assigned_technician = :tech AND status = 'confirmed'", ['tech' => $tech]),
+                'kpi_completed' => (int) $this->database->fetchOne("SELECT COUNT(*) FROM service_bookings WHERE assigned_technician = :tech AND status = 'completed'", ['tech' => $tech]),
+            ], 'My Assigned Schedule & Tasks', 'schedule', '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css"><link rel="stylesheet" href="schedule.css">', '<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script><script src="schedule.js" defer></script>');
+        }
         return $this->view($request, 'schedule/index', [
             'kpi_total' => (int) $this->database->fetchOne('SELECT COUNT(*) FROM service_bookings'),
             'kpi_pending' => (int) $this->database->fetchOne("SELECT COUNT(*) FROM service_bookings WHERE status = 'pending'"),
@@ -224,6 +262,11 @@ final class AdminController
         $service = trim((string) $request->query->get('service_type', 'all'));
         $search = trim((string) $request->query->get('search', ''));
         $where = []; $parameters = [];
+        $session = $request->getSession();
+        if ($this->auth->isStaff($session)) {
+            $where[] = 'assigned_technician = :staff_tech';
+            $parameters['staff_tech'] = trim((string) ($this->auth->user($session)['username'] ?? ''));
+        }
         if (in_array($status, ['pending', 'confirmed', 'completed', 'cancelled'], true)) {
             $where[] = 'status = :st'; $parameters['st'] = $status;
         }
@@ -238,7 +281,7 @@ final class AdminController
         return $this->view($request, 'schedule/bookings', [
             'bookings' => $this->database->fetchAllAssociative("SELECT * FROM service_bookings $whereSql ORDER BY preferred_date DESC, created_at DESC", $parameters),
             'status_filter' => $status, 'service_filter' => $service, 'search' => $search,
-        ], 'Service Bookings List', 'schedule');
+        ], $this->auth->isStaff($session) ? 'My Assigned Service Bookings' : 'Service Bookings List', 'schedule');
     }
 
     #[Route('/admin/schedule/appointments.php', name: 'admin_schedule_appointments', methods: ['GET'])]
@@ -248,6 +291,13 @@ final class AdminController
         $id = (int) $request->query->get('id', 0);
         $booking = $this->database->fetchAssociative('SELECT * FROM service_bookings WHERE id = :id', ['id' => $id]);
         if (!$booking) return $this->redirect('bookings.php?err='.rawurlencode('Booking not found.'));
+        $session = $request->getSession();
+        if ($this->auth->isStaff($session)) {
+            $staffName = trim((string) ($this->auth->user($session)['username'] ?? ''));
+            if (strtolower(trim((string) ($booking['assigned_technician'] ?? ''))) !== strtolower($staffName)) {
+                return $this->redirect('bookings.php?err='.rawurlencode('Access Denied: You can only view and manage tasks assigned to you.'));
+            }
+        }
         return $this->view($request, 'schedule/appointments', [
             'booking' => $booking,
             'linkedOrder' => !empty($booking['order_id']) ? $this->database->fetchAssociative('SELECT id, order_number, total_amount, status FROM orders WHERE id = :id', ['id' => $booking['order_id']]) : null,
@@ -263,6 +313,13 @@ final class AdminController
         $status = trim((string) $request->query->get('status', 'all'));
         $search = trim((string) $request->query->get('search', ''));
         $where = []; $parameters = [];
+        $session = $request->getSession();
+        $isStaff = $this->auth->isStaff($session);
+        $staffName = trim((string) ($this->auth->user($session)['username'] ?? ''));
+        if ($isStaff) {
+            $where[] = 'installation_head = :staff_head';
+            $parameters['staff_head'] = $staffName;
+        }
         $map = ['new' => "status IN ('new', 'pending')", 'confirmed' => "status IN ('confirmed', 'accepted')", 'in_progress' => "status = 'in_progress'", 'completed' => "status = 'completed'", 'cancelled' => "status IN ('cancelled', 'rejected', 'expired')"];
         if (isset($map[$status])) $where[] = $map[$status];
         elseif (in_array($status, ['reviewed', 'quoted', 'accepted', 'rejected', 'expired', 'client_confirmed'], true)) {
@@ -273,16 +330,19 @@ final class AdminController
             foreach (['s1', 's2', 's3', 's4'] as $key) $parameters[$key] = '%'.$search.'%';
         }
         $whereSql = $where ? 'WHERE '.implode(' AND ', $where) : '';
+        $kpiWhere = $isStaff ? 'WHERE installation_head = :staff_head' : '';
+        $kpiAnd = $isStaff ? 'WHERE installation_head = :staff_head AND ' : 'WHERE ';
+        $kpiParams = $isStaff ? ['staff_head' => $staffName] : [];
         return $this->view($request, 'quotes/index', [
             'status_filter' => $status, 'search' => $search,
             'quotes' => $this->database->fetchAllAssociative("SELECT * FROM quote_requests $whereSql ORDER BY (status = 'new') DESC, created_at DESC", $parameters),
-            'kpi_total' => (int) $this->database->fetchOne('SELECT COUNT(*) FROM quote_requests'),
-            'kpi_new' => (int) $this->database->fetchOne("SELECT COUNT(*) FROM quote_requests WHERE status IN ('new', 'pending')"),
-            'kpi_confirmed' => (int) $this->database->fetchOne("SELECT COUNT(*) FROM quote_requests WHERE status IN ('confirmed', 'accepted')"),
-            'kpi_in_progress' => (int) $this->database->fetchOne("SELECT COUNT(*) FROM quote_requests WHERE status = 'in_progress'"),
-            'kpi_completed' => (int) $this->database->fetchOne("SELECT COUNT(*) FROM quote_requests WHERE status = 'completed'"),
-            'kpi_cancelled' => (int) $this->database->fetchOne("SELECT COUNT(*) FROM quote_requests WHERE status IN ('cancelled', 'rejected', 'expired')"),
-        ], 'Quote Requests Queue', 'quotes', '<link rel="stylesheet" href="quotes.css">', '<script src="quotes.js" defer></script>');
+            'kpi_total' => (int) $this->database->fetchOne("SELECT COUNT(*) FROM quote_requests $kpiWhere", $kpiParams),
+            'kpi_new' => (int) $this->database->fetchOne("SELECT COUNT(*) FROM quote_requests {$kpiAnd}status IN ('new', 'pending')", $kpiParams),
+            'kpi_confirmed' => (int) $this->database->fetchOne("SELECT COUNT(*) FROM quote_requests {$kpiAnd}status IN ('confirmed', 'accepted')", $kpiParams),
+            'kpi_in_progress' => (int) $this->database->fetchOne("SELECT COUNT(*) FROM quote_requests {$kpiAnd}status = 'in_progress'", $kpiParams),
+            'kpi_completed' => (int) $this->database->fetchOne("SELECT COUNT(*) FROM quote_requests {$kpiAnd}status = 'completed'", $kpiParams),
+            'kpi_cancelled' => (int) $this->database->fetchOne("SELECT COUNT(*) FROM quote_requests {$kpiAnd}status IN ('cancelled', 'rejected', 'expired')", $kpiParams),
+        ], $isStaff ? 'My Assigned Installation Projects' : 'Quote Requests Queue', 'quotes', '<link rel="stylesheet" href="quotes.css">', '<script src="quotes.js" defer></script>');
     }
 
     #[Route('/admin/quotes/view.php', name: 'admin_quote_view')]
@@ -292,6 +352,13 @@ final class AdminController
         $id = (int) $request->query->get('id', 0);
         $quote = $this->database->fetchAssociative('SELECT q.*, u.username AS quoted_by_name FROM quote_requests q LEFT JOIN admin_users u ON q.quoted_by = u.id WHERE q.id = :id', ['id' => $id]);
         if (!$quote) return $this->redirect('index.php?err='.rawurlencode('Quote request not found.'));
+        $session = $request->getSession();
+        if ($this->auth->isStaff($session)) {
+            $staffName = trim((string) ($this->auth->user($session)['username'] ?? ''));
+            if (strtolower(trim((string) ($quote['installation_head'] ?? ''))) !== strtolower($staffName)) {
+                return $this->redirect('index.php?err='.rawurlencode('Access Denied: You can only view and manage installation projects assigned to you.'));
+            }
+        }
         $linked = $this->database->fetchAssociative('SELECT id, order_number, status, installation_head, installation_date FROM orders WHERE order_number = :num OR notes LIKE :text LIMIT 1', ['num' => 'APD-INST-'.$quote['quote_number'], 'text' => '%'.$quote['quote_number'].'%']);
         $status = $quote['status'];
         if ($linked && $linked['status'] === 'client_confirmed' && in_array($status, ['new', 'pending'], true)) $status = 'client_confirmed';
@@ -328,5 +395,25 @@ final class AdminController
             'search' => $search,
             'staffs' => $this->staffs->all($role, $search),
         ], 'Staffs & Engineers Management', 'staffs');
+    }
+
+    #[Route('/admin/profile', name: 'admin_profile_directory')]
+    #[Route('/admin/profile/', name: 'admin_profile_slash')]
+    #[Route('/admin/profile/index.php', name: 'admin_profile')]
+    public function profile(Request $request): Response
+    {
+        if ($blocked = $this->auth->guard($request)) return $blocked;
+        $current = $this->auth->user($request->getSession()) ?? [];
+        $profile = $this->staffs->profile(
+            (int) ($current['id'] ?? 0),
+            (string) ($current['username'] ?? 'Admin'),
+            (string) ($current['email'] ?? ''),
+            (string) ($current['role'] ?? 'staff'),
+        );
+
+        return $this->view($request, 'profile/index', [
+            'profile' => $profile,
+            'is_staff' => $this->auth->isStaff($request->getSession()),
+        ], 'My Account Profile', 'profile');
     }
 }

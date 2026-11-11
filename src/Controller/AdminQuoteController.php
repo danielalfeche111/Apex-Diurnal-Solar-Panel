@@ -24,7 +24,7 @@ final class AdminQuoteController
     #[Route('/admin/quotes/convert.php', name: 'admin_quote_convert')]
     public function convert(Request $request): Response
     {
-        if ($blocked = $this->auth->guard($request)) return $blocked;
+        if ($blocked = $this->auth->guard($request, false, ['admin', 'superadmin', 'manager'])) return $blocked;
         if (!$request->isMethod('POST')) return $this->redirect('index.php');
         if (!$this->auth->verify($request->getSession(), $request->request->get('csrf_token'))) return $this->redirect('index.php', 'err', 'Security token expired.');
         $id = (int) $request->request->get('quote_id', 0);
@@ -52,16 +52,51 @@ final class AdminQuoteController
         }
         $id = (int) $request->request->get('quote_id', 0);
         if ($id <= 0) return $this->redirect('index.php', 'err', 'Invalid quote reference.');
+
+        $session = $request->getSession();
+        $isStaff = $this->auth->isStaff($session);
+        $staffName = $isStaff ? $this->auth->staffUsername($session) : '';
+        $quote = $this->quotes->findById($id);
+        if (!$quote) {
+            return $this->redirect('index.php', 'err', 'Quote request not found.');
+        }
+
+        if ($isStaff && strtolower(trim((string) ($quote['installation_head'] ?? ''))) !== strtolower($staffName)) {
+            return new Response('Access Denied: You can only modify quotes assigned to your account.', 403);
+        }
+
+        $mode = strtolower(trim((string) $request->request->get('mode', 'update')));
+        if ($mode === 'delete') {
+            try {
+                $result = $this->quotes->delete($id);
+                return $this->redirect('index.php', 'msg', $result['message']);
+            } catch (\Throwable $error) {
+                return $this->redirect('index.php', 'err', $error->getMessage());
+            }
+        }
+
+        $status = $mode === 'complete'
+            ? 'completed'
+            : trim((string) $request->request->get('status', (string) ($quote['status'] ?? 'confirmed')));
+        $head = $isStaff
+            ? $staffName
+            : trim((string) $request->request->get('installation_head', (string) ($quote['installation_head'] ?? '')));
+        $date = trim((string) $request->request->get('installation_date', (string) ($quote['installation_date'] ?? '')));
+        $notes = $request->request->has('admin_notes')
+            ? trim((string) $request->request->get('admin_notes', ''))
+            : (string) ($quote['admin_notes'] ?? '');
+
         try {
             $result = $this->quotes->respond(
                 $id,
-                trim((string) $request->request->get('status', 'confirmed')),
-                trim((string) $request->request->get('installation_head', '')),
-                trim((string) $request->request->get('installation_date', '')),
-                trim((string) $request->request->get('admin_notes', '')),
-                $this->auth->user($request->getSession())['id'],
+                $status,
+                $head,
+                $date,
+                $notes,
+                $this->auth->user($session)['id'],
             );
-            return $this->redirect('view.php?id='.$id, 'msg', $result['message']);
+            $returnTo = trim((string) $request->request->get('redirect_source', '')) === 'index' ? 'index.php' : 'view.php?id='.$id;
+            return $this->redirect($returnTo, 'msg', $result['message']);
         } catch (\Throwable $error) {
             return $this->redirect('view.php?id='.$id, 'err', $error->getMessage());
         }

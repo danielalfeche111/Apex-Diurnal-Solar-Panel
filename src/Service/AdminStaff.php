@@ -296,5 +296,96 @@ final class AdminStaff
             ];
         });
     }
+
+    public function profile(int $id, string $fallbackUsername = '', string $fallbackEmail = '', string $fallbackRole = 'staff'): array
+    {
+        $this->ensureSeeded();
+        $row = null;
+        if ($id > 0) {
+            $row = $this->database->fetchAssociative(
+                "SELECT u.id, u.username, u.email, u.role, u.created_at, u.updated_at,
+                        (SELECT COUNT(*) FROM quote_requests q WHERE q.installation_head = u.username AND q.status NOT IN ('cancelled', 'rejected', 'expired')) AS quote_assignments,
+                        (SELECT COUNT(*) FROM service_bookings b WHERE b.assigned_technician = u.username AND b.status != 'cancelled') AS booking_assignments
+                 FROM admin_users u
+                 WHERE u.id = :id
+                 LIMIT 1",
+                ['id' => $id]
+            );
+        }
+        if ((!$row || !is_array($row)) && $fallbackEmail !== '') {
+            $row = $this->database->fetchAssociative(
+                "SELECT u.id, u.username, u.email, u.role, u.created_at, u.updated_at,
+                        (SELECT COUNT(*) FROM quote_requests q WHERE q.installation_head = u.username AND q.status NOT IN ('cancelled', 'rejected', 'expired')) AS quote_assignments,
+                        (SELECT COUNT(*) FROM service_bookings b WHERE b.assigned_technician = u.username AND b.status != 'cancelled') AS booking_assignments
+                 FROM admin_users u
+                 WHERE LOWER(u.email) = LOWER(:email)
+                 LIMIT 1",
+                ['email' => $fallbackEmail]
+            );
+        }
+
+        if (is_array($row)) {
+            $createdCount = (int) $this->database->fetchOne(
+                "SELECT COUNT(DISTINCT product_id) FROM inventory_transactions WHERE created_by = :id AND (reference_id = 'CATALOG-EDIT' OR notes LIKE 'Opening stock%')",
+                ['id' => (int) $row['id']]
+            );
+            $row['created_records'] = $createdCount;
+            return $row;
+        }
+
+        return [
+            'id' => $id,
+            'username' => $fallbackUsername !== '' ? $fallbackUsername : 'Admin',
+            'email' => $fallbackEmail,
+            'role' => $fallbackRole,
+            'created_at' => null,
+            'updated_at' => null,
+            'quote_assignments' => 0,
+            'booking_assignments' => 0,
+            'created_records' => 0,
+        ];
+    }
+
+    public function changeOwnPassword(int $id, string $currentPassword, string $newPassword, string $confirmPassword): string
+    {
+        if ($id <= 0) {
+            throw new \InvalidArgumentException('Invalid account session.');
+        }
+        if ($currentPassword === '') {
+            throw new \InvalidArgumentException('Current password is required.');
+        }
+        if ($newPassword === '') {
+            throw new \InvalidArgumentException('New password is required.');
+        }
+        if (mb_strlen($newPassword) < 6) {
+            throw new \InvalidArgumentException('New password must be at least 6 characters long.');
+        }
+        if ($confirmPassword === '' || $newPassword !== $confirmPassword) {
+            throw new \InvalidArgumentException('New password and confirmation password do not match.');
+        }
+
+        $account = $this->database->fetchAssociative('SELECT id, username, email, role, password_hash FROM admin_users WHERE id = :id LIMIT 1', ['id' => $id]);
+        if (!$account) {
+            throw new \RuntimeException('Account record was not found.');
+        }
+        if (strtolower((string) ($account['role'] ?? '')) !== 'staff') {
+            throw new \RuntimeException('Only staff accounts are permitted to change their own password here.');
+        }
+        if (!password_verify($currentPassword, (string) $account['password_hash'])) {
+            throw new \InvalidArgumentException('Current password is incorrect.');
+        }
+
+        $newHash = password_hash($newPassword, PASSWORD_DEFAULT);
+        $this->database->update('admin_users', ['password_hash' => $newHash], ['id' => (int) $account['id']]);
+
+        if (!empty($account['email'])) {
+            $this->database->executeStatement(
+                'UPDATE users SET password_hash = :hash WHERE LOWER(email) = LOWER(:email)',
+                ['hash' => $newHash, 'email' => (string) $account['email']]
+            );
+        }
+
+        return 'Your password has been updated successfully.';
+    }
 }
 

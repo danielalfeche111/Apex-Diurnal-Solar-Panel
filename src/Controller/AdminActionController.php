@@ -37,7 +37,7 @@ final class AdminActionController
     #[Route('/admin/inventory/product.php', name: 'admin_inventory_product', methods: ['POST'])]
     public function product(Request $request): Response
     {
-        if ($blocked = $this->auth->guard($request)) return $blocked;
+        if ($blocked = $this->auth->guard($request, false, ['admin', 'superadmin', 'manager'])) return $blocked;
         if (!$this->auth->verify($request->getSession(), $request->request->get('csrf_token'))) {
             return $this->redirect('index.php', 'err', 'Security token expired. Please try again.');
         }
@@ -79,7 +79,7 @@ final class AdminActionController
     #[Route('/admin/inventory/edit.php', name: 'admin_inventory_edit')]
     public function inventoryEdit(Request $request): Response
     {
-        if ($blocked = $this->auth->guard($request)) return $blocked;
+        if ($blocked = $this->auth->guard($request, false, ['admin', 'superadmin', 'manager'])) return $blocked;
         if (!$request->isMethod('POST')) return $this->redirect('index.php');
         if (!$this->auth->verify($request->getSession(), $request->request->get('csrf_token'))) return $this->redirect('index.php', 'err', 'Security token expired. Please try again.');
         $productId = trim((string) $request->request->get('product_id', ''));
@@ -97,7 +97,7 @@ final class AdminActionController
     #[Route('/admin/orders/process.php', name: 'admin_order_process')]
     public function orderProcess(Request $request): Response
     {
-        if ($blocked = $this->auth->guard($request)) return $blocked;
+        if ($blocked = $this->auth->guard($request, false, ['admin', 'superadmin', 'manager'])) return $blocked;
         if (!$request->isMethod('POST')) return $this->redirect('index.php');
         if (!$this->auth->verify($request->getSession(), $request->request->get('csrf_token'))) return $this->redirect('index.php', 'err', 'Security token expired. Please try again.');
         $id = (int) $request->request->get('order_id', 0);
@@ -116,7 +116,7 @@ final class AdminActionController
     #[Route('/admin/orders/api.php', name: 'admin_order_api')]
     public function orderApi(Request $request): Response
     {
-        if ($blocked = $this->auth->guard($request, true)) return $blocked;
+        if ($blocked = $this->auth->guard($request, true, ['admin', 'superadmin', 'manager'])) return $blocked;
         if ($request->isMethod('POST') && !$this->auth->verify($request->getSession(), $request->request->get('csrf_token', $request->headers->get('X-CSRF-Token')))) {
             return new JsonResponse(['success' => false, 'message' => 'Invalid CSRF token'], 403);
         }
@@ -143,34 +143,116 @@ final class AdminActionController
     {
         if ($blocked = $this->auth->guard($request)) return $blocked;
         if (!$this->auth->verify($request->getSession(), $request->request->get('csrf_token'))) return $this->redirect('index.php', 'err', 'Security token expired.');
+
+        $session = $request->getSession();
+        $isStaff = $this->auth->isStaff($session);
+        $staffName = $isStaff ? $this->auth->staffUsername($session) : '';
+        $mode = strtolower(trim((string) $request->request->get('mode', 'update')));
+
+        if ($mode === 'create') {
+            $customerName = trim((string) $request->request->get('customer_name', ''));
+            $customerEmail = trim((string) $request->request->get('customer_email', ''));
+            $customerPhone = trim((string) $request->request->get('customer_phone', ''));
+            $serviceType = strtolower(trim((string) $request->request->get('service_type', 'maintenance')));
+            if (!in_array($serviceType, ['consultation', 'installation', 'maintenance'], true)) {
+                $serviceType = 'maintenance';
+            }
+            $preferredDate = trim((string) $request->request->get('preferred_date', date('Y-m-d'))) ?: date('Y-m-d');
+            $preferredSlot = trim((string) $request->request->get('preferred_time_slot', '8:00 AM - 10:00 AM')) ?: '8:00 AM - 10:00 AM';
+            $status = strtolower(trim((string) $request->request->get('status', 'confirmed')));
+            if (!in_array($status, ['pending', 'confirmed', 'completed', 'cancelled'], true)) {
+                $status = 'confirmed';
+            }
+            $address = trim((string) $request->request->get('address', ''));
+            $notes = trim((string) $request->request->get('access_notes', ''));
+            $tech = $isStaff ? $staffName : (trim((string) $request->request->get('assigned_technician', '')) ?: null);
+
+            if ($customerName === '' || $address === '') {
+                return $this->redirect('bookings.php', 'err', 'Customer name and service address are required.');
+            }
+
+            try {
+                $reference = 'SRV-'.date('Ymd').'-'.strtoupper(substr(md5(uniqid((string) mt_rand(), true)), 0, 5));
+                $this->database->insert('service_bookings', [
+                    'booking_reference' => $reference,
+                    'customer_name' => $customerName,
+                    'customer_email' => $customerEmail !== '' ? $customerEmail : 'service@apexdiurnal.com',
+                    'customer_phone' => $customerPhone !== '' ? $customerPhone : 'N/A',
+                    'service_type' => $serviceType,
+                    'preferred_date' => $preferredDate,
+                    'preferred_time_slot' => $preferredSlot,
+                    'status' => $status,
+                    'address' => $address,
+                    'access_notes' => $notes,
+                    'assigned_technician' => $tech,
+                ]);
+                return $this->redirect('bookings.php', 'msg', "Assigned task {$reference} created successfully.");
+            } catch (\Throwable $error) {
+                return $this->redirect('bookings.php', 'err', $error->getMessage());
+            }
+        }
+
         $id = (int) $request->request->get('booking_id', 0);
         if ($id <= 0) return $this->redirect('index.php', 'err', 'Invalid booking reference.');
-        $status = trim((string) $request->request->get('status', 'pending'));
+
+        $booking = $this->database->fetchAssociative('SELECT * FROM service_bookings WHERE id = :id', ['id' => $id]);
+        if (!$booking) return $this->redirect('bookings.php', 'err', 'Booking record not found.');
+
+        if ($isStaff && strtolower(trim((string) ($booking['assigned_technician'] ?? ''))) !== strtolower($staffName)) {
+            return new Response('Access Denied: You can only modify tasks assigned to your account.', 403);
+        }
+
+        if ($mode === 'delete') {
+            try {
+                $ref = (string) ($booking['booking_reference'] ?? '#'.$id);
+                $this->database->executeStatement('DELETE FROM service_bookings WHERE id = :id', ['id' => $id]);
+                return $this->redirect('bookings.php', 'msg', "Assigned task {$ref} deleted successfully.");
+            } catch (\Throwable $error) {
+                return $this->redirect('bookings.php', 'err', $error->getMessage());
+            }
+        }
+
+        $status = $mode === 'complete' ? 'completed' : trim((string) $request->request->get('status', (string) ($booking['status'] ?? 'pending')));
         if (!in_array($status, ['pending', 'confirmed', 'completed', 'cancelled'], true)) return $this->redirect('appointments.php?id='.$id, 'err', 'Invalid status.');
-        $tech = trim((string) $request->request->get('assigned_technician', '')) ?: null;
+        $tech = $isStaff ? $staffName : (trim((string) $request->request->get('assigned_technician', (string) ($booking['assigned_technician'] ?? ''))) ?: null);
+        $customerName = trim((string) $request->request->get('customer_name', (string) ($booking['customer_name'] ?? ''))) ?: (string) ($booking['customer_name'] ?? '');
+        $address = trim((string) $request->request->get('address', (string) ($booking['address'] ?? ''))) ?: (string) ($booking['address'] ?? '');
+        $notes = $request->request->has('access_notes')
+            ? trim((string) $request->request->get('access_notes', ''))
+            : (string) ($booking['access_notes'] ?? '');
+
         try {
-            $booking = $this->database->fetchAssociative('SELECT * FROM service_bookings WHERE id = :id', ['id' => $id]);
-            $this->database->executeStatement('UPDATE service_bookings SET status = :status, assigned_technician = :tech, preferred_date = :date, preferred_time_slot = :slot, access_notes = :notes WHERE id = :id', [
+            $this->database->executeStatement('UPDATE service_bookings SET status = :status, assigned_technician = :tech, preferred_date = :date, preferred_time_slot = :slot, access_notes = :notes, customer_name = :cname, address = :addr WHERE id = :id', [
                 'status' => $status,
                 'tech' => $tech,
                 'date' => trim((string) $request->request->get('preferred_date', '')) ?: ($booking['preferred_date'] ?? date('Y-m-d')),
                 'slot' => trim((string) $request->request->get('preferred_time_slot', '')) ?: ($booking['preferred_time_slot'] ?? '8:00 AM - 10:00 AM'),
-                'notes' => trim((string) $request->request->get('access_notes', '')),
+                'notes' => $notes,
+                'cname' => $customerName,
+                'addr' => $address,
                 'id' => $id,
             ]);
-            if ($booking) {
-                if (!empty($booking['order_id'])) {
-                    $this->database->executeStatement('UPDATE orders SET installation_head = :tech, updated_at = CURRENT_TIMESTAMP WHERE id = :oid', ['tech' => $tech, 'oid' => $booking['order_id']]);
-                }
-                $ref = (string) ($booking['booking_reference'] ?? '');
-                if (str_starts_with($ref, 'INSTALL-')) {
-                    $qNum = substr($ref, 8);
-                    $this->database->executeStatement('UPDATE quote_requests SET installation_head = :tech, updated_at = CURRENT_TIMESTAMP WHERE quote_number = :qnum', ['tech' => $tech, 'qnum' => $qNum]);
-                    $this->database->executeStatement('UPDATE orders SET installation_head = :tech, updated_at = CURRENT_TIMESTAMP WHERE order_number = :onum OR notes LIKE :qtext', ['tech' => $tech, 'onum' => 'APD-INST-'.$qNum, 'qtext' => '%'.$qNum.'%']);
-                }
+            if (!empty($booking['order_id'])) {
+                $this->database->executeStatement('UPDATE orders SET installation_head = :tech, updated_at = CURRENT_TIMESTAMP WHERE id = :oid', ['tech' => $tech, 'oid' => $booking['order_id']]);
             }
-            $path = $request->request->get('redirect_source', 'detail') === 'index' ? 'index.php' : 'appointments.php?id='.$id;
-            return $this->redirect($path, 'msg', 'Appointment updated successfully.');
+            $ref = (string) ($booking['booking_reference'] ?? '');
+            if (str_starts_with($ref, 'INSTALL-')) {
+                $qNum = substr($ref, 8);
+                if ($status === 'completed') {
+                    $this->database->executeStatement("UPDATE quote_requests SET status = 'completed', installation_head = :tech, updated_at = CURRENT_TIMESTAMP WHERE quote_number = :qnum", ['tech' => $tech, 'qnum' => $qNum]);
+                } else {
+                    $this->database->executeStatement('UPDATE quote_requests SET installation_head = :tech, updated_at = CURRENT_TIMESTAMP WHERE quote_number = :qnum', ['tech' => $tech, 'qnum' => $qNum]);
+                }
+                $this->database->executeStatement('UPDATE orders SET installation_head = :tech, updated_at = CURRENT_TIMESTAMP WHERE order_number = :onum OR notes LIKE :qtext', ['tech' => $tech, 'onum' => 'APD-INST-'.$qNum, 'qtext' => '%'.$qNum.'%']);
+            }
+            $redirectSource = trim((string) $request->request->get('redirect_source', 'detail'));
+            $path = match ($redirectSource) {
+                'index' => 'index.php',
+                'bookings' => 'bookings.php',
+                default => 'appointments.php?id='.$id,
+            };
+            $msg = $status === 'completed' ? 'Assigned task marked as completed.' : 'Appointment updated successfully.';
+            return $this->redirect($path, 'msg', $msg);
         } catch (\Throwable $error) {
             return $this->redirect('appointments.php?id='.$id, 'err', $error->getMessage());
         }
@@ -206,6 +288,31 @@ final class AdminActionController
         }
     }
 
+    #[Route('/admin/profile/action.php', name: 'admin_profile_action', methods: ['GET', 'POST'])]
+    public function profileAction(Request $request): Response
+    {
+        if ($blocked = $this->auth->guard($request)) return $blocked;
+        if (!$request->isMethod('POST')) return $this->redirect('index.php');
+        if (!$this->auth->verify($request->getSession(), $request->request->get('csrf_token'))) {
+            return $this->redirect('index.php', 'err', 'Security token expired. Please try again.');
+        }
+        if (!$this->auth->isStaff($request->getSession())) {
+            return new Response('Access Denied: Only staff accounts are permitted to change their own password.', 403);
+        }
+
+        $adminId = (int) ($this->auth->user($request->getSession())['id'] ?? 0);
+        $currentPassword = (string) $request->request->get('current_password', '');
+        $newPassword = (string) $request->request->get('new_password', '');
+        $confirmPassword = (string) $request->request->get('confirm_password', '');
+
+        try {
+            $message = $this->staffs->changeOwnPassword($adminId, $currentPassword, $newPassword, $confirmPassword);
+            return $this->redirect('index.php', 'msg', $message);
+        } catch (\Throwable $error) {
+            return $this->redirect('index.php', 'err', $error->getMessage());
+        }
+    }
+
     #[Route('/admin/schedule/calendar.php', name: 'admin_calendar')]
     public function calendar(Request $request): Response
     {
@@ -213,6 +320,11 @@ final class AdminActionController
         $start = substr((string) $request->query->get('start', date('Y-m-01')), 0, 10);
         $end = substr((string) $request->query->get('end', date('Y-m-t', strtotime('+2 months'))), 0, 10);
         $where = ['preferred_date BETWEEN :start AND :end']; $parameters = ['start' => $start, 'end' => $end];
+        $session = $request->getSession();
+        if ($this->auth->isStaff($session)) {
+            $where[] = 'assigned_technician = :staff_tech';
+            $parameters['staff_tech'] = trim((string) ($this->auth->user($session)['username'] ?? ''));
+        }
         $service = (string) $request->query->get('service_type', '');
         $status = (string) $request->query->get('status', '');
         if (in_array($service, ['consultation', 'installation', 'maintenance'], true)) {

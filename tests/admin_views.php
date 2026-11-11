@@ -24,7 +24,7 @@ $renderer = new PhpTemplateRenderer(new ViewContext($stack, $root), $root);
 $templates = [
     'index', 'inventory/index', 'inventory/alerts', 'orders/index', 'orders/view',
     'quotes/index', 'quotes/view', 'schedule/index', 'schedule/bookings', 'schedule/appointments',
-    'staffs/index',
+    'staffs/index', 'profile/index',
 ];
 
 foreach ($templates as $template) {

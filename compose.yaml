@@ -4,7 +4,7 @@ services:
             context: .
             dockerfile: Dockerfile
         container_name: website-app-1
-        restart: unless-stopped
+        restart: always
         ports:
             - '8000:80'
         environment:
@@ -20,13 +20,13 @@ services:
 
     database:
         image: mysql:8.0
-        restart: unless-stopped
+        restart: always
         command: ['--log-bin-trust-function-creators=1']
         environment:
             MYSQL_DATABASE: solar_db
             MYSQL_USER: solar
             MYSQL_PASSWORD: ${DB_PASSWORD:-solar_local}
-            MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-solar_local_root}
+            MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
         volumes:
             - mysql_data:/var/lib/mysql
         ports:
@@ -39,13 +39,18 @@ services:
 
     phpmyadmin:
         image: phpmyadmin:5.2.3
-        restart: unless-stopped
+        restart: always
         depends_on:
             database:
                 condition: service_healthy
         environment:
             PMA_HOST: database
             PMA_PORT: '3306'
+            PMA_PMADB: phpmyadmin
+            PMA_CONTROLUSER: root
+            PMA_CONTROLPASS: root
+            PMA_USER: root
+            PMA_PASSWORD: root
         ports:
             - '127.0.0.1:8081:80'
 
